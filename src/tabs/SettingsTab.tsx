@@ -1,11 +1,24 @@
 import { Database } from 'lucide-react';
 import { safeInvoke } from '../utils';
+import { save, open } from '@tauri-apps/plugin-dialog';
 
 export default function SettingsTab() {
   const handleExport = async () => {
     try {
-      const result = await safeInvoke('export_database', { destPath: 'wuwa_backup.db' });
-      alert(result);
+      // Open save dialog to let user choose export location
+      const filePath = await save({
+        filters: [{
+          name: 'Database',
+          extensions: ['db']
+        }],
+        defaultPath: 'wuwa_backup.db',
+        title: 'Export Database'
+      });
+
+      if (filePath) {
+        const result = await safeInvoke('export_database', { destPath: filePath });
+        alert(result);
+      }
     } catch (err) {
       alert('Export failed: ' + err);
     }
@@ -13,8 +26,21 @@ export default function SettingsTab() {
 
   const handleImport = async () => {
     try {
-      const result = await safeInvoke('import_database', { sourcePath: 'wuwa_backup.db' });
-      alert(result);
+      // Open file dialog to let user choose database file to import
+      const filePath = await open({
+        filters: [{
+          name: 'Database',
+          extensions: ['db']
+        }],
+        multiple: false,
+        directory: false,
+        title: 'Import Database'
+      });
+
+      if (filePath) {
+        const result = await safeInvoke('import_database', { sourcePath: filePath });
+        alert(result);
+      }
     } catch (err) {
       alert('Import failed: ' + err);
     }

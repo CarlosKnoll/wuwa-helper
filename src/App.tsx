@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Sword, Package, Target, Map, Settings, Database, TrendingUp, Menu } from 'lucide-react';
+import { Users, Sword, Package, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
 import { safeInvoke } from './utils';
-import { Character, Resources, PityStatus, Weapon, ExplorationRegion } from './types';
 import DashboardTab from './tabs/DashboardTab';
 import CharactersTab from './tabs/CharactersTab';
 import WeaponsTab from './tabs/WeaponsTab';
 import ResourcesTab from './tabs/ResourcesTab';
 import PityTab from './tabs/PityTab';
 import ExplorationTab from './tabs/ExplorationTab';
+import EndgameTab from './tabs/EndgameTab';
 import SettingsTab from './tabs/SettingsTab';
 
 export default function WuwaHelper() {
@@ -28,7 +28,11 @@ export default function WuwaHelper() {
     setError(null);
     try {
       const [chars, res, pity, weaps, regions] = await Promise.all([
-        safeInvoke('get_all_characters'), safeInvoke('get_resources'), safeInvoke('get_pity_status'), safeInvoke('get_all_weapons'), safeInvoke('get_exploration_regions')
+        safeInvoke('get_all_characters'),
+        safeInvoke('get_resources'),
+        safeInvoke('get_pity_status'),
+        safeInvoke('get_all_weapons'),
+        safeInvoke('get_exploration_regions')
       ]);
       setCharacters(chars as Character[]);
       setResources(res as Resources);
@@ -49,6 +53,7 @@ export default function WuwaHelper() {
     { id: 'resources', name: 'Resources', icon: Package },
     { id: 'pity', name: 'Pity Counter', icon: Target },
     { id: 'exploration', name: 'Exploration', icon: Map },
+    { id: 'endgame', name: 'Endgame', icon: Trophy },
     { id: 'settings', name: 'Settings', icon: Settings },
   ];
 
@@ -86,6 +91,7 @@ export default function WuwaHelper() {
               {activeTab === 'resources' && <ResourcesTab resources={resources} onUpdate={loadAllData} />}
               {activeTab === 'pity' && <PityTab pityStatus={pityStatus} onUpdate={loadAllData} />}
               {activeTab === 'exploration' && <ExplorationTab regions={explorationRegions} onUpdate={loadAllData} />}
+              {activeTab === 'endgame' && <EndgameTab onUpdate={loadAllData} />}
               {activeTab === 'settings' && <SettingsTab />}
             </>
           )}

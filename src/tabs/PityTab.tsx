@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Edit2, Save } from 'lucide-react';
-import { safeInvoke } from '../utils';
+import { safeInvoke, formatBannerType } from '../utils';
 
 export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStatus[]; onUpdate: () => void }) {
   const [editing, setEditing] = useState<number | null>(null);
@@ -44,7 +44,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
           <div key={pity.id} className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-bold">{pity.banner_type}</h3>
+                <h3 className="text-xl font-bold">{formatBannerType(pity.banner_type)}</h3>
                 <p className="text-sm text-slate-400 mt-1">Banner Type</p>
               </div>
               <div className="flex gap-2">
