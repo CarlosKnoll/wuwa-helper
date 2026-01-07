@@ -1,16 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { safeInvoke, getElementColor } from '../utils';
+import { CharacterTalents, CharacterWeapon, Echo, EchoBuild, EchoSubstat, CharacterModalProps } from '../types';
 import CharacterInfo from './CharacterInfo';
 import CharacterTalentsSection from './CharacterTalentsSection';
 import CharacterWeaponSection from './CharacterWeaponSection';
 import CharacterEchoBuildSection from './CharacterEchoBuildSection';
-
-interface CharacterModalProps {
-  character: Character;
-  onClose: () => void;
-  onUpdate: () => void;
-}
 
 export default function CharacterModal({ character, onClose, onUpdate }: CharacterModalProps) {
   // Character basic info state
@@ -40,15 +35,15 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
 
   // Reload if character changes (e.g., from external update)
   useEffect(() => {
+    setForm({
+      level: character.level,
+      ascension: character.ascension,
+      waveband: character.waveband,
+      build_status: character.build_status,
+      notes: character.notes || ''
+    });
+    setCurrentCharacterId(character.id);
     if (currentCharacterId !== character.id) {
-      setForm({
-        level: character.level,
-        ascension: character.ascension,
-        waveband: character.waveband,
-        build_status: character.build_status,
-        notes: character.notes || ''
-      });
-      setCurrentCharacterId(character.id);
       loadDetails();
     }
   }, [character]);
@@ -82,20 +77,43 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
   };
 
   const handleSave = async () => {
+    
+    // Enforce limits
+    const level = Math.max(1, Math.min(90, form.level));
+    const ascension = Math.max(0, Math.min(6, form.ascension));
+    const waveband = Math.max(0, Math.min(6, form.waveband));
+    
+    if (form.level !== level || form.ascension !== ascension || form.waveband !== waveband) {
+      alert('Values adjusted: Level (1-90), Ascension (0-6), Waveband (0-6)');
+    }
+    
     try {
       await safeInvoke('update_character', {
         id: character.id,
-        level: form.level,
-        ascension: form.ascension,
-        waveband: form.waveband,
+        level: level,
+        ascension: ascension,
+        waveband: waveband,
         buildStatus: form.build_status,
         notes: form.notes || null
       });
+      
+      
+      // Update local form state
+      setForm({
+        level: level,
+        ascension: ascension,
+        waveband: waveband,
+        build_status: form.build_status,
+        notes: form.notes
+      });
+      
       setEditing(false);
-      // Update parent list but keep modal open
+      
+      // Trigger parent update - this will refresh the character list
+      // and because we pass characters.find() in CharactersTab, 
+      // the modal will receive the fresh character data
       onUpdate();
-      // Reload character details to reflect changes
-      await loadDetails();
+      
     } catch (err) {
       alert('Failed to update: ' + err);
     }
@@ -112,7 +130,13 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
               {character.element} • {character.weapon_type}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => {
+              onUpdate(); // Update parent when closing
+              onClose();
+            }} 
+            className="text-slate-400 hover:text-white transition-colors"
+          >
             <X size={24} />
           </button>
         </div>

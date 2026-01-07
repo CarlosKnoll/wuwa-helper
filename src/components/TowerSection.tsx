@@ -1,48 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Trophy, ChevronDown, ChevronUp, Star, Edit2, Save, X } from 'lucide-react';
+import { TowerDetails, TowerTeam, TowerSectionProps } from '../types'
 import { safeInvoke } from '../utils';
-
-interface TowerOfAdversity {
-  id: number;
-  last_reset: string;
-  total_stars: number;
-  astrite_earned: number;
-  notes: string | null;
-}
-
-interface TowerDetails {
-  id: number;
-  tower_type: string;
-  stars_achieved: number;
-  max_stars: number;
-  notes: string | null;
-}
-
-interface TowerAreaEffect {
-  id: number;
-  tower_type: string;
-  floor_range: string;
-  effect_description: string;
-}
-
-interface TowerTeam {
-  id: number;
-  tower_type: string;
-  floor_number: number;
-  character1: string;
-  character2: string;
-  character3: string;
-}
-
-interface TowerSectionProps {
-  towerInfo: TowerOfAdversity | null;
-  towerDetails: TowerDetails[];
-  towerEffects: TowerAreaEffect[];
-  towerTeams: TowerTeam[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
-}
 
 export default function TowerSection({
   towerInfo,

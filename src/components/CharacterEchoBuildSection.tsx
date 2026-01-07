@@ -1,14 +1,8 @@
-import React, { useState } from 'react';
-import { Edit2, Save, X, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Edit2, Save, X, Shield, Plus } from 'lucide-react';
+import { CharacterEchoBuildSectionProps } from '../types';
 import { safeInvoke } from '../utils';
 import EchoItem from './EchoItem';
-
-interface CharacterEchoBuildSectionProps {
-  echoBuild: EchoBuild | null;
-  echoes: Echo[];
-  echoSubstats: Record<number, EchoSubstat[]>;
-  onUpdate: () => void;
-}
 
 export default function CharacterEchoBuildSection({
   echoBuild,
@@ -18,11 +12,23 @@ export default function CharacterEchoBuildSection({
 }: CharacterEchoBuildSectionProps) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    set_bonus: echoBuild?.set_bonus || '',
-    set_effect: echoBuild?.set_effect || '',
-    overall_quality: echoBuild?.overall_quality || '',
-    notes: echoBuild?.notes || '',
+    set_bonus: '',
+    set_effect: '',
+    overall_quality: '',
+    notes: '',
   });
+
+  // Sync form with echoBuild whenever it changes
+  useEffect(() => {
+    if (echoBuild) {
+      setForm({
+        set_bonus: echoBuild.set_bonus || '',
+        set_effect: echoBuild.set_effect || '',
+        overall_quality: echoBuild.overall_quality || '',
+        notes: echoBuild.notes || '',
+      });
+    }
+  }, [echoBuild]);
 
   const handleSave = async () => {
     if (!echoBuild) return;
@@ -44,12 +50,40 @@ export default function CharacterEchoBuildSection({
 
   const handleCancel = () => {
     setEditing(false);
-    setForm({
-      set_bonus: echoBuild?.set_bonus || '',
-      set_effect: echoBuild?.set_effect || '',
-      overall_quality: echoBuild?.overall_quality || '',
-      notes: echoBuild?.notes || '',
-    });
+    if (echoBuild) {
+      setForm({
+        set_bonus: echoBuild.set_bonus || '',
+        set_effect: echoBuild.set_effect || '',
+        overall_quality: echoBuild.overall_quality || '',
+        notes: echoBuild.notes || '',
+      });
+    }
+  };
+
+  const addNewEcho = async () => {
+    if (!echoBuild) return;
+    
+    // Check if already at max echoes (5)
+    if (echoes.length >= 5) {
+      alert('Maximum of 5 echoes per character reached.');
+      return;
+    }
+    
+    try {
+      await safeInvoke('add_echo', {
+        buildId: echoBuild.id,
+        echoName: 'New Echo',
+        cost: 1,
+        level: 0,
+        rarity: 5,
+        mainStat: null,
+        mainStatValue: null,
+        notes: null,
+      });
+      await onUpdate();
+    } catch (err) {
+      alert('Failed to add echo: ' + err);
+    }
   };
 
   if (!echoBuild) return null;
@@ -157,12 +191,21 @@ export default function CharacterEchoBuildSection({
       )}
 
       {/* Echoes Grid - Side by Side */}
-      {echoes.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <div className="text-sm text-slate-400 font-medium mb-3">
+      <div className="mt-4 pt-4 border-t border-slate-700">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm text-slate-400 font-medium">
             Echoes ({echoes.length})
           </div>
-          {/* Changed from space-y-3 to grid for side-by-side layout */}
+          <button
+            onClick={addNewEcho}
+            className="px-3 py-1 bg-purple-500 hover:bg-purple-600 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add Echo
+          </button>
+        </div>
+        
+        {echoes.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {echoes.map(echo => (
               <EchoItem
@@ -173,8 +216,12 @@ export default function CharacterEchoBuildSection({
               />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8 text-slate-500 text-sm">
+            No echoes yet. Click "Add Echo" to start building.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

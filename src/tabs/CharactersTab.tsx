@@ -1,38 +1,38 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import { Character } from '../types';
+import { Character } from '../types.ts';
 import { getElementColor, getRarityStars, getBuildStatusColor, getBuildStatusPriority, safeInvoke } from '../utils';
 import CharacterModal from '../components/CharacterModal';
 import AddCharacterModal from '../components/AddCharacterModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function CharactersTab({ characters, onUpdate }: { characters: Character[]; onUpdate: () => void }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChar, setSelectedChar] = useState<Character | null>(null);
+  const [selectedCharId, setSelectedCharId] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; name: string } | null>(null);
   const [deletingCharId, setDeletingCharId] = useState<number | null>(null);
 
-  const handleDelete = async (char: Character, e: React.MouseEvent) => {
+  // Find the selected character from the current characters array
+  const selectedChar = selectedCharId ? characters.find(c => c.id === selectedCharId) : null;
+
+  const handleDeleteClick = (char: Character, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    // Show confirmation dialog FIRST, before doing anything
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${char.character_name}? This will also delete all related data (talents, weapon, echoes).`
-    );
-    
-    // Only proceed if user clicked OK
-    if (confirmed) {
-      try {
-        setDeletingCharId(char.id);
-        await safeInvoke('delete_character', { id: char.id });
-        onUpdate();
-      } catch (err) {
-        alert('Failed to delete character: ' + err);
-      } finally {
-        setDeletingCharId(null);
-      }
-    }
-    else if (!confirmed) {
-      return;
+    setDeleteConfirm({ id: char.id, name: char.character_name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      setDeletingCharId(deleteConfirm.id);
+      await safeInvoke('delete_character', { id: deleteConfirm.id });
+      onUpdate();
+    } catch (err) {
+      alert('Failed to delete character: ' + err);
+    } finally {
+      setDeletingCharId(null);
+      setDeleteConfirm(null);
     }
   };
 
@@ -50,10 +50,28 @@ export default function CharactersTab({ characters, onUpdate }: { characters: Ch
     return char.character_name.toLowerCase() === 'rover';
   };
 
+  // Helper function to calculate max level based on ascension
+  const getMaxLevel = (ascension: number): number => {
+    const maxLevels = [20, 40, 50, 60, 70, 80, 90];
+    return maxLevels[ascension] || 20;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm !== null}
+        title="Delete Character"
+        message={`Are you sure you want to delete ${deleteConfirm?.name}? This will also delete all related data (talents, weapon, echoes). This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        variant="danger"
+      />
+
       {/* Search and Add */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 items-center">
         <div className="flex-1 bg-slate-900/50 rounded-xl p-4 border border-slate-800">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -68,7 +86,7 @@ export default function CharactersTab({ characters, onUpdate }: { characters: Ch
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg font-semibold flex items-center gap-2 transition-colors text-sm"
+          className="h-10 px-4 bg-cyan-500 hover:bg-cyan-600 rounded-lg font-semibold flex items-center gap-2 transition-colors text-sm whitespace-nowrap"
         >
           <Plus size={18} />
           Add
@@ -82,20 +100,10 @@ export default function CharactersTab({ characters, onUpdate }: { characters: Ch
             key={char.id}
             className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 hover:border-cyan-500 transition-all cursor-pointer group relative"
           >
-            {/* Delete Button */}
-            <button
-              onClick={(e) => handleDelete(char, e)}
-              disabled={deletingCharId === char.id}
-              className="absolute top-2 right-2 p-1.5 bg-red-500/20 hover:bg-red-500/40 rounded text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-              title="Delete character"
-            >
-              <Trash2 size={14} />
-            </button>
-
             {/* Character Content */}
-            <div onClick={() => setSelectedChar(char)}>
+            <div onClick={() => setSelectedCharId(char.id)}>
               <div className="flex items-start justify-between mb-3">
-                <div>
+                <div className="flex-1 pr-2">
                   <h3 className="font-bold text-lg group-hover:text-cyan-400">
                     {char.character_name}
                   </h3>
@@ -104,7 +112,17 @@ export default function CharactersTab({ characters, onUpdate }: { characters: Ch
                     <p className="text-sm text-slate-400">{char.variant}</p>
                   )}
                 </div>
-                <span className="text-yellow-400">{getRarityStars(char.rarity)}</span>
+                <div className="flex items-start gap-2 flex-shrink-0">
+                  <span className="text-yellow-400">{getRarityStars(char.rarity)}</span>
+                  {/* Delete Button - Like weapons tab */}
+                  <button
+                    onClick={(e) => handleDeleteClick(char, e)}
+                    disabled={deletingCharId === char.id}
+                    className="p-1 bg-red-500 hover:bg-red-600 rounded transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <span className={`inline-block px-2 py-1 rounded text-xs ${getElementColor(char.element)}`}>
@@ -112,7 +130,7 @@ export default function CharactersTab({ characters, onUpdate }: { characters: Ch
                 </span>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Level</span>
-                  <span className="font-bold">{char.level}/{char.ascension * 10 + 20}</span>
+                  <span className="font-bold">{char.level}/{getMaxLevel(char.ascension)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Waveband</span>
@@ -130,11 +148,10 @@ export default function CharactersTab({ characters, onUpdate }: { characters: Ch
       {/* Modals */}
       {selectedChar && (
         <CharacterModal
+          key={selectedCharId}
           character={selectedChar}
-          onClose={() => setSelectedChar(null)}
-          onUpdate={() => {
-            onUpdate();
-          }}
+          onClose={() => setSelectedCharId(null)}
+          onUpdate={onUpdate}
         />
       )}
       

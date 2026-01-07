@@ -1,35 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Zap, ChevronDown, ChevronUp, Edit2, Save, X } from 'lucide-react';
+import { WhimperingWastesSectionProps, TorrentsStage } from '../types'
 import { safeInvoke } from '../utils';
-
-interface WhimperingWastes {
-  id: number;
-  last_reset: string;
-  chasm_highest_stage: number;
-  chasm_total_points: number;
-  chasm_astrite: number;
-  torrents_total_points: number;
-  torrents_astrite: number;
-  notes: string | null;
-}
-
-interface TorrentsStage {
-  id: number;
-  stage_number: number;
-  character1: string;
-  character2: string;
-  character3: string;
-  token: string;
-  points: number;
-}
-
-interface WhimperingWastesSectionProps {
-  wastesInfo: WhimperingWastes | null;
-  torrentsStages: TorrentsStage[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
-}
 
 export default function WhimperingWastesSection({
   wastesInfo,

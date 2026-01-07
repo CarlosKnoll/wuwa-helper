@@ -1,32 +1,55 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit2, Save, ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
+import { EchoSubstat, EchoItemProps } from '../types';
 import { safeInvoke, getRarityStars } from '../utils';
+import ConfirmDialog from './ConfirmDialog';
 
-interface EchoItemProps {
-  echo: Echo;
-  substats: EchoSubstat[];
-  onUpdate: () => void;
-}
+
 
 export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
   const [editing, setEditing] = useState(false);
   const [showSubstats, setShowSubstats] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [form, setForm] = useState({
-    level: echo.level || 0,
-    main_stat: echo.main_stat || '',
-    main_stat_value: echo.main_stat_value || '',
-    notes: echo.notes || '',
+    echo_name: '',
+    cost: 0,
+    rarity: 5,
+    level: 0,
+    main_stat: '',
+    main_stat_value: '',
+    notes: '',
   });
   
-  const [substatForms, setSubstatForms] = useState<EchoSubstat[]>([...substats]);
+  const [substatForms, setSubstatForms] = useState<EchoSubstat[]>([]);
   const [newSubstats, setNewSubstats] = useState<{stat_name: string, stat_value: string}[]>([]);
   const [deletedSubstatIds, setDeletedSubstatIds] = useState<number[]>([]);
 
+  // Sync form with echo whenever it changes
+  useEffect(() => {
+    setForm({
+      echo_name: echo.echo_name || '',
+      cost: echo.cost || 0,
+      rarity: echo.rarity || 5,
+      level: echo.level || 0,
+      main_stat: echo.main_stat || '',
+      main_stat_value: echo.main_stat_value || '',
+      notes: echo.notes || '',
+    });
+  }, [echo]);
+
+  // Sync substats whenever they change
+  useEffect(() => {
+    setSubstatForms([...substats]);
+  }, [substats]);
+
   const handleSave = async () => {
     try {
-      // Update echo main stats
+      // Update echo main stats including name
       await safeInvoke('update_echo', {
         id: echo.id,
+        echoName: form.echo_name || null,
+        cost: form.cost || null,
+        rarity: form.rarity || null,
         level: form.level || null,
         mainStat: form.main_stat || null,
         mainStatValue: form.main_stat_value || null,
@@ -72,6 +95,9 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
   const handleCancel = () => {
     setEditing(false);
     setForm({
+      echo_name: echo.echo_name || '',
+      cost: echo.cost || 0,
+      rarity: echo.rarity || 5,
       level: echo.level || 0,
       main_stat: echo.main_stat || '',
       main_stat_value: echo.main_stat_value || '',
@@ -83,6 +109,12 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
   };
 
   const addNewSubstat = () => {
+    // Check if already at max substats (5)
+    const totalSubstats = visibleSubstats.length + newSubstats.length;
+    if (totalSubstats >= 5) {
+      alert('Maximum of 5 substats per echo reached.');
+      return;
+    }
     setNewSubstats([...newSubstats, { stat_name: '', stat_value: '' }]);
   };
 
@@ -95,20 +127,55 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
     setNewSubstats(newSubstats.filter((_, i) => i !== index));
   };
 
+  const handleDelete = async () => {
+    try {
+      await safeInvoke('delete_echo', { id: echo.id });
+      await onUpdate();
+    } catch (err) {
+      alert('Failed to delete echo: ' + err);
+    } finally {
+      setDeleteConfirm(false);
+    }
+  };
+
   const visibleSubstats = editing 
     ? substatForms.filter(s => !deletedSubstatIds.includes(s.id))
     : substats;
 
+  const totalSubstats = visibleSubstats.length + newSubstats.length;
+
   return (
     <div className="bg-slate-900/50 rounded-lg border border-slate-700">
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm}
+        title="Delete Echo"
+        message={`Are you sure you want to delete "${form.echo_name}"? This will also delete all substats. This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(false)}
+        variant="danger"
+      />
+
       {/* Echo Header */}
       <div className="p-3">
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
-            <div className="font-medium text-white">{echo.echo_name}</div>
+            {editing ? (
+              <input
+                type="text"
+                value={form.echo_name}
+                onChange={e => setForm({ ...form, echo_name: e.target.value })}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-cyan-500 mb-2"
+                placeholder="Echo name"
+              />
+            ) : (
+              <div className="font-medium text-white">{form.echo_name}</div>
+            )}
             <div className="flex gap-2 mt-1 text-sm text-slate-400">
-              {echo.cost && <span>Cost: {echo.cost}</span>}
-              {echo.rarity && <span>{getRarityStars(echo.rarity)}</span>}
+              {form.cost > 0 && <span>Cost: {form.cost}</span>}
+              {form.rarity > 0 && <span>{getRarityStars(form.rarity)}</span>}
             </div>
           </div>
           <div className="flex items-start gap-2">
@@ -130,6 +197,12 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
                   className="p-1 bg-cyan-500 hover:bg-cyan-600 rounded text-xs transition-colors"
                 >
                   <Edit2 className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="p-1 bg-red-500 hover:bg-red-600 rounded text-xs transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
                 </button>
               </>
             ) : (
@@ -154,7 +227,29 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
         {/* Echo Main Stats Editing */}
         {editing && (
           <div className="space-y-2 mb-3">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
+              <div>
+                <label className="text-xs text-slate-500">Cost</label>
+                <input
+                  type="number"
+                  value={form.cost}
+                  onChange={e => setForm({ ...form, cost: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  min="1"
+                  max="4"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500">Rarity</label>
+                <input
+                  type="number"
+                  value={form.rarity}
+                  onChange={e => setForm({ ...form, rarity: parseInt(e.target.value) || 5 })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  min="2"
+                  max="5"
+                />
+              </div>
               <div>
                 <label className="text-xs text-slate-500">Level</label>
                 <input
@@ -166,6 +261,8 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
                   max="25"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-slate-500">Main Stat</label>
                 <input
@@ -225,7 +322,7 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
               {editing ? (
                 <div className="space-y-2">
                   {/* Existing substats */}
-                  {visibleSubstats.map((sub, idx) => (
+                  {visibleSubstats.map((sub) => (
                     <div key={sub.id} className="flex gap-2">
                       <input
                         type="text"
@@ -300,10 +397,12 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
                   
                   <button
                     onClick={addNewSubstat}
-                    className="w-full py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-cyan-400 flex items-center justify-center gap-1"
+                    disabled={totalSubstats >= 5}
+                    className="w-full py-1 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded text-xs text-cyan-400 disabled:text-slate-500 flex items-center justify-center gap-1"
+                    title={totalSubstats >= 5 ? "Maximum 5 substats per echo" : "Add substat"}
                   >
                     <Plus className="w-3 h-3" />
-                    Add Substat
+                    Add Substat {totalSubstats >= 5 && "(Max 5)"}
                   </button>
                 </div>
               ) : (

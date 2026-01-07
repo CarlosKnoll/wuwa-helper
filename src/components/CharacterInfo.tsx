@@ -1,22 +1,6 @@
-import React from 'react';
 import { Edit2, Save, X } from 'lucide-react';
+import { CharacterInfoProps } from '../types'
 import { getBuildStatusColor, getBuildStatusOptions } from '../utils';
-
-interface CharacterInfoProps {
-  character: Character;
-  form: {
-    level: number;
-    ascension: number;
-    waveband: number;
-    build_status: string;
-    notes: string;
-  };
-  editing: boolean;
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  onChange: (form: any) => void;
-}
 
 export default function CharacterInfo({
   character,
@@ -29,6 +13,12 @@ export default function CharacterInfo({
 }: CharacterInfoProps) {
   const buildStatusOptions = getBuildStatusOptions();
 
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await onSave();
+  };
+
   return (
     <div className="bg-slate-800/50 rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
@@ -39,7 +29,7 @@ export default function CharacterInfo({
           </button>
         ) : (
           <div className="flex gap-2">
-            <button onClick={onSave} className="p-2 bg-green-500 hover:bg-green-600 rounded transition-colors">
+            <button onClick={handleSave} className="p-2 bg-green-500 hover:bg-green-600 rounded transition-colors">
               <Save size={16} />
             </button>
             <button onClick={onCancel} className="p-2 bg-slate-600 hover:bg-slate-700 rounded transition-colors">

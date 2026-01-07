@@ -138,3 +138,14 @@ pub struct EndgameMode {
     pub max_stars: Option<i64>,
     pub notes: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Goal {
+    pub id: i64,
+    pub goal_text: String,
+    pub priority: Option<String>,
+    pub category: Option<String>,
+    pub notes: Option<String>,
+    pub astrite_needed: Option<i64>,
+    pub estimated_banner: Option<String>,
+}

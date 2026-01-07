@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit2, Save } from 'lucide-react';
+import { PityStatus } from '../types';
 import { safeInvoke, formatBannerType } from '../utils';
 
 export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStatus[]; onUpdate: () => void }) {

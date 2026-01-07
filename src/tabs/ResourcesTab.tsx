@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Target, Star, Shield, Edit2, Save, Coins } from 'lucide-react';
+import { Resources } from '../types';
 import { safeInvoke } from '../utils';
 
 export default function ResourcesTab({ resources, onUpdate }: { resources: Resources | null; onUpdate: () => void }) {

@@ -156,16 +156,50 @@ pub fn add_character(
     app: tauri::AppHandle,
     character_name: String,
     variant: Option<String>,
+    resonance_date: String,
     rarity: i64,
     element: String,
     weapon_type: String,
+    waveband: i64,
+    level: i64,
+    ascension: i64,
+    build_status: String,
+    notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
+    // Insert the character
     conn.execute(
-        "INSERT INTO characters (character_name, variant, rarity, element, weapon_type, waveband, level, ascension, build_status) 
-         VALUES (?, ?, ?, ?, ?, 0, 1, 0, 'Not built')",
-        (character_name, variant, rarity, element, weapon_type),
+        "INSERT INTO characters (character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes),
+    )
+    .map_err(|e| e.to_string())?;
+    
+    // Get the newly inserted character's ID
+    let character_id = conn.last_insert_rowid();
+    
+    // Initialize character_talents with default values
+    conn.execute(
+        "INSERT INTO character_talents (character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes) 
+         VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)",
+        [character_id],
+    )
+    .map_err(|e| e.to_string())?;
+    
+    // Initialize character_weapons with default values
+    conn.execute(
+        "INSERT INTO character_weapons (character_id, weapon_name, rarity, level, rank, notes) 
+         VALUES (?, 'None', NULL, NULL, NULL, NULL)",
+        [character_id],
+    )
+    .map_err(|e| e.to_string())?;
+    
+    // Initialize echo_builds with default values
+    conn.execute(
+        "INSERT INTO echo_builds (character_id, set_bonus, set_effect, overall_quality, notes) 
+         VALUES (?, NULL, NULL, NULL, NULL)",
+        [character_id],
     )
     .map_err(|e| e.to_string())?;
     

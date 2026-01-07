@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Sword, Package, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
+import { Character, Weapon, Resources, PityStatus, ExplorationRegion } from './types';
 import { safeInvoke } from './utils';
 import DashboardTab from './tabs/DashboardTab';
 import CharactersTab from './tabs/CharactersTab';
@@ -14,6 +15,7 @@ export default function WuwaHelper() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [resources, setResources] = useState<Resources | null>(null);
@@ -21,9 +23,9 @@ export default function WuwaHelper() {
   const [weapons, setWeapons] = useState<Weapon[]>([]);
   const [explorationRegions, setExplorationRegions] = useState<ExplorationRegion[]>([]);
 
-  useEffect(() => { loadAllData(); }, []);
+  useEffect(() => { loadAllData(true); }, []);
 
-  const loadAllData = async () => {
+  const loadAllData = async (isInitial = false) => {
     setLoading(true);
     setError(null);
     try {
@@ -43,6 +45,9 @@ export default function WuwaHelper() {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
+      if (isInitial) {
+        setInitialLoading(false);
+      }
     }
   };
 
@@ -76,14 +81,18 @@ export default function WuwaHelper() {
         <header className="bg-slate-900/30 backdrop-blur-xl border-b border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
             <div><h2 className="text-2xl font-bold">{navigation.find(n => n.id === activeTab)?.name}</h2></div>
-            <button onClick={loadAllData} disabled={loading} className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
+            <button onClick={() => loadAllData()} disabled={loading} className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">
           {error && <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400"><strong>Error:</strong> {error}</div>}
-          {loading && <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div></div>}
-          {!loading && (
+          
+          {initialLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
+            </div>
+          ) : (
             <>
               {activeTab === 'dashboard' && <DashboardTab characters={characters} resources={resources} pityStatus={pityStatus} />}
               {activeTab === 'characters' && <CharactersTab characters={characters} onUpdate={loadAllData} />}
@@ -91,7 +100,7 @@ export default function WuwaHelper() {
               {activeTab === 'resources' && <ResourcesTab resources={resources} onUpdate={loadAllData} />}
               {activeTab === 'pity' && <PityTab pityStatus={pityStatus} onUpdate={loadAllData} />}
               {activeTab === 'exploration' && <ExplorationTab regions={explorationRegions} onUpdate={loadAllData} />}
-              {activeTab === 'endgame' && <EndgameTab onUpdate={loadAllData} />}
+              {activeTab === 'endgame' && <EndgameTab />}
               {activeTab === 'settings' && <SettingsTab />}
             </>
           )}

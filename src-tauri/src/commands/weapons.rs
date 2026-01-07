@@ -37,13 +37,14 @@ pub fn update_weapon(
     level: i64,
     rank: i64,
     equipped_on: String,
+    category: String,
     notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
     conn.execute(
-        "UPDATE weapons_inventory SET level = ?, rank = ?, equipped_on = ?, notes = ? WHERE id = ?",
-        (level, rank, equipped_on, notes, id),
+        "UPDATE weapons_inventory SET level = ?, rank = ?, equipped_on = ?, category = ?, notes = ? WHERE id = ?",
+        (level, rank, equipped_on, category, notes, id),
     )
     .map_err(|e| e.to_string())?;
     
@@ -56,15 +57,36 @@ pub fn add_weapon(
     weapon_name: String,
     weapon_type: String,
     rarity: i64,
+    level: i64,
+    rank: i64,
+    equipped_on: String,
+    category: String,
+    notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
     conn.execute(
-        "INSERT INTO weapons_inventory (weapon_name, weapon_type, rarity, rank, level, equipped_on, category) 
-         VALUES (?, ?, ?, 1, 1, 'Nobody', 'owned')",
-        (weapon_name, weapon_type, rarity),
+        "INSERT INTO weapons_inventory (weapon_name, weapon_type, rarity, rank, level, equipped_on, category, notes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (weapon_name, weapon_type, rarity, rank, level, equipped_on, category, notes),
     )
     .map_err(|e| e.to_string())?;
     
     Ok("Weapon added successfully".to_string())
+}
+
+#[tauri::command]
+pub fn delete_weapon(
+    app: tauri::AppHandle,
+    id: i64,
+) -> Result<String, String> {
+    let conn = init_db(&app)?;
+    
+    conn.execute(
+        "DELETE FROM weapons_inventory WHERE id = ?",
+        [id],
+    )
+    .map_err(|e| e.to_string())?;
+    
+    Ok("Weapon deleted successfully".to_string())
 }

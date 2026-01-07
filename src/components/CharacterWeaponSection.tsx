@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit2, Save, X, Sword } from 'lucide-react';
+import { Weapon, CharacterWeaponSectionProps } from '../types';
 import { safeInvoke, getRarityStars } from '../utils';
-
-interface CharacterWeaponSectionProps {
-  weapon: CharacterWeapon | null;
-  characterId: number;
-  onUpdate: () => void;
-}
 
 export default function CharacterWeaponSection({
   weapon,

@@ -1,70 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { safeInvoke } from '../utils';
+import { TowerOfAdversity, TowerDetails, TowerAreaEffect, TowerTeam, WhimperingWastes, TorrentsStage, TroopMatrix } from '../types.ts'
 import TowerSection from '../components/TowerSection';
 import WhimperingWastesSection from '../components/WhimperingWastesSection';
 import TroopMatrixSection from '../components/TroopMatrixSection';
 
-interface TowerOfAdversity {
-  id: number;
-  last_reset: string;
-  total_stars: number;
-  astrite_earned: number;
-  notes: string | null;
-}
-
-interface TowerDetails {
-  id: number;
-  tower_type: string;
-  stars_achieved: number;
-  max_stars: number;
-  notes: string | null;
-}
-
-interface TowerAreaEffect {
-  id: number;
-  tower_type: string;
-  floor_range: string;
-  effect_description: string;
-}
-
-interface TowerTeam {
-  id: number;
-  tower_type: string;
-  floor_number: number;
-  character1: string;
-  character2: string;
-  character3: string;
-}
-
-interface WhimperingWastes {
-  id: number;
-  last_reset: string;
-  chasm_highest_stage: number;
-  chasm_total_points: number;
-  chasm_astrite: number;
-  torrents_total_points: number;
-  torrents_astrite: number;
-  notes: string | null;
-}
-
-interface TorrentsStage {
-  id: number;
-  stage_number: number;
-  character1: string;
-  character2: string;
-  character3: string;
-  token: string;
-  points: number;
-}
-
-interface TroopMatrix {
-  id: number;
-  unlocked: boolean;
-  progress: string;
-  notes: string | null;
-}
-
-export default function EndgameTab({ onUpdate }: { onUpdate: () => void }) {
+export default function EndgameTab() {
   const [loading, setLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     tower: false,
@@ -102,14 +43,13 @@ export default function EndgameTab({ onUpdate }: { onUpdate: () => void }) {
         safeInvoke('get_troop_matrix')
       ]);
 
-      if (results[0].status === 'fulfilled') setTowerInfo(results[0].value);
-      if (results[1].status === 'fulfilled') setTowerDetails(results[1].value);
-      if (results[2].status === 'fulfilled') setTowerEffects(results[2].value);
-      if (results[3].status === 'fulfilled') setTowerTeams(results[3].value);
-      if (results[4].status === 'fulfilled') setWastesInfo(results[4].value);
-      if (results[5].status === 'fulfilled') setTorrentsStages(results[5].value);
-      if (results[6].status === 'fulfilled') setTroopMatrix(results[6].value);
-      else console.log('Troop Matrix not unlocked yet');
+      if (results[0].status === 'fulfilled') setTowerInfo(results[0].value as TowerOfAdversity);
+      if (results[1].status === 'fulfilled') setTowerDetails(results[1].value as TowerDetails[]);
+      if (results[2].status === 'fulfilled') setTowerEffects(results[2].value as TowerAreaEffect[]);
+      if (results[3].status === 'fulfilled') setTowerTeams(results[3].value as TowerTeam[]);
+      if (results[4].status === 'fulfilled') setWastesInfo(results[4].value as WhimperingWastes);
+      if (results[5].status === 'fulfilled') setTorrentsStages(results[5].value as TorrentsStage[]);
+      if (results[6].status === 'fulfilled') setTroopMatrix(results[6].value as TroopMatrix);
       
     } catch (error) {
       console.error('Failed to load endgame data:', error);

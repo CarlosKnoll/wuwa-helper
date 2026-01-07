@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Map, Edit2, Check} from 'lucide-react';
+import { ExplorationMap, ExplorationRegion } from '../types';
 import { safeInvoke } from '../utils';
 
 export default function ExplorationTab({ regions, onUpdate }: { regions: ExplorationRegion[]; onUpdate: () => void }) {

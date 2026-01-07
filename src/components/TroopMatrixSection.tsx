@@ -1,20 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Users, ChevronDown, ChevronUp, Edit2, Save, X } from 'lucide-react';
+import { TroopMatrixSectionProps } from '../types'
 import { safeInvoke } from '../utils';
-
-interface TroopMatrix {
-  id: number;
-  unlocked: boolean;
-  progress: string;
-  notes: string | null;
-}
-
-interface TroopMatrixSectionProps {
-  troopMatrix: TroopMatrix | null;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
-}
 
 export default function TroopMatrixSection({
   troopMatrix,

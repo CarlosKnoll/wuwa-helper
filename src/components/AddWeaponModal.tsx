@@ -1,11 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { safeInvoke } from '../utils';
-
-interface AddWeaponModalProps {
-  onClose: () => void;
-  onSuccess: () => void;
-}
+import { AddWeaponModalProps } from '../types';
 
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
 
@@ -14,8 +10,8 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
     weapon_name: '',
     weapon_type: 'Sword',
     rarity: 5,
-    rank: 1,
     level: 1,
+    rank: 1,
     equipped_on: 'Nobody',
     category: 'owned',
     notes: '',
@@ -37,8 +33,8 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
         weaponName: form.weapon_name,
         weaponType: form.weapon_type,
         rarity: form.rarity,
-        rank: form.rank,
         level: form.level,
+        rank: form.rank,
         equippedOn: form.equipped_on,
         category: form.category,
         notes: form.notes || null,
@@ -76,7 +72,7 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
                 value={form.weapon_name}
                 onChange={e => setForm({ ...form, weapon_name: e.target.value })}
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-                placeholder="e.g., Verdant Summit"
+                placeholder="e.g., Emerald of Genesis"
                 required
               />
             </div>
@@ -120,7 +116,7 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
             </div>
 
             <div>
-              <label className="text-sm text-slate-400">Rank (Refinement)</label>
+              <label className="text-sm text-slate-400">Refinement Rank</label>
               <input
                 type="number"
                 value={form.rank}
@@ -132,18 +128,6 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
             </div>
 
             <div>
-              <label className="text-sm text-slate-400">Category</label>
-              <select
-                value={form.category}
-                onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-              >
-                <option value="owned">Owned (not leveled)</option>
-                <option value="leveled">Leveled</option>
-              </select>
-            </div>
-
-            <div>
               <label className="text-sm text-slate-400">Equipped On</label>
               <input
                 type="text"
@@ -152,6 +136,18 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
                 placeholder="Character name or 'Nobody'"
               />
+            </div>
+
+            <div>
+              <label className="text-sm text-slate-400">Category</label>
+              <select
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+              >
+                <option value="owned">Owned</option>
+                <option value="leveled">Leveled</option>
+              </select>
             </div>
 
             <div className="col-span-2">

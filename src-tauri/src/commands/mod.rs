@@ -6,3 +6,4 @@ pub mod weapons;
 pub mod exploration;
 pub mod endgame;
 pub mod database;
+pub mod goals;

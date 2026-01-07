@@ -1,12 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Edit2, Save, X, Zap } from 'lucide-react';
+import { CharacterTalents, CharacterTalentsSectionProps } from '../types';
 import { safeInvoke } from '../utils';
-
-interface CharacterTalentsSectionProps {
-  talents: CharacterTalents | null;
-  characterId: number;
-  onUpdate: () => void;
-}
 
 export default function CharacterTalentsSection({
   talents,

@@ -1,11 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
+import { AddCharacterModalProps } from '../types';
 import { safeInvoke, getBuildStatusOptions } from '../utils';
-
-interface AddCharacterModalProps {
-  onClose: () => void;
-  onSuccess: () => void;
-}
 
 const elements = ['Spectro', 'Havoc', 'Aero', 'Electro', 'Fusion', 'Glacio'];
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
@@ -37,6 +33,15 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
       return;
     }
 
+    // Enforce limits
+    const level = Math.max(1, Math.min(90, form.level));
+    const ascension = Math.max(0, Math.min(6, form.ascension));
+    const waveband = Math.max(0, Math.min(6, form.waveband));
+    
+    if (form.level !== level || form.ascension !== ascension || form.waveband !== waveband) {
+      alert('Values adjusted: Level (1-90), Ascension (0-6), Waveband (0-6)');
+    }
+
     try {
       setLoading(true);
       await safeInvoke('add_character', {
@@ -46,9 +51,9 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
         rarity: form.rarity,
         element: form.element,
         weaponType: form.weapon_type,
-        waveband: form.waveband,
-        level: form.level,
-        ascension: form.ascension,
+        waveband: waveband,
+        level: level,
+        ascension: ascension,
         buildStatus: form.build_status,
         notes: form.notes || null,
       });
