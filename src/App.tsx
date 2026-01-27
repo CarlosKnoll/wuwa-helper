@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Users, Sword, Package, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
 import { Character, Weapon, Resources, PityStatus, ExplorationRegion } from './types';
 import { safeInvoke } from './utils';
@@ -8,7 +8,7 @@ import WeaponsTab from './tabs/WeaponsTab';
 import ResourcesTab from './tabs/ResourcesTab';
 import PityTab from './tabs/PityTab';
 import ExplorationTab from './tabs/ExplorationTab';
-import EndgameTab from './tabs/EndgameTab';
+import EndgameTab, { EndgameTabRef } from './tabs/EndgameTab';
 import SettingsTab from './tabs/SettingsTab';
 
 export default function WuwaHelper() {
@@ -22,6 +22,9 @@ export default function WuwaHelper() {
   const [pityStatus, setPityStatus] = useState<PityStatus[]>([]);
   const [weapons, setWeapons] = useState<Weapon[]>([]);
   const [explorationRegions, setExplorationRegions] = useState<ExplorationRegion[]>([]);
+
+  // Ref for EndgameTab to trigger refresh
+  const endgameTabRef = useRef<EndgameTabRef>(null);
 
   useEffect(() => { loadAllData(true); }, []);
 
@@ -48,6 +51,23 @@ export default function WuwaHelper() {
       if (isInitial) {
         setInitialLoading(false);
       }
+    }
+  };
+
+  const handleRefresh = async () => {
+    // If we're in the endgame tab, refresh endgame data
+    if (activeTab === 'endgame' && endgameTabRef.current) {
+      setLoading(true);
+      try {
+        await endgameTabRef.current.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to refresh endgame data');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Otherwise refresh main data
+      await loadAllData();
     }
   };
 
@@ -81,7 +101,7 @@ export default function WuwaHelper() {
         <header className="bg-slate-900/30 backdrop-blur-xl border-b border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
             <div><h2 className="text-2xl font-bold">{navigation.find(n => n.id === activeTab)?.name}</h2></div>
-            <button onClick={() => loadAllData()} disabled={loading} className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
+            <button onClick={handleRefresh} disabled={loading} className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
           </div>
         </header>
 
@@ -100,7 +120,7 @@ export default function WuwaHelper() {
               {activeTab === 'resources' && <ResourcesTab resources={resources} onUpdate={loadAllData} />}
               {activeTab === 'pity' && <PityTab pityStatus={pityStatus} onUpdate={loadAllData} />}
               {activeTab === 'exploration' && <ExplorationTab regions={explorationRegions} onUpdate={loadAllData} />}
-              {activeTab === 'endgame' && <EndgameTab />}
+              {activeTab === 'endgame' && <EndgameTab ref={endgameTabRef} />}
               {activeTab === 'settings' && <SettingsTab />}
             </>
           )}

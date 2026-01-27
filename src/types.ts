@@ -224,6 +224,14 @@ export interface TowerDetails {
   notes: string | null;
 }
 
+export interface TowerFloor {
+  id: number;
+  tower_type: string;
+  floor_number: number;
+  stars: number;
+  max_stars: number;
+}
+
 export interface TowerAreaEffect {
   id: number;
   tower_type: string;
@@ -243,26 +251,9 @@ export interface TowerTeam {
 export interface TowerSectionProps {
   towerInfo: TowerOfAdversity | null;
   towerDetails: TowerDetails[];
+  towerFloors: TowerFloor[];
   towerEffects: TowerAreaEffect[];
   towerTeams: TowerTeam[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
-}
-
-/* =======================
-   Troop Matrix
-   ======================= */
-
-export interface TroopMatrix {
-  id: number;
-  unlocked: boolean;
-  progress: string;
-  notes: string | null;
-}
-
-export interface TroopMatrixSectionProps {
-  troopMatrix: TroopMatrix | null;
   isExpanded: boolean;
   onToggle: () => void;
   onUpdate: () => void;
@@ -301,6 +292,41 @@ export interface TorrentsStage {
   points: number;
 }
 
+/* =======================
+   Troop Matrix
+   ======================= */
+
+export interface TroopMatrix {
+  id: number;
+  unlocked: boolean;
+  last_reset: string;
+  stability_accords_points: number;
+  stability_accords_astrite: number;
+  singularity_expansion_points: number;
+  singularity_expansion_astrite: number;
+  singularity_expansion_highest_round: number;
+  notes: string | null;
+}
+
+export interface MatrixTeam {
+  id: number;
+  mode: string; // "Stability Accords" or "Singularity Expansion"
+  team_number: number;
+  character1: string;
+  character2: string;
+  character3: string;
+  points: number;
+  round_number: number | null; // Only for Singularity Expansion
+}
+
+// Component Props Interfaces
+export interface TroopMatrixSectionProps {
+  troopMatrix: TroopMatrix | null;
+  matrixTeams: MatrixTeam[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  onUpdate: () => void;
+}
 
 /* =======================
 Utility
@@ -316,6 +342,3 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
   variant?: 'danger' | 'warning' | 'info';
 }
-
-
-
