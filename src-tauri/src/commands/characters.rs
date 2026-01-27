@@ -142,11 +142,75 @@ pub fn update_character_weapon(
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
+    // Get character name
+    let character_name: String = conn
+        .query_row("SELECT character_name FROM characters WHERE id = ?", [character_id], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+    
+    // Get the old weapon name for this character
+    let old_weapon_name: String = conn
+        .query_row("SELECT weapon_name FROM character_weapons WHERE character_id = ?", [character_id], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+    
+    // If the new weapon is not "None", check if it's equipped on another character
+    if weapon_name != "None" {
+        // Find if this weapon is equipped on another character
+        let other_character_result: rusqlite::Result<(i64, String)> = conn.query_row(
+            "SELECT cw.character_id, c.character_name 
+             FROM character_weapons cw 
+             JOIN characters c ON c.id = cw.character_id 
+             WHERE cw.weapon_name = ? AND cw.character_id != ?",
+            (&weapon_name, character_id),
+            |row| Ok((row.get(0)?, row.get(1)?))
+        );
+        
+        // If weapon is equipped on another character, unequip it from them
+        if let Ok((other_char_id, other_char_name)) = other_character_result {
+            conn.execute(
+                "UPDATE character_weapons SET weapon_name = 'None', rarity = NULL, level = NULL, rank = NULL WHERE character_id = ?",
+                [other_char_id]
+            ).map_err(|e| e.to_string())?;
+            
+            // Also update weapons_inventory if the weapon exists there
+            conn.execute(
+                "UPDATE weapons_inventory SET equipped_on = 'Nobody' WHERE weapon_name = ? AND equipped_on = ?",
+                (&weapon_name, &other_char_name)
+            ).map_err(|e| e.to_string())?;
+        }
+    }
+    
+    // Update character_weapons table
     conn.execute(
         "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ?, notes = ? WHERE character_id = ?",
-        (weapon_name, rarity, level, rank, notes, character_id),
+        (&weapon_name, rarity, level, rank, &notes, character_id),
     )
     .map_err(|e| e.to_string())?;
+    
+    // Sync with weapons_inventory table
+    // First, unequip the old weapon if it exists in inventory
+    if old_weapon_name != "None" && old_weapon_name != weapon_name {
+        conn.execute(
+            "UPDATE weapons_inventory SET equipped_on = 'Nobody' WHERE weapon_name = ? AND equipped_on = ?",
+            (&old_weapon_name, &character_name)
+        ).map_err(|e| e.to_string())?;
+    }
+    
+    // Then, equip the new weapon if it exists in inventory
+    if weapon_name != "None" {
+        let weapon_exists: rusqlite::Result<i64> = conn.query_row(
+            "SELECT id FROM weapons_inventory WHERE weapon_name = ?",
+            [&weapon_name],
+            |row| row.get(0)
+        );
+        
+        if let Ok(weapon_id) = weapon_exists {
+            // Update the weapon's equipped_on field and sync its stats
+            conn.execute(
+                "UPDATE weapons_inventory SET equipped_on = ?, level = ?, rank = ? WHERE id = ?",
+                (&character_name, level.unwrap_or(1), rank.unwrap_or(1), weapon_id)
+            ).map_err(|e| e.to_string())?;
+        }
+    }
     
     Ok("Weapon updated successfully".to_string())
 }
@@ -172,7 +236,7 @@ pub fn add_character(
     conn.execute(
         "INSERT INTO characters (character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes),
+        (&character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes),
     )
     .map_err(|e| e.to_string())?;
     
@@ -209,6 +273,17 @@ pub fn add_character(
 #[tauri::command(rename_all = "camelCase")]
 pub fn delete_character(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     let conn = init_db(&app)?;
+    
+    // Get character name before deletion to unequip weapons
+    let character_name: String = conn
+        .query_row("SELECT character_name FROM characters WHERE id = ?", [id], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+    
+    // Unequip any weapons from this character in the weapons_inventory
+    conn.execute(
+        "UPDATE weapons_inventory SET equipped_on = 'Nobody' WHERE equipped_on = ?",
+        [&character_name]
+    ).map_err(|e| e.to_string())?;
     
     // Delete related data first (foreign key constraints)
     conn.execute("DELETE FROM character_talents WHERE character_id = ?", [id])

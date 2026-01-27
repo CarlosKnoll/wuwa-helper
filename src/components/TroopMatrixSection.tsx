@@ -59,7 +59,7 @@ export default function TroopMatrixSection({
                 {troopMatrix.unlocked ? 'Unlocked' : 'Locked'} • {troopMatrix.progress}
               </p>
             ) : (
-              <p className="text-sm text-slate-400">Not unlocked yet - Requires 36★ Tower + 4500pts Wastes</p>
+              <p className="text-sm text-slate-400">Not unlocked yet - Requires 30★ Tower + 4500pts Wastes</p>
             )}
           </div>
         </div>
@@ -156,11 +156,11 @@ export default function TroopMatrixSection({
               <div className="space-y-2 text-left max-w-md mx-auto">
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                  <span>Obtain 36/36 stars in Tower of Adversity</span>
+                  <span>Obtain 30 stars in Tower of Adversity</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                  <span>Score 4500+ points in Whimpering Wastes</span>
+                  <span>Score 4500+ points in Whimpering Wastes: Infinite Torrents</span>
                 </div>
               </div>
             </div>

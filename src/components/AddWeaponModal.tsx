@@ -145,8 +145,9 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
                 onChange={e => setForm({ ...form, category: e.target.value })}
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
               >
-                <option value="owned">Owned</option>
+                <option value="building">Building</option>
                 <option value="leveled">Leveled</option>
+                <option value="owned">Owned</option>
               </select>
             </div>
 
@@ -160,6 +161,16 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
                 rows={3}
               />
             </div>
+          </div>
+
+          {/* Category Info */}
+          <div className="bg-slate-800/50 rounded-lg p-3 text-xs text-slate-400">
+            <p className="font-semibold text-slate-300 mb-1">Category Guide:</p>
+            <ul className="space-y-1 ml-4">
+              <li><span className="text-orange-400 font-semibold">Building:</span> Weapons you're currently leveling/upgrading</li>
+              <li><span className="text-green-400 font-semibold">Leveled:</span> Weapons that are fully leveled and ready to use</li>
+              <li><span className="text-slate-400 font-semibold">Owned:</span> Weapons you own but haven't leveled yet</li>
+            </ul>
           </div>
 
           {/* Buttons */}
