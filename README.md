@@ -1,38 +1,60 @@
 # Wuthering Waves Assistant
 
-Assistant app for Wuthering Waves. It shall:
-* Have a tab for characters where the user can add/remove/edit their characters and build. Look-wise it should resemble the echoes screen of the game (can provide images later if needed)
-* Have a general tab where it displays data from accountInfo, resources, pityStatus, exploration and goals, with edit buttons for all of them
-* Have a tab to look at the endgame progress and its data, with editable fields.
-* Have a tab for weapons, like the characters.
-* Of course, allow exports/imports
+# Still in development.
 
-Data expected:
-* account_info
-* character_talents
-* character_weapons
-* characters
-* echo_builds
-* echo_substats
-* echoes
-* exploration_maps
-* exploration_regions
-* goals
-* pity_status
-* resources
-* torrents_stages
-* tower_area_effects
-* tower_details
-* tower_of_adversity
-* tower_teams
-* troop_matrix
-* weapons_inventory
-* whimpering_wastes
+Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Waves, built with Tauri (Rust) + React (TypeScript). It provides tools to manage characters, weapons, echoes, gacha/pity tracking, exploration progress, resources, and endgame content. All data is stored locally, allowing offline usage and full user control.
 
-Still in development.
+#### Key Features
 
-Stuff to do:
-- Implementation: Double Pawns Matrix endgame proper implementation
-- Visuals: Find an API/Scraping method to have some game icons instead of the placeholder ones.
+- Character management with weapons, echoes, talents, and builds
+- Weapon tracking and inventory organization
+- Echo management with detailed build sections
+- Gacha & pity tracking
+- Exploration progress tracking
+- Endgame tools (Tower, Troop Matrix, Whimpering Wastes)
+- Resource and goal tracking
+- Local backups & data persistence
+- Offline-first design with asset caching
 
-Building with Tauri.
+#### Data structure:
+| Table / View        | Children | Parents | Columns | Type  |
+|---------------------|----------|---------|---------|-------|
+| account_info        | 0        | 0       | 4       | Table |
+| character_talents   | 0        | 1       | 8       | Table |
+| character_weapons   | 0        | 1       | 7       | Table |
+| characters          | 3        | 0       | 12      | Table |
+| echo_builds         | 1        | 1       | 6       | Table |
+| echo_substats       | 0        | 1       | 4       | Table |
+| echoes              | 1        | 1       | 9       | Table |
+| exploration_maps    | 0        | 1       | 5       | Table |
+| exploration_regions | 1        | 0       | 3       | Table |
+| goals               | 0        | 0       | 7       | Table |
+| matrix_teams        | 0        | 0       | 8       | Table |
+| pity_status         | 0        | 0       | 5       | Table |
+| pull_history        | 0        | 0       | 9       | Table |
+| resources           | 0        | 0       | 9       | Table |
+| torrents_stages     | 0        | 0       | 7       | Table |
+| tower_area_effects  | 0        | 0       | 4       | Table |
+| tower_details       | 0        | 0       | 5       | Table |
+| tower_floors        | 0        | 0       | 5       | Table |
+| tower_of_adversity  | 0        | 0       | 5       | Table |
+| tower_teams         | 0        | 0       | 6       | Table |
+| troop_matrix        | 0        | 0       | 9       | Table |
+| weapons_inventory   | 0        | 0       | 9       | Table |
+| whimpering_wastes   | 0        | 0       | 8       | Table |
+
+
+### To-Do:
+#### Builds:
+- Remove the ability to add echoes to a build if there are already 5 echoes.
+- Modify new characters talents field generation to start at level 1 
+- Add fields to represent traces upgrades.
+- Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
+- Change the talents order to reflect ingame order (swap forte and liberation)
+
+#### Pity/Tracker:
+- Add calculation to display pity at which the 5 star was pulled.
+
+#### Assets:
+- Start to implement the asset displays in the tabs now that the backend is ready.
+- Split backend hardcoded mapping to avoid a single file in the thousands of lines
