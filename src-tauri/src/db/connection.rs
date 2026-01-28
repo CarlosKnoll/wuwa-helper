@@ -1,8 +1,7 @@
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;
-use tauri::Manager;
 
-pub fn get_db_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+pub fn get_db_path(_app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| format!("Failed to get executable path: {}", e))?
         .parent()

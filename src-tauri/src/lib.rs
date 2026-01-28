@@ -1,11 +1,18 @@
 mod db;
 mod commands;
+mod assets;
 
 use commands::*;
+use tauri::Manager; // Add this import for .manage() method
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            // Initialize asset resolver state
+            app.manage(tokio::sync::Mutex::new(None::<crate::assets::AssetResolver>));
+            Ok(())
+        })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -81,6 +88,19 @@ pub fn run() {
             endgame::initialize_tower_floors,
             database::import_database,
             database::export_database,
+            commands::assets::init_assets,
+            commands::assets::get_asset,
+            commands::assets::get_asset_path,
+            commands::assets::update_assets,
+            commands::assets::should_update_assets,
+            commands::assets::get_asset_stats,
+            commands::asset_resolver::init_asset_resolver,
+            commands::asset_resolver::resolve_asset_by_name,
+            commands::asset_resolver::get_asset_filename,
+            commands::asset_resolver::search_assets,
+            commands::asset_resolver::get_assets_by_type,
+            commands::asset_resolver::filter_assets,
+            commands::asset_resolver::categorize_asset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

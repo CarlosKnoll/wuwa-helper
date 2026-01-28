@@ -232,7 +232,7 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     eprintln!("[DEBUG] Received {} records", r.len());
                     r
                 },
-                Some(r) => {
+                Some(_r) => {
                     eprintln!("[DEBUG] Received empty records list");
                     break;
                 },
