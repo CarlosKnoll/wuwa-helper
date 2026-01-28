@@ -1,126 +1,647 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Save } from 'lucide-react';
-import { PityStatus } from '../types';
+import { Download, Upload, FileText, Filter, Calendar, Star } from 'lucide-react';
+import { PityStatus, PullHistory, WuwaTrackerExport } from '../types';
 import { safeInvoke, formatBannerType } from '../utils';
 
+// Standard pool items (if pulled on featured banner, next 5-star is guaranteed)
+const STANDARD_CHARACTERS = ['Calcharo', 'Encore', 'Jianxin', 'Lingyang', 'Verina'];
+const STANDARD_WEAPONS = [
+  'Abyss Surges',
+  'Boson Astrolabe',
+  'Cosmic Ripples',
+  'Emerald of Genesis',
+  'Laser Shearer',
+  'Lustrous Razor',
+  'Phasic Homogenizer',
+  'Pulsation Bracer',
+  'Radiance Cleaver',
+  'Static Mist'
+];
+
 export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStatus[]; onUpdate: () => void }) {
-  const [editing, setEditing] = useState<number | null>(null);
-  const [forms, setForms] = useState<Record<number, { current_pity: number; guaranteed_next_fivestar: boolean; notes: string }>>({});
+  // Pull History States
+  const [pullHistory, setPullHistory] = useState<PullHistory[]>([]);
+  const [selectedBanner, setSelectedBanner] = useState('featuredCharacter');
+  const [showImportExport, setShowImportExport] = useState(false);
+  const [conveneUrl, setConveneUrl] = useState('');
+  
+  // Loading states
+  const [isImportingUrl, setIsImportingUrl] = useState(false);
+  const [isImportingJson, setIsImportingJson] = useState(false);
+  const [importProgress, setImportProgress] = useState('');
+  
+  // Clean import option
+  const [cleanImport, setCleanImport] = useState(false);
+  
+  // Filter states - changed to arrays for multiple selection
+  const [rarityFilters, setRarityFilters] = useState<number[]>([]);
+  const [itemTypeFilters, setItemTypeFilters] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | '90d'>('all');
 
   useEffect(() => {
-    const newForms: Record<number, any> = {};
-    pityStatus.forEach(pity => {
-      newForms[pity.id] = {
-        current_pity: pity.current_pity,
-        guaranteed_next_fivestar: pity.guaranteed_next_fivestar || false,
-        notes: pity.notes || '',
-      };
-    });
-    setForms(newForms);
-  }, [pityStatus]);
+    loadPullHistory();
+  }, []);
 
-  const handleSave = async (pity: PityStatus) => {
+  const loadPullHistory = async () => {
     try {
-      const form = forms[pity.id];
-      await safeInvoke('update_pity', {
-        id: pity.id,
-        currentPity: form.current_pity,
-        guaranteedNextFivestar: form.guaranteed_next_fivestar,
-        notes: form.notes || null,
-      });
-      setEditing(null);
-      onUpdate();
+      const data = await safeInvoke('get_pull_history') as PullHistory[];
+      setPullHistory(data);
     } catch (err) {
-      alert('Failed to update pity: ' + err);
+      console.error('Failed to load pull history:', err);
+      setPullHistory([]);
     }
   };
 
+  const handleImportFromUrl = async () => {
+    if (!conveneUrl.trim()) {
+      alert('Please enter a Convene History URL');
+      return;
+    }
+
+    setIsImportingUrl(true);
+    setImportProgress('Validating URL...');
+
+    try {
+      const url = new URL(conveneUrl);
+      const params = new URLSearchParams(url.hash.substring(url.hash.indexOf('?')));
+      
+      const serverId = params.get('svr_id');
+      const playerId = params.get('player_id');
+      const recordId = params.get('record_id');
+      
+      if (!serverId || !playerId || !recordId) {
+        alert('Invalid Convene History URL. Please make sure you copied the complete URL from the game.');
+        setIsImportingUrl(false);
+        setImportProgress('');
+        return;
+      }
+
+      setImportProgress('Fetching pull history from game servers...');
+
+      const result = await safeInvoke('import_pulls_from_url', {
+        url: conveneUrl
+      }) as string;
+
+      alert(result || 'Successfully imported pull history from game!');
+      await loadPullHistory();
+      if (onUpdate) onUpdate();
+      setConveneUrl('');
+      setShowImportExport(false);
+    } catch (err) {
+      console.error('Import error:', err);
+      alert('Failed to import from URL: ' + err);
+    } finally {
+      setIsImportingUrl(false);
+      setImportProgress('');
+    }
+  };
+
+  const handleExportToJson = async () => {
+    try {
+      const pulls = await safeInvoke('get_pull_history') as PullHistory[];
+      
+      const { exportToWuwaTrackerFormat } = await import('../utils');
+      const exportData = exportToWuwaTrackerFormat(pulls, 'user');
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wuwatracker-pulls-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to export: ' + err);
+    }
+  };
+
+  const handleImportFromJson = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingJson(true);
+    setImportProgress('Reading JSON file...');
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      const { importFromWuwaTrackerFormat } = await import('../utils');
+      
+      if (data.version && data.pulls && Array.isArray(data.pulls)) {
+        // Clean import: delete all existing pulls first
+        if (cleanImport) {
+          setImportProgress('Clearing existing pull history...');
+          const existingPulls = await safeInvoke('get_pull_history') as PullHistory[];
+          for (const pull of existingPulls) {
+            await safeInvoke('delete_pull', { id: pull.id });
+          }
+        }
+
+        setImportProgress(`Processing ${data.pulls.length} pulls...`);
+        const pullsByBanner = importFromWuwaTrackerFormat(data);
+        
+        let totalImported = 0;
+        let processedCount = 0;
+        const totalPulls = Array.from(pullsByBanner.values()).reduce((sum, pulls) => sum + pulls.length, 0);
+
+        for (const [bannerType, pulls] of pullsByBanner) {
+          for (const pull of pulls) {
+            processedCount++;
+            
+            if (processedCount % 10 === 0) {
+              setImportProgress(`Importing pulls: ${processedCount}/${totalPulls}...`);
+            }
+
+            // If clean import, don't check for existing (we already cleared everything)
+            const existing = cleanImport ? false : await safeInvoke('check_pull_exists', {
+              bannerType: pull.banner_type,
+              itemName: pull.item_name,
+              pullDate: pull.pull_date
+            });
+
+            if (!existing) {
+              await safeInvoke('add_pull', {
+                bannerType: pull.banner_type,
+                itemName: pull.item_name,
+                rarity: pull.rarity,
+                itemType: pull.item_type,
+                isGuaranteed: pull.is_guaranteed,
+                pullDate: pull.pull_date,
+                notes: cleanImport ? 'Imported from WuwaTracker (Clean Import)' : 'Imported from WuwaTracker'
+              });
+              totalImported++;
+            }
+          }
+        }
+
+        const message = cleanImport 
+          ? `Successfully imported ${totalImported} pulls (clean import - all previous pulls were cleared)!`
+          : `Successfully imported ${totalImported} new pulls from WuwaTracker format!`;
+        alert(message);
+      } else {
+        alert('Invalid JSON format. Please use WuwaTracker export format.');
+        return;
+      }
+
+      await loadPullHistory();
+      if (onUpdate) onUpdate();
+      event.target.value = '';
+      setCleanImport(false); // Reset checkbox after import
+    } catch (err) {
+      console.error('Import error:', err);
+      alert('Failed to import JSON: ' + err);
+    } finally {
+      setIsImportingJson(false);
+      setImportProgress('');
+    }
+  };
+
+  // Filter pulls
+  const getFilteredPulls = () => {
+    let filtered = pullHistory.filter(p => p.banner_type === selectedBanner);
+
+    // Rarity filters - check if pull's rarity is in the selected array
+    if (rarityFilters.length > 0) {
+      filtered = filtered.filter(p => rarityFilters.includes(p.rarity));
+    }
+
+    // Item type filters - check if pull's type is in the selected array
+    if (itemTypeFilters.length > 0) {
+      filtered = filtered.filter(p => itemTypeFilters.includes(p.item_type));
+    }
+
+    // Date range filter
+    if (dateRange !== 'all') {
+      const now = new Date();
+      const daysAgo = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+      const cutoffDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(p => new Date(p.pull_date) >= cutoffDate);
+    }
+
+    return filtered;
+  };
+
+  const filteredPulls = getFilteredPulls();
+
+  // Toggle functions for multi-select filters
+  const toggleRarityFilter = (rarity: number) => {
+    setRarityFilters(prev => 
+      prev.includes(rarity)
+        ? prev.filter(r => r !== rarity)
+        : [...prev, rarity]
+    );
+  };
+
+  const toggleItemTypeFilter = (type: string) => {
+    setItemTypeFilters(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  // Helper function to check if an item is from standard pool
+  const isStandardItem = (itemName: string, itemType: string) => {
+    if (itemType === 'character') {
+      return STANDARD_CHARACTERS.includes(itemName);
+    } else {
+      return STANDARD_WEAPONS.includes(itemName);
+    }
+  };
+
+  // Helper function to determine if next pull is guaranteed
+  const isNextGuaranteed = (bannerType: string) => {
+    if (bannerType !== 'featuredCharacter' && bannerType !== 'featuredWeapon') {
+      return false; // Standard banners don't have guarantee system
+    }
+
+    // Find the last 5-star pull for this banner
+    const fiveStarPulls = pullHistory
+      .filter(p => p.banner_type === bannerType && p.rarity === 5)
+      .sort((a, b) => new Date(b.pull_date).getTime() - new Date(a.pull_date).getTime());
+
+    if (fiveStarPulls.length === 0) {
+      return false; // No 5-stars yet, so it's 50/50
+    }
+
+    const lastFiveStar = fiveStarPulls[0];
+    return isStandardItem(lastFiveStar.item_name, lastFiveStar.item_type);
+  };
+
+  const getRarityColor = (rarity: number) => {
+    if (rarity === 5) return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30';
+    if (rarity === 4) return 'text-purple-400 bg-purple-400/10 border-purple-400/30';
+    return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+  };
+
+  const getRarityBadge = (rarity: number) => {
+    if (rarity === 5) return 'bg-yellow-500/20 text-yellow-400';
+    if (rarity === 4) return 'bg-purple-500/20 text-purple-400';
+    return 'bg-slate-500/20 text-slate-400';
+  };
+
+  // Calculate stats for selected banner
+  const bannerPulls = pullHistory.filter(p => p.banner_type === selectedBanner);
+  const fiveStarCount = bannerPulls.filter(p => p.rarity === 5).length;
+  const fourStarCount = bannerPulls.filter(p => p.rarity === 4).length;
+  const threeStarCount = bannerPulls.filter(p => p.rarity === 3).length;
+
+  // Calculate all-time stats across all banners
+  const allTimeFiveStarCount = pullHistory.filter(p => p.rarity === 5).length;
+  const allTimeFourStarCount = pullHistory.filter(p => p.rarity === 4).length;
+  const allTimeThreeStarCount = pullHistory.filter(p => p.rarity === 3).length;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {pityStatus.map((pity) => {
-        const isEditing = editing === pity.id;
-        const form = forms[pity.id] || { current_pity: pity.current_pity, guaranteed_next_fivestar: pity.guaranteed_next_fivestar || false, notes: pity.notes || '' };
-
-        return (
-          <div key={pity.id} className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-xl font-bold">{formatBannerType(pity.banner_type)}</h3>
-                <p className="text-sm text-slate-400 mt-1">Banner Type</p>
-              </div>
-              <div className="flex gap-2">
-                {!isEditing ? (
-                  <button onClick={() => setEditing(pity.id)} className="p-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button onClick={() => handleSave(pity)} className="p-2 bg-green-500 hover:bg-green-600 rounded-lg">
-                    <Save className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              {isEditing ? (
-                <div>
-                  <label className="text-sm text-slate-400">Current Pity</label>
-                  <input
-                    type="number"
-                    value={form.current_pity}
-                    onChange={e => setForms({ ...forms, [pity.id]: { ...form, current_pity: parseInt(e.target.value) || 0 } })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-3xl font-bold focus:outline-none focus:border-cyan-500 mt-1"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold text-cyan-400">{form.current_pity}</span>
-                  <span className="text-2xl text-slate-400">/ 80</span>
-                </div>
-              )}
-              <div className="text-sm text-slate-400 mt-2">Pulls since last 5-star</div>
-            </div>
-
-            <div className="mb-4">
-              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300" style={{ width: `${(form.current_pity / 80) * 100}%` }}></div>
-              </div>
-              <div className="flex justify-between text-xs text-slate-400 mt-1">
-                <span>0</span>
-                <span>Hard pity at 80</span>
-              </div>
-            </div>
-
-            {isEditing ? (
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.guaranteed_next_fivestar}
-                    onChange={e => setForms({ ...forms, [pity.id]: { ...form, guaranteed_next_fivestar: e.target.checked } })}
-                    className="w-4 h-4 rounded bg-slate-800 border-slate-700"
-                  />
-                  <span className="text-sm">Guaranteed next 5-star</span>
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={e => setForms({ ...forms, [pity.id]: { ...form, notes: e.target.value } })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
-                  placeholder="Add notes..."
-                />
-              </div>
-            ) : (
-              <div className={`px-3 py-2 rounded text-center text-sm font-medium ${form.guaranteed_next_fivestar ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                {form.guaranteed_next_fivestar ? '✓ Guaranteed 5-Star' : '50/50 Active'}
-              </div>
-            )}
-
-            {!isEditing && form.notes && (
-              <p className="text-sm text-slate-400 italic mt-4">{form.notes}</p>
-            )}
+    <div className="space-y-6">
+      {/* All-Time Pull Statistics - Now on Top */}
+      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+        <h2 className="text-xl font-bold mb-4">All-Time Pull Statistics</h2>
+        <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/30 rounded-lg">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-yellow-400">{allTimeFiveStarCount}</div>
+            <div className="text-sm text-slate-400">5-Star Pulls</div>
           </div>
-        );
-      })}
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-400">{allTimeFourStarCount}</div>
+            <div className="text-sm text-slate-400">4-Star Pulls</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-slate-400">{allTimeThreeStarCount}</div>
+            <div className="text-sm text-slate-400">3-Star Pulls</div>
+          </div>
+        </div>
+        <div className="mt-4 text-center text-slate-400 text-sm">
+          Total Pulls: {pullHistory.length}
+        </div>
+      </div>
+
+      {/* Pull History Section */}
+      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Pull History</h2>
+          <button
+            onClick={() => setShowImportExport(!showImportExport)}
+            className="px-3 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Import/Export
+          </button>
+        </div>
+
+        {/* Import/Export Panel */}
+        {showImportExport && (
+          <div className="bg-slate-800/50 rounded-lg p-4 mb-4 space-y-4">
+            {/* Loading Progress */}
+            {(isImportingUrl || isImportingJson) && (
+              <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-blue-400">Importing...</div>
+                    <div className="text-xs text-slate-400">{importProgress}</div>
+                  </div>
+                </div>
+                <div className="mt-2 w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-blue-500 h-full animate-pulse" style={{ width: '100%' }}></div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="text-sm font-bold mb-2">Import from Game</h3>
+              <p className="text-xs text-slate-400 mb-2">
+                Open your in-game Convene History first, then run the PowerShell script to get your URL.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={conveneUrl}
+                  onChange={e => setConveneUrl(e.target.value)}
+                  disabled={isImportingUrl || isImportingJson}
+                  className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm disabled:opacity-50"
+                  placeholder="Paste your Convene History URL here..."
+                />
+                <button
+                  onClick={handleImportFromUrl}
+                  disabled={isImportingUrl || isImportingJson}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Import
+                </button>
+              </div>
+              <a
+                href="https://github.com/wuwatracker/wuwatracker/blob/main/import.ps1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-cyan-400 hover:underline mt-1 inline-block"
+              >
+                How to get your Convene URL →
+              </a>
+            </div>
+
+            <div className="border-t border-slate-700 pt-4">
+              <h3 className="text-sm font-bold mb-2">Import/Export JSON</h3>
+              
+              {/* Clean Import Checkbox */}
+              <label className="flex items-center gap-2 mb-3 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={cleanImport}
+                  onChange={e => setCleanImport(e.target.checked)}
+                  disabled={isImportingUrl || isImportingJson}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-500 focus:ring-red-500 focus:ring-offset-slate-900 disabled:opacity-50"
+                />
+                <span className={cleanImport ? 'text-red-400 font-medium' : 'text-slate-400'}>
+                  Clean Import (⚠️ deletes all existing pulls first)
+                </span>
+              </label>
+
+              <div className="flex gap-2">
+                <label className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm cursor-pointer text-center disabled:opacity-50">
+                  <Upload className="w-4 h-4 inline mr-2" />
+                  Import JSON
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportFromJson}
+                    disabled={isImportingUrl || isImportingJson}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  onClick={handleExportToJson}
+                  disabled={isImportingUrl || isImportingJson}
+                  className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4 inline mr-2" />
+                  Export JSON
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner & Filter Tabs */}
+        <div className="space-y-3 mb-4">
+          {/* Banner Selection */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {['featuredCharacter', 'featuredWeapon', 'standardCharacter', 'standardWeapon'].map(banner => (
+              <button
+                key={banner}
+                onClick={() => setSelectedBanner(banner)}
+                className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${
+                  selectedBanner === banner
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                {formatBannerType(banner)}
+              </button>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <span className="text-sm font-medium text-slate-300">Filters</span>
+              {(rarityFilters.length > 0 || itemTypeFilters.length > 0 || dateRange !== 'all') && (
+                <button
+                  onClick={() => {
+                    setRarityFilters([]);
+                    setItemTypeFilters([]);
+                    setDateRange('all');
+                  }}
+                  className="ml-auto text-xs text-cyan-400 hover:text-cyan-300"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Rarity Filters */}
+              <div>
+                <div className="text-xs text-slate-400 mb-2 font-medium">Rarity</div>
+                <div className="space-y-2">
+                  {[5, 4, 3].map(rarity => (
+                    <label key={rarity} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={rarityFilters.includes(rarity)}
+                        onChange={() => toggleRarityFilter(rarity)}
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+                      />
+                      <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                        {'★'.repeat(rarity)} ({rarity}-Star)
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Item Type Filters */}
+              <div>
+                <div className="text-xs text-slate-400 mb-2 font-medium">Type</div>
+                <div className="space-y-2">
+                  {['character', 'weapon'].map(type => (
+                    <label key={type} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={itemTypeFilters.includes(type)}
+                        onChange={() => toggleItemTypeFilter(type)}
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+                      />
+                      <span className="text-sm text-slate-300 group-hover:text-white transition-colors capitalize">
+                        {type}s
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date Range - Keep as dropdown */}
+              <div>
+                <div className="text-xs text-slate-400 mb-2 font-medium">Date Range</div>
+                <select
+                  value={dateRange}
+                  onChange={e => setDateRange(e.target.value as any)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                >
+                  <option value="all">All Time</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-slate-700 text-sm text-slate-400">
+              Showing {filteredPulls.length} of {pullHistory.filter(p => p.banner_type === selectedBanner).length} pulls
+            </div>
+          </div>
+        </div>
+
+        {/* Current Pity Status for Selected Banner */}
+        <div className="mb-4">
+          {(() => {
+            const currentPity = pityStatus.find(p => p.banner_type === selectedBanner);
+            if (!currentPity) return null;
+
+            const isFeatured = selectedBanner === 'featuredCharacter' || selectedBanner === 'featuredWeapon';
+            const nextIsGuaranteed = isNextGuaranteed(selectedBanner);
+            
+            return (
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 max-w-md">
+                <div className="text-sm text-slate-400 uppercase tracking-wide mb-3 flex items-center justify-between">
+                  <span>Current Pity</span>
+                  {isFeatured && (
+                    <div className={`px-2 py-1 rounded text-xs font-medium ${nextIsGuaranteed ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                      {nextIsGuaranteed ? '✓ Guaranteed' : '50/50'}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* 5-Star Pity */}
+                  <div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-bold text-cyan-400">{currentPity.current_pity_5star}</span>
+                      <span className="text-sm text-slate-400">/ 80</span>
+                    </div>
+
+                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-1">
+                      <div 
+                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300" 
+                        style={{ width: `${(currentPity.current_pity_5star / 80) * 100}%` }}
+                      />
+                    </div>
+                    
+                    <div className="text-xs text-slate-500">5-Star Pity</div>
+                  </div>
+
+                  {/* 4-Star Pity */}
+                  <div>
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-2xl font-bold text-purple-400">{currentPity.current_pity_4star}</span>
+                      <span className="text-sm text-slate-400">/ 10</span>
+                    </div>
+
+                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-1">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" 
+                        style={{ width: `${(currentPity.current_pity_4star / 10) * 100}%` }}
+                      />
+                    </div>
+                    
+                    <div className="text-xs text-slate-500">4-Star Pity</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Pull List - Compact Table */}
+        <div className="space-y-1 max-h-[500px] overflow-y-auto">
+          {filteredPulls.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              No pulls recorded for this banner yet.
+              {(rarityFilters.length > 0 || itemTypeFilters.length > 0 || dateRange !== 'all') && (
+                <div className="mt-2 text-sm">Try adjusting your filters.</div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filteredPulls.map(pull => {
+                const isFeaturedBanner = selectedBanner === 'featuredCharacter' || selectedBanner === 'featuredWeapon';
+                const isStandard = pull.rarity === 5 && isStandardItem(pull.item_name, pull.item_type);
+                
+                return (
+                  <div 
+                    key={pull.id} 
+                    className={`flex items-center gap-3 px-3 py-2 rounded border ${getRarityColor(pull.rarity)} hover:brightness-110 transition-all`}
+                  >
+                    {/* Rarity Badge */}
+                    <div className={`px-2 py-1 rounded text-xs font-bold ${getRarityBadge(pull.rarity)} min-w-[40px] text-center`}>
+                      {'★'.repeat(pull.rarity)}
+                    </div>
+
+                    {/* Item Name */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">{pull.item_name}</div>
+                      <div className="text-xs text-slate-400">
+                        #{pull.pull_number} • {pull.item_type}
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="text-xs text-slate-400 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(pull.pull_date).toLocaleDateString()}
+                    </div>
+
+                    {/* Standard Badge (for 5-star standard items on featured banners) */}
+                    {isFeaturedBanner && isStandard && (
+                      <div className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs">
+                        Standard
+                      </div>
+                    )}
+
+                    {/* Guarantee Badge */}
+                    {pull.is_guaranteed && (
+                      <div className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">
+                        Guaranteed
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

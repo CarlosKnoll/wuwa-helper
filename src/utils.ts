@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { WuwaTrackerPull, PullHistory, WuwaTrackerExport } from './types';
 
 export async function safeInvoke(cmd: string, args?: Record<string, any>) {
   try {
@@ -35,14 +36,6 @@ export function getRarityStars(rarity: number): string {
  * Tier 2 - Maxed: High/maximum investment
  * Tier 1 - Building: Currently working on
  */
-
-/**Changes for the database: 
- * Phrolova -> Hyperinvested
- * Cartethya -> Hyperinvested
- * Sanhua -> High investment
- * Youhu -> Medium investment
- * Mortefi - Low investment
-*/
 
 export const BUILD_STATUS_TIERS = {
   // Tier 6: Unbuilt
@@ -89,4 +82,190 @@ export function formatBannerType(bannerType: string): string {
     'standardWeapon': 'Standard Weapon Banner',
   };
   return formatMap[bannerType] || bannerType;
+}
+
+/* =======================
+   WuwaTracker Format Conversion Utilities
+   ======================= */
+
+/**
+ * Convert cardPoolType to our internal banner_type format
+ * 1 = Featured Character
+ * 2 = Featured Weapon
+ * 3 = Standard Character
+ * 4 = Standard Weapon
+ * 5 = Beginner (IGNORE - not tracked)
+ * 6 = Selector (IGNORE - not tracked)
+ * 7 = Standard Permanent (IGNORE - invalid/unknown type)
+ */
+export function cardPoolTypeToBannerType(cardPoolType: number): string | null {
+  const mapping: Record<number, string | null> = {
+    1: 'featuredCharacter',
+    2: 'featuredWeapon',
+    3: 'standardCharacter',
+    4: 'standardWeapon',
+    5: null, // Beginner banner - ignore
+    6: null, // Selector banner - ignore
+    7: null, // Standard permanent - ignore
+  };
+  return mapping[cardPoolType] ?? null;
+}
+
+/**
+ * Convert our internal banner_type to cardPoolType
+ */
+export function bannerTypeToCardPoolType(bannerType: string): number {
+  const mapping: Record<string, number> = {
+    'featuredCharacter': 1,
+    'featuredWeapon': 2,
+    'standardCharacter': 3,
+    'standardWeapon': 4,
+  };
+  return mapping[bannerType] || 1;
+}
+
+/**
+ * Determine if a pull is a character or weapon based on resourceId
+ * Characters: 1001-1999
+ * Weapons: 21000000+
+ * Materials: Other ranges
+ */
+export function determineItemType(resourceId: number | null, name: string): 'character' | 'weapon' {
+  if (!resourceId) {
+    // Fallback to name-based detection
+    const weaponKeywords = [
+      'Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier',
+      'Originite', // Materials
+      'Cleaver', 'Rifle', 'Blade'
+    ];
+    const isWeapon = weaponKeywords.some(keyword => name.includes(keyword));
+    return isWeapon ? 'weapon' : 'character';
+  }
+
+  // Character IDs are typically 1001-1999
+  if (resourceId >= 1000 && resourceId < 2000) {
+    return 'character';
+  }
+  
+  // Everything else (weapons, materials) treated as weapon
+  return 'weapon';
+}
+
+/**
+ * Convert WuwaTracker pull to our internal PullHistory format
+ */
+export function wuwaTrackerPullToInternal(pull: WuwaTrackerPull, pullNumber: number): Omit<PullHistory, 'id'> {
+  return {
+    banner_type: cardPoolTypeToBannerType(pull.cardPoolType),
+    pull_number: pullNumber,
+    item_name: pull.name,
+    rarity: pull.qualityLevel,
+    item_type: determineItemType(pull.resourceId, pull.name),
+    is_guaranteed: false, // We can't determine this from WuwaTracker data
+    pull_date: pull.time,
+    notes: null,
+  };
+}
+
+/**
+ * Convert our internal PullHistory to WuwaTracker format
+ */
+export function internalPullToWuwaTracker(pull: PullHistory, group: number = 1): WuwaTrackerPull {
+  return {
+    cardPoolType: bannerTypeToCardPoolType(pull.banner_type),
+    resourceId: null, // We don't store resourceId
+    qualityLevel: pull.rarity,
+    name: pull.item_name,
+    time: pull.pull_date,
+    isSorted: true,
+    group: group,
+  };
+}
+
+/**
+ * Export pulls to WuwaTracker format
+ */
+export function exportToWuwaTrackerFormat(
+  pulls: PullHistory[],
+  playerId: string = 'unknown'
+): WuwaTrackerExport {
+  // Group pulls by their pull_date (10-pulls have same timestamp)
+  const pullsByTime = new Map<string, PullHistory[]>();
+  pulls.forEach(pull => {
+    const existing = pullsByTime.get(pull.pull_date) || [];
+    existing.push(pull);
+    pullsByTime.set(pull.pull_date, existing);
+  });
+
+  // Convert to WuwaTracker format with group numbers
+  const wuwaTrackerPulls: WuwaTrackerPull[] = [];
+  pullsByTime.forEach((groupedPulls) => {
+    groupedPulls.forEach((pull, index) => {
+      wuwaTrackerPulls.push(
+        internalPullToWuwaTracker(pull, groupedPulls.length - index)
+      );
+    });
+  });
+
+  return {
+    version: '0.0.2',
+    date: new Date().toISOString(),
+    playerId: playerId,
+    pulls: wuwaTrackerPulls,
+  };
+}
+
+/**
+ * Import pulls from WuwaTracker format
+ * Returns pulls grouped by banner type with their pull numbers
+ * Ignores beginner and selector banner pulls (types 5, 6, 7)
+ */
+export function importFromWuwaTrackerFormat(
+  wuwaData: WuwaTrackerExport
+): Map<string, Array<Omit<PullHistory, 'id'>>> {
+  const pullsByBanner = new Map<string, Array<Omit<PullHistory, 'id'>>>();
+
+  // Sort pulls by time (oldest first) to maintain correct pull order
+  const sortedPulls = [...wuwaData.pulls].sort((a, b) => 
+    new Date(a.time).getTime() - new Date(b.time).getTime()
+  );
+
+  // Group by banner type and calculate pull numbers
+  sortedPulls.forEach(pull => {
+    const bannerType = cardPoolTypeToBannerType(pull.cardPoolType);
+    
+    // Skip beginner, selector, and other ignored banner types
+    if (bannerType === null) {
+      return;
+    }
+    
+    const bannerPulls = pullsByBanner.get(bannerType) || [];
+    
+    const internalPull = wuwaTrackerPullToInternal(pull, bannerPulls.length + 1);
+    bannerPulls.push(internalPull);
+    
+    pullsByBanner.set(bannerType, bannerPulls);
+  });
+
+  return pullsByBanner;
+}
+
+/**
+ * Calculate pity state from a sequence of pulls
+ */
+export function calculatePityFromPulls(pulls: Array<Omit<PullHistory, 'id'>>) {
+  let currentPity = 0;
+  let guaranteed = false;
+
+  pulls.forEach(pull => {
+    if (pull.rarity === 5) {
+      currentPity = 0;
+      // If we didn't get the guaranteed item, next is guaranteed
+      guaranteed = !pull.is_guaranteed;
+    } else {
+      currentPity++;
+    }
+  });
+
+  return { currentPity, guaranteed };
 }

@@ -15,11 +15,13 @@ export interface Resources {
 }
 
 export interface PityStatus {
-  id: number;
   banner_type: string;
-  current_pity: number;
+  current_pity_5star: number;
+  current_pity_4star: number;
   guaranteed_next_fivestar: boolean;
-  notes: string | null;
+  total_pulls: number;
+  last_5star_pull: number | null;
+  last_4star_pull: number | null;
 }
 
 export interface Goal {
@@ -203,6 +205,40 @@ export interface ExplorationRegion {
   notes: string | null;
 }
 
+/* =======================
+   Pull History - WuwaTracker Compatible Format
+   ======================= */
+
+// Internal database format (for compatibility with existing code)
+export interface PullHistory {
+  id: number;
+  banner_type: string;
+  pull_number: number;
+  item_name: string;
+  rarity: number;
+  item_type: 'character' | 'weapon';
+  is_guaranteed: boolean;
+  pull_date: string;
+  notes: string | null;
+}
+
+// WuwaTracker export/import format
+export interface WuwaTrackerPull {
+  cardPoolType: number; // 1=Featured Char, 2=Featured Weapon, 3=Std Char, 4=Std Weapon, 5=Beginner, 6=Selector, 7=Std Permanent
+  resourceId: number | null;
+  qualityLevel: number; // 3, 4, or 5 stars
+  name: string;
+  time: string; // ISO 8601 format
+  isSorted: boolean;
+  group: number; // For 10-pulls
+}
+
+export interface WuwaTrackerExport {
+  version: string; // e.g., "0.0.2"
+  date: string; // ISO 8601 timestamp
+  playerId: string;
+  pulls: WuwaTrackerPull[];
+}
 
 /* =======================
 Tower of Adversity

@@ -114,7 +114,7 @@ export default function WuwaHelper() {
             </div>
           ) : (
             <>
-              {activeTab === 'dashboard' && <DashboardTab characters={characters} resources={resources} pityStatus={pityStatus} />}
+              {activeTab === 'dashboard' && <DashboardTab characters={characters} resources={resources} pityStatus={pityStatus} onUpdate={loadAllData} />}
               {activeTab === 'characters' && <CharactersTab characters={characters} onUpdate={loadAllData} />}
               {activeTab === 'weapons' && <WeaponsTab weapons={weapons} onUpdate={loadAllData} />}
               {activeTab === 'resources' && <ResourcesTab resources={resources} onUpdate={loadAllData} />}

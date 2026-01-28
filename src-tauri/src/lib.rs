@@ -6,6 +6,7 @@ use commands::*;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
@@ -31,7 +32,11 @@ pub fn run() {
             account::get_resources,
             account::update_resources,
             gacha::get_pity_status,
-            gacha::update_pity,
+            gacha::get_pull_history,
+            gacha::check_pull_exists,
+            gacha::add_pull,
+            gacha::delete_pull,
+            gacha::import_pulls_from_url,
             goals::get_goals,           
             goals::update_goal,        
             goals::add_goal,            
