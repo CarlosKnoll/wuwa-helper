@@ -13,27 +13,7 @@ pub struct AssetResolver {
 impl AssetResolver {
     /// Create a new resolver with combined mappings
     pub fn new(mapper: AssetMapper) -> Self {
-        let hardcoded = mappings::get_all_mappings();
-        
-        // DEBUG: Check if Mornye is actually in the hardcoded mappings
-        eprintln!("DEBUG [AssetResolver::new]: Loaded {} hardcoded mappings", hardcoded.len());
-        
-        // Check for Mornye specifically
-        let mornye_found = hardcoded.values().find(|m| m.display_name == "Mornye");
-        if let Some(meta) = mornye_found {
-            eprintln!("DEBUG [AssetResolver::new]: ✅ Mornye found! Filename: {}", meta.filename);
-        } else {
-            eprintln!("DEBUG [AssetResolver::new]: ❌ Mornye NOT found in hardcoded mappings!");
-        }
-        
-        // Check for Lynae specifically
-        let lynae_found = hardcoded.values().find(|m| m.display_name == "Lynae");
-        if let Some(meta) = lynae_found {
-            eprintln!("DEBUG [AssetResolver::new]: ✅ Lynae found! Filename: {}", meta.filename);
-        } else {
-            eprintln!("DEBUG [AssetResolver::new]: ❌ Lynae NOT found in hardcoded mappings!");
-        }
-        
+        let hardcoded = mappings::get_all_mappings();      
         Self {
             mapper,
             hardcoded,
@@ -42,11 +22,9 @@ impl AssetResolver {
 
     /// Resolve asset by display name with flexible element matching
     pub fn resolve_by_name(&self, name: &str) -> Option<&AssetMetadata> {
-        eprintln!("DEBUG [resolve_by_name]: Looking for '{}'", name);
         
         // Try exact match first
         if let Some(meta) = self.mapper.get_by_name(name) {
-            eprintln!("DEBUG [resolve_by_name]: Found in mapper");
             return Some(meta);
         }
 
@@ -54,34 +32,26 @@ impl AssetResolver {
         let name_lower = name.to_lowercase();
         for meta in self.mapper.assets.values() {
             if meta.display_name.to_lowercase() == name_lower {
-                eprintln!("DEBUG [resolve_by_name]: Found in mapper (case-insensitive)");
                 return Some(meta);
             }
         }
 
         // Check hardcoded mappings with exact key
         if let Some(meta) = self.hardcoded.get(name) {
-            eprintln!("DEBUG [resolve_by_name]: Found in hardcoded by exact key");
             return Some(meta);
         }
 
         // Try case-insensitive in hardcoded
-        eprintln!("DEBUG [resolve_by_name]: Searching {} hardcoded entries...", self.hardcoded.len());
         for (key, meta) in &self.hardcoded {
             if meta.display_name.to_lowercase() == name_lower {
-                eprintln!("DEBUG [resolve_by_name]: ✅ FOUND '{}' in hardcoded! Key: {}, Filename: {}", 
-                    meta.display_name, key, meta.filename);
                 return Some(meta);
             }
         }
-        
-        eprintln!("DEBUG [resolve_by_name]: ❌ NOT FOUND after checking all hardcoded entries");
 
         // For elements, try with "element_" prefix
         if !name_lower.starts_with("element_") {
             let element_key = format!("element_{}", name_lower);
             if let Some(meta) = self.hardcoded.get(&element_key) {
-                eprintln!("DEBUG [resolve_by_name]: Found as element with prefix");
                 return Some(meta);
             }
         }
@@ -189,21 +159,16 @@ impl AssetResolver {
     /// Get asset filename for use in the frontend
     /// Enhanced to handle element lookups better
     pub fn get_asset_filename(&self, identifier: &str) -> Option<String> {
-        eprintln!("DEBUG [get_asset_filename]: Called with '{}'", identifier);
         
         // Try direct filename first
         if self.resolve_by_filename(identifier).is_some() {
-            eprintln!("DEBUG [get_asset_filename]: Found as direct filename");
             return Some(identifier.to_string());
         }
 
         // Try by display name (works for elements like "Aero", "Spectro")
         if let Some(meta) = self.resolve_by_name(identifier) {
-            eprintln!("DEBUG [get_asset_filename]: ✅ Resolved to filename: {}", meta.filename);
             return Some(meta.filename.clone());
         }
-
-        eprintln!("DEBUG [get_asset_filename]: ❌ Could not resolve '{}'", identifier);
         None
     }
 

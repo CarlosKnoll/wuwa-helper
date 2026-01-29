@@ -42,50 +42,205 @@ fn get_weapon_type_icons() -> Vec<(&'static str, &'static str, &'static str)> {
     vec![
         ("weapon_sword.png", "Sword", "sword"),
         ("weapon_broadblade.png", "Broadblade", "broadblade"),
-        ("weapon_pistols.png", "Pistols", "pistol"),
-        ("weapon_gauntlets.png", "Gauntlets", "gauntlet"),
+        ("weapon_pistols.png", "Pistol", "pistol"),
+        ("weapon_gauntlets.png", "Gauntlet", "gauntlet"),
         ("weapon_rectifier.png", "Rectifier", "rectifier"),
     ]
 }
 
 /// Get broadblade weapon mappings (2101XXXX)
-/// Format: (filename, display_name, rarity, element, weapon_type, tags)
-fn get_broadblades() -> Vec<(&'static str, &'static str, u8, Option<&'static str>, &'static str, Vec<&'static str>)> {
+/// Format: (filename, display_name, rarity, weapon_type, tags)
+fn get_broadblades() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
-        // TODO: Add your broadblade weapons here
-        // Example:
-        // ("21010001.webp", "Lustrous Razor", 5, Some("Spectro"), "Broadblade", vec!["5star", "limited"]),
-        // ("21010002.webp", "Sword of Night", 5, Some("Havoc"), "Broadblade", vec!["5star", "standard"]),
+        //5-STARS LIMITED WEAPONS
+        ("21010016.webp", "Verdant Summit", 5, "Broadblade", vec!["5stars"]),
+        ("21010026.webp", "Ages of Harvest", 5, "Broadblade", vec!["5stars"]),
+        ("21010036.webp", "Wildfire Mark", 5, "Broadblade", vec!["5stars"]),
+        ("21010046.webp", "Thunderflare Dominion", 5, "Broadblade", vec!["5stars"]),
+        ("21010056.webp", "Kumokiri", 5, "Broadblade", vec!["5stars"]),
+        ("21010066.webp", "Starfield Calibrator", 5, "Broadblade", vec!["5stars"]),
+
+        //5-STARS STANDARD WEAPONS
+        ("21010015.webp", "Lustrous Razor", 5, "Broadblade", vec!["5stars"]),
+        ("21010045.webp", "Radiance Cleaver", 5, "Broadblade", vec!["5stars"]),
+
+        //4-STARS WEAPONS
+        ("21010024.webp", "Discord", 4, "Broadblade", vec!["4stars"]),
+        ("21010034.webp", "Broadblade#41", 4, "Broadblade", vec!["4stars"]),
+        ("21010044.webp", "Dauntless Evernight", 4, "Broadblade", vec!["4stars"]),
+        ("21010064.webp", "Helios Cleaver", 4, "Broadblade", vec!["4stars"]),
+        ("21010074.webp", "Autumntrace", 4, "Broadblade", vec!["4stars"]),
+        ("21010084.webp", "Waning Redshift", 4, "Broadblade", vec!["4stars"]),
+        ("21010094.webp", "Meditations on Mercy", 4, "Broadblade", vec!["4stars"]),
+        ("21010104.webp", "Aureate Zenith", 4, "Broadblade", vec!["4stars"]),
+
+        //3-STARS WEAPONS
+        ("21010013.webp", "Broadblade of Night", 3, "Broadblade", vec!["3stars"]),
+        ("21010023.webp", "Originite: Type I", 3, "Broadblade", vec!["3stars"]),
+        ("21010043.webp", "Broadblade of Voyager", 3, "Broadblade", vec!["3stars"]),
+        ("21010053.webp", "Guardian Broadblade", 3, "Broadblade", vec!["3stars"]),
+        ("21010063.webp", "Beguiling Melody", 3, "Broadblade", vec!["3stars"]),
+
+        //2-STARS WEAPONS
+        ("21010012.webp", "Tyro Broadblade", 2, "Broadblade", vec!["2stars"]),
+
+        //1-STAR WEAPONS
+        ("21010011.webp", "Training Broadblade", 1, "Broadblade", vec!["1star"]),
     ]
 }
 
 /// Get sword weapon mappings (2102XXXX)
-fn get_swords() -> Vec<(&'static str, &'static str, u8, Option<&'static str>, &'static str, Vec<&'static str>)> {
+fn get_swords() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
-        // TODO: Add your sword weapons here
-        // Example:
-        // ("21020001.webp", "Emerald of Genesis", 5, Some("Spectro"), "Sword", vec!["5star", "limited"]),
+        //5-STARS LIMITED WEAPONS
+        ("21020016.webp", "Blazing Brilliance", 5, "Sword", vec!["5stars"]),
+        ("21020026.webp", "Red Spring", 5, "Sword", vec!["5stars"]),
+        ("21020036.webp", "Unflickering Valor", 5, "Sword", vec!["5stars"]),
+        ("21020046.webp", "Bloodpact's Pledge", 5, "Sword", vec!["5stars"]),
+        ("21020056.webp", "Defier's Thorn", 5, "Sword", vec!["5stars"]),
+        ("21020066.webp", "Emerald Sentence", 5, "Sword", vec!["5stars"]),
+
+        //5-STARS STANDARD WEAPONS
+        ("21020015.webp", "Lustrous Razor", 5, "Sword", vec!["5stars"]),
+        ("21020045.webp", "Laser Shearer", 5, "Sword", vec!["5stars"]),
+
+        //4-STARS WEAPONS
+        ("21020017.webp", "Somnoire Anchor", 4, "Sword", vec!["4stars"]),
+        ("21020024.webp", "Overture", 4, "Sword", vec!["4stars"]),
+        ("21020034.webp", "Sword#18", 4, "Sword", vec!["4stars"]),
+        ("21020044.webp", "Commando of Conviction", 4, "Sword", vec!["4stars"]),
+        ("21020064.webp", "Lunar Cutter", 4, "Sword", vec!["4stars"]),
+        ("21020074.webp", "Lumingloss", 4, "Sword", vec!["4stars"]),
+        ("21020084.webp", "Endless Collapse", 4, "Sword", vec!["4stars"]),
+        ("21020094.webp", "Fables of Wisdom", 4, "Sword", vec!["4stars"]),
+        ("21020104.webp", "Feather Edge", 4, "Sword", vec!["4stars"]),
+
+        //3-STARS WEAPONS
+        ("21020013.webp", "Sword of Night", 3, "Sword", vec!["3stars"]),
+        ("21020023.webp", "Originite: Type II", 3, "Sword", vec!["3stars"]),
+        ("21020043.webp", "Sword of Voyager", 3, "Sword", vec!["3stars"]),
+        ("21020053.webp", "Guardian Sword", 3, "Sword", vec!["3stars"]),
+
+        //2-STARS WEAPONS
+        ("21020012.webp", "Tyro Sword", 2, "Sword", vec!["2stars"]),
+
+        //1-STAR WEAPONS
+        ("21020011.webp", "Training Sword", 1, "Sword", vec!["1star"]),
     ]
 }
 
 /// Get pistol weapon mappings (2103XXXX)
-fn get_pistols() -> Vec<(&'static str, &'static str, u8, Option<&'static str>, &'static str, Vec<&'static str>)> {
+fn get_pistols() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
-        // TODO: Add your pistol weapons here
+        //5-STARS LIMITED WEAPONS
+        ("21030016.webp", "The Last Dance", 5, "Pistol", vec!["5stars"]),
+        ("21030026.webp", "Woodland Aria", 5, "Pistol", vec!["5stars"]),
+        ("21030036.webp", "Lux & Umbra", 5, "Pistol", vec!["5stars"]),
+        ("21030046.webp", "Spectrum Blaster", 5, "Pistol", vec!["5stars"]),
+
+        //5-STARS STANDARD WEAPONS
+        ("21030015.webp", "Static Mist", 5, "Pistol", vec!["5stars"]),
+        ("21030045.webp", "Phasic Homogenizer", 5, "Pistol", vec!["5stars"]),
+
+        //4-STARS WEAPONS
+        ("21030024.webp", "Cadenza", 4, "Pistol", vec!["4stars"]),
+        ("21030034.webp", "Pistols#26", 4, "Pistol", vec!["4stars"]),
+        ("21030044.webp", "Undying Flame", 4, "Pistol", vec!["4stars"]),
+        ("21030064.webp", "Novaburst", 4, "Pistol", vec!["4stars"]),
+        ("21030074.webp", "Thunderbolt", 4, "Pistol", vec!["4stars"]),
+        ("21030084.webp", "Relativistic Jet", 4, "Pistol", vec!["4stars"]),
+        ("21030094.webp", "Romance in Farewell", 4, "Pistol", vec!["4stars"]),
+        ("21030104.webp", "Solar Flame", 4, "Pistol", vec!["4stars"]),
+
+        //3-STARS WEAPONS
+        ("21030013.webp", "Pistol of Night", 3, "Pistol", vec!["3stars"]),
+        ("21030023.webp", "Originite: Type III", 3, "Pistol", vec!["3stars"]),
+        ("21030043.webp", "Pistols of Voyager", 3, "Pistol", vec!["3stars"]),
+        ("21030053.webp", "Guardian Pistols", 3, "Pistol", vec!["3stars"]),
+
+        //2-STARS WEAPONS
+        ("21030012.webp", "Tyro Pistols", 2, "Pistol", vec!["2stars"]),
+
+        //1-STAR WEAPONS
+        ("21030011.webp", "Training Pistols", 1, "Pistol", vec!["1star"]),
     ]
 }
 
 /// Get gauntlet weapon mappings (2104XXXX)
-fn get_gauntlets() -> Vec<(&'static str, &'static str, u8, Option<&'static str>, &'static str, Vec<&'static str>)> {
+fn get_gauntlets() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
-        // TODO: Add your gauntlet weapons here
+        //5-STARS LIMITED WEAPONS
+        ("21040016.webp", "Verity's Handle", 5, "Gauntlet", vec!["5stars"]),
+        ("21040026.webp", "Tragicomedy", 5, "Gauntlet", vec!["5stars"]),
+        ("21040036.webp", "Blazing Justice", 5, "Gauntlet", vec!["5stars"]),
+        ("21040046.webp", "Moongazer's Sigil", 5, "Gauntlet", vec!["5stars"]),
+
+        //5-STARS STANDARD WEAPONS
+        ("21040015.webp", "Abyss Surges", 5, "Gauntlet", vec!["5stars"]),
+        ("21040045.webp", "Pulsation Bracer", 5, "Gauntlet", vec!["5stars"]),
+
+        //4-STARS WEAPONS
+        ("21040024.webp", "Marcato", 4, "Gauntlet", vec!["4stars"]),
+        ("21040034.webp", "Gauntlets#21D", 4, "Gauntlet", vec!["4stars"]),
+        ("21040044.webp", "Amity Accord", 4, "Gauntlet", vec!["4stars"]),
+        ("21040064.webp", "Hollow Mirage", 4, "Gauntlet", vec!["4stars"]),
+        ("21040074.webp", "Stonard", 4, "Gauntlet", vec!["4stars"]),
+        ("21040084.webp", "Celestial Spiral", 4, "Gauntlet", vec!["4stars"]),
+        ("21040094.webp", "Legend of Drunken Hero", 4, "Gauntlet", vec!["4stars"]),
+        ("21040104.webp", "Aether Strike", 4, "Gauntlet", vec!["4stars"]),
+
+        //3-STARS WEAPONS
+        ("21040013.webp", "Gauntlets of Night", 3, "Gauntlet", vec!["3stars"]),
+        ("21040023.webp", "Originite: Type IV", 3, "Gauntlet", vec!["3stars"]),
+        ("21040043.webp", "Gauntlets of Voyager", 3, "Gauntlet", vec!["3stars"]),
+        ("21040053.webp", "Guardian Gauntlets", 3, "Gauntlet", vec!["3stars"]),
+
+        //2-STARS WEAPONS
+        ("21040012.webp", "Tyro Gauntlets", 2, "Gauntlet", vec!["2stars"]),
+
+        //1-STAR WEAPONS
+        ("21040011.webp", "Training Gauntlets", 1, "Gauntlet", vec!["1star"]),
     ]
 }
 
 /// Get rectifier weapon mappings (2105XXXX)
-fn get_rectifiers() -> Vec<(&'static str, &'static str, u8, Option<&'static str>, &'static str, Vec<&'static str>)> {
+fn get_rectifiers() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
-        // TODO: Add your rectifier weapons here
+        //5-STARS LIMITED WEAPONS
+        ("21050016.webp", "Stringmaster", 5, "Rectifier", vec!["5stars"]),
+        ("21050026.webp", "Rime-Drapped Sprouts", 5, "Rectifier", vec!["5stars"]),
+        ("21050036.webp", "Stellar Symphony", 5, "Rectifier", vec!["5stars"]),
+        ("21050046.webp", "Luminous Hymn", 5, "Rectifier", vec!["5stars"]),
+        ("21050056.webp", "Whispers of Sirens", 5, "Rectifier", vec!["5stars"]),
+        ("21050066.webp", "Lethean Elegy", 5, "Rectifier", vec!["5stars"]),
+
+        //5-STARS STANDARD WEAPONS
+        ("21050015.webp", "Cosmic Ripples", 5, "Rectifier", vec!["5stars"]),
+        ("21050045.webp", "Boson Astrolabe", 5, "Rectifier", vec!["5stars"]),
+
+        //4-STARS WEAPONS
+        ("21050017.webp", "Call of the Abyss", 4, "Rectifier", vec!["4stars"]),
+        ("21050024.webp", "Variation", 4, "Rectifier", vec!["4stars"]),
+        ("21050027.webp", "Ocean's Gift", 4, "Rectifier", vec!["4stars"]),
+        ("21050034.webp", "Rectifier#25", 4, "Rectifier", vec!["4stars"]),
+        ("21050044.webp", "Jinzhou Keeper", 4, "Rectifier", vec!["4stars"]),
+        ("21050064.webp", "Comet Flare", 4, "Rectifier", vec!["4stars"]),
+        ("21050074.webp", "Augment", 4, "Rectifier", vec!["4stars"]),
+        ("21050084.webp", "Fusion Accretion", 4, "Rectifier", vec!["4stars"]),
+        ("21050094.webp", "Waltz in Masquerade", 4, "Rectifier", vec!["4stars"]),
+        ("21050104.webp", "Radiant Dawn", 4, "Rectifier", vec!["4stars"]),
+
+        //3-STARS WEAPONS
+        ("21050013.webp", "Rectifier of Night", 3, "Rectifier", vec!["3stars"]),
+        ("21050023.webp", "Originite: Type V", 3, "Rectifier", vec!["3stars"]),
+        ("21050043.webp", "Rectifier of Voyager", 3, "Rectifier", vec!["3stars"]),
+        ("21050053.webp", "Guardian Rectifier", 3, "Rectifier", vec!["3stars"]),
+
+        //2-STARS WEAPONS
+        ("21050012.webp", "Tyro Rectifier", 2, "Rectifier", vec!["2stars"]),
+
+        //1-STAR WEAPONS
+        ("21050011.webp", "Training Rectifier", 1, "Rectifier", vec!["1star"]),
     ]
 }
 
@@ -120,14 +275,14 @@ pub fn get_weapon_mappings() -> HashMap<String, AssetMetadata> {
 
     // Convert to HashMap
     for weapon_list in all_weapons {
-        for (filename, name, rarity, element, weapon_type, tags) in weapon_list {
+        for (filename, name, rarity, weapon_type, tags) in weapon_list {
             map.insert(filename.to_string(), AssetMetadata {
                 id: name.to_lowercase().replace(" ", "_").replace("'", ""),
                 filename: filename.to_string(),
                 display_name: name.to_string(),
                 asset_type: "weapon".to_string(),
                 rarity: Some(rarity),
-                element: element.map(|s| s.to_string()),
+                element: None,
                 weapon_type: Some(weapon_type.to_string()),
                 echo_class: None,
                 cost: None,
@@ -138,28 +293,3 @@ pub fn get_weapon_mappings() -> HashMap<String, AssetMetadata> {
 
     map
 }
-
-// ==========================================
-// REFERENCE: Common Weapons to Get Started
-// ==========================================
-//
-// Here are some common weapons you might want to add:
-//
-// 5-STAR WEAPONS (Limited/Signature):
-// - Broadblade: Lustrous Razor (Jiyan's weapon)
-// - Sword: Emerald of Genesis (Jinhsi's weapon)
-// - Pistols: Static Mist (Yinlin's weapon)
-// - Gauntlets: Abyss Surges (Calcharo's weapon)
-// - Rectifier: Stringmaster (Zhezhi's weapon)
-//
-// 5-STAR WEAPONS (Standard):
-// - Check Prydwen.gg for the standard 5-star pool
-//
-// 4-STAR WEAPONS:
-// - There are many 4-star options
-// - Start with ones you actually use/own
-//
-// 3-STAR WEAPONS:
-// - Usually not needed unless you're completionist
-//
-// TIP: Focus on 5-star and 4-star weapons you use first!

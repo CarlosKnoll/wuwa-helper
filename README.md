@@ -47,17 +47,35 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 ### To-Do:
 This branch is focused on slowly and granullarly implement assets loading into the existing tabs.
 
-#### General:
-- Get assets of currencies.
-- Implement assets into other tabs and character build modals.
+#### Dashboard:
+- Load assets for the areas: Resources, Pull Calculator (maybe more?)
+
+#### Resources:
+- Load assets
+
+#### Pity Counter:
+- Load assets for pull history
+
+#### Endgame:
+- Load assets for teams characters
 
 ### Remaining To-Dos unrelated to assets:
+#### Dashboard:
+- Editing notes not showing time category (longterm, immediate, so on). 
+
 #### Characters:
 - Clicking delete icon also opens build modal (functionality works, if I close the build modal I can see the delete confimation modal)
+- Allow editing of rarity (for user error cases)
 - Make it so Rover display concatenates with its element before (so instead of three rover entries differentiated by their element icons we have actually display names of Aero Rover, Spectro Rover and Havoc Rover)
 
 #### Add Characters:
 - Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (still allow to add custom characters that are not matching with any of the list)
+
+#### Weapons:
+- Allow editing of rarity (for user error cases)
+
+#### Add Weapons:
+- Add dropdown menu with hardcoded weapons, allow refining dropdown list as user is typing. (still allow to add custom weapons that are not matching with any of the list)
 
 #### Builds:
 - Remove the ability to add echoes to a build if there are already 5 echoes.

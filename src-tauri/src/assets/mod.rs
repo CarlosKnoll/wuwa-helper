@@ -62,20 +62,97 @@ impl AssetManager {
         })
     }
 
-    /// Get path to asset - uses resolver for character lookups, filesystem for elements
+    /// Get path to asset - uses resolver for lookups and handles nested weapon directories
     pub fn get_asset_path(&self, asset_type: AssetType, name: &str) -> Option<PathBuf> {
+        
         // For characters, use the resolver to find the correct filename
         if matches!(asset_type, AssetType::Character) {
             if let Some(filename) = self.resolver.get_asset_filename(name) {
                 let path = self.base_path
                     .join(asset_type.as_str())
                     .join(&filename);
-                
+            
                 if path.exists() {
                     return Some(path);
                 }
             }
-            // If resolver doesn't find it, fall through to cache lookup
+        }
+        
+        // For weapons, use resolver and search in weapon type subdirectories
+        if matches!(asset_type, AssetType::Weapon) {
+            // Strategy 1: Try to resolve by name (handles display names like "Somnoire Anchor")
+            if let Some(metadata) = self.resolver.resolve_by_name(name) {
+                
+                // If it's a weapon image (numeric ID), look in weapon type subdirectory
+                if metadata.filename.chars().next().unwrap_or('a').is_numeric() {
+                    if let Some(ref weapon_type) = metadata.weapon_type {
+                        let weapon_type_lower = weapon_type.to_lowercase();
+                        let path = self.base_path
+                            .join("weapons")
+                            .join(&weapon_type_lower)
+                            .join(&metadata.filename);
+                        
+                        if path.exists() {
+                            return Some(path);
+                        }
+                    }
+                } else {
+                    // It's a weapon type icon (weapon_*.png), look in root weapons folder
+                    let path = self.base_path
+                        .join("weapons")
+                        .join(&metadata.filename);
+                    
+                    if path.exists() {
+                        return Some(path);
+                    }
+                }
+            }
+            
+            // Strategy 2: If name looks like a weapon type icon, try directly
+            if name.starts_with("weapon_") {
+                let path = self.base_path
+                    .join("weapons")
+                    .join(name);
+                
+                if path.exists() {
+                    return Some(path);
+                }
+                
+                // Try with .png extension if not present
+                if !name.ends_with(".png") {
+                    let path = self.base_path
+                        .join("weapons")
+                        .join(format!("{}.png", name));
+                    
+                    if path.exists() {
+                        return Some(path);
+                    }
+                }
+            }
+            
+            // Strategy 3: Try as filename directly in all weapon subdirectories
+            for weapon_type in &["broadblade", "sword", "pistol", "gauntlet", "rectifier"] {
+                let path = self.base_path
+                    .join("weapons")
+                    .join(weapon_type)
+                    .join(name);
+                
+                if path.exists() {
+                    return Some(path);
+                }
+                
+                // Try with .webp extension if not present
+                if !name.ends_with(".webp") && !name.ends_with(".png") {
+                    let path = self.base_path
+                        .join("weapons")
+                        .join(weapon_type)
+                        .join(format!("{}.webp", name));
+                    
+                    if path.exists() {
+                        return Some(path);
+                    }
+                }
+            }
         }
         
         // For elements, try direct filesystem access

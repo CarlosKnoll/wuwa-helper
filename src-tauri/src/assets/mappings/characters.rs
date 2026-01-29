@@ -100,14 +100,6 @@ pub fn get_character_mappings() -> HashMap<String, AssetMetadata> {
         }
     }
 
-    // DEBUG: Print how many mappings we created
-    eprintln!("DEBUG: Created {} character mappings", map.len());
-    
-    // DEBUG: Print first few to verify
-    for (filename, meta) in map.iter().take(5) {
-        eprintln!("DEBUG: {} -> {}", filename, meta.display_name);
-    }
-
     map
 }
 

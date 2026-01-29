@@ -144,8 +144,6 @@ pub fn delete_pull(app: tauri::AppHandle, id: i64) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result<String, String> {
-    eprintln!("[DEBUG] ======== IMPORT STARTED ========");
-    eprintln!("[DEBUG] URL: {}", url);
     
     let hash = url.split('#').nth(1).ok_or("Invalid URL")?;
     let query = hash.split('?').nth(1).ok_or("Invalid URL")?;
@@ -161,16 +159,12 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
     let record_id = params["record_id"].clone();
     let lang = params.get("lang").cloned().unwrap_or_else(|| "en".into());
 
-    eprintln!("[DEBUG] Parsed params - player_id: {}, svr_id: {}, record_id: {}, lang: {}", 
-        player_id, svr_id, record_id, lang);
-
     let api = if url.contains("aki-game.net") {
         "https://gmserver-api.aki-game2.net/gacha/record/query"
     } else {
         "https://gmserver-api.aki-game2.com/gacha/record/query"
     };
 
-    eprintln!("[DEBUG] Using API endpoint: {}", api);
 
     let client = reqwest::Client::new();
     let conn = init_db(&app)?;
@@ -179,12 +173,10 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
     let mut fetched = 0;
 
     for pool in ["1", "2", "3", "4"] {
-        eprintln!("[DEBUG] ======== Processing pool: {} ========", pool);
         
         let banner = match map_card_pool_to_banner(pool) {
             Some(b) => b,
             None => {
-                eprintln!("[DEBUG] Pool {} skipped (no banner mapping)", pool);
                 continue;
             }
         };
@@ -203,9 +195,6 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                 "pageSize": 20
             });
 
-            eprintln!("[DEBUG] Requesting page {} for pool {}", page, pool);
-            eprintln!("[DEBUG] Request body: {}", serde_json::to_string_pretty(&body).unwrap_or_default());
-
             let res: GameApiResponse = client.post(api)
                 .json(&body)
                 .send().await
@@ -221,23 +210,14 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     err
                 })?;
 
-            eprintln!("[DEBUG] API Response - code: {}, message: {}, data: {}", 
-                res.code, 
-                res.message,
-                if res.data.is_some() { "Some" } else { "None" }
-            );
-
             let records = match res.data {
                 Some(r) if !r.is_empty() => {
-                    eprintln!("[DEBUG] Received {} records", r.len());
                     r
                 },
                 Some(_r) => {
-                    eprintln!("[DEBUG] Received empty records list");
                     break;
                 },
                 None => {
-                    eprintln!("[DEBUG] No data in response");
                     break;
                 }
             };
@@ -245,16 +225,9 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
             fetched += records.len();
             let mut stop = false;
 
-            eprintln!("[DEBUG] ========================================");
-            eprintln!("[DEBUG] Processing banner: {} | Page: {} | Records: {}", banner, page, records.len());
-            eprintln!("[DEBUG] ========================================");
-
             for r in records {
                 // Normalize the incoming date to standard format
                 let normalized_date = normalize_date_format(&r.time);
-                
-                eprintln!("[DEBUG] Processing pull: {} | Banner: {} | Original Date: {} | Normalized Date: {}", 
-                    r.name, banner, r.time, normalized_date);
                 
                 // Check for duplicates - need to handle both:
                 // 1. Exact matches (same format)
@@ -271,10 +244,8 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     |row| row.get(0),
                 ).unwrap_or(false);
 
-                eprintln!("[DEBUG] Duplicate check result: {}", if exists { "EXISTS (skipping)" } else { "NEW (importing)" });
 
                 if exists {
-                    eprintln!("[DEBUG] Found duplicate, stopping further imports for this banner");
                     stop = true;
                     break;
                 }
@@ -285,7 +256,6 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     "weapon"
                 };
 
-                eprintln!("[DEBUG] Adding new pull to database");
                 add_pull(
                     app.clone(),
                     banner.clone(),
@@ -313,8 +283,6 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
         imported, fetched
     );
     
-    eprintln!("[DEBUG] ======== IMPORT COMPLETED ========");
-    eprintln!("[DEBUG] {}", result);
     
     Ok(result)
 }
