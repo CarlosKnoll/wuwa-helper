@@ -4,7 +4,7 @@
  * Provides methods to fetch and display assets from local cache
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core'; // Tauri v2
 import { listen } from '@tauri-apps/api/event';
 import { useState, useEffect, useCallback } from 'react';
 

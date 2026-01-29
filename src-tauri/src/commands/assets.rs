@@ -4,7 +4,6 @@
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex;
 
-// Import from the ROOT assets module (not commands::assets)
 use crate::assets::{AssetManager, AssetType, CacheStats, UpdateProgress, UpdateSummary};
 
 pub type AssetManagerState = Mutex<AssetManager>;
@@ -27,10 +26,17 @@ pub async fn get_asset(
     state: State<'_, AssetManagerState>,
 ) -> Result<String, String> {
     let manager = state.lock().await;
-    let asset_type = parse_asset_type(&asset_type)?;
+    let asset_type_enum = parse_asset_type(&asset_type)?;
+    
+    // For elements, resolve the display name to the actual filename
+    let resolved_name = if matches!(asset_type_enum, AssetType::Element) {
+        resolve_element_filename(&name)
+    } else {
+        name
+    };
     
     manager
-        .get_asset_base64(asset_type, &name)
+        .get_asset_base64(asset_type_enum, &resolved_name)
         .map_err(|e| format!("Failed to get asset: {}", e))
 }
 
@@ -42,12 +48,18 @@ pub async fn get_asset_path(
     state: State<'_, AssetManagerState>,
 ) -> Result<String, String> {
     let manager = state.lock().await;
-    let asset_type = parse_asset_type(&asset_type)?;
+    let asset_type_enum = parse_asset_type(&asset_type)?;
+    
+    let resolved_name = if matches!(asset_type_enum, AssetType::Element) {
+        resolve_element_filename(&name)
+    } else {
+        name
+    };
     
     manager
-        .get_asset_path(asset_type, &name)
+        .get_asset_path(asset_type_enum, &resolved_name)
         .map(|p| p.to_string_lossy().to_string())
-        .ok_or_else(|| format!("Asset not found: {:?}/{}", asset_type, name))
+        .ok_or_else(|| format!("Asset not found: {:?}/{}", asset_type_enum, resolved_name))
 }
 
 /// Update all assets from Prydwen
@@ -56,14 +68,11 @@ pub async fn update_assets(
     app: AppHandle,
     state: State<'_, AssetManagerState>,
 ) -> Result<UpdateSummary, String> {
-    // Clone app handle for use in callback
     let app_clone = app.clone();
-    
     let mut manager = state.lock().await;
     
     manager
         .update_assets(Some(Box::new(move |progress: UpdateProgress| {
-            // Emit progress event to frontend using Tauri v2 Emitter trait
             let _ = app_clone.emit("asset-update-progress", &progress);
         })))
         .await
@@ -82,6 +91,26 @@ pub async fn should_update_assets(state: State<'_, AssetManagerState>) -> Result
 pub async fn get_asset_stats(state: State<'_, AssetManagerState>) -> Result<CacheStats, String> {
     let manager = state.lock().await;
     Ok(manager.get_stats())
+}
+
+/// Resolve element display name to filename WITH extension
+fn resolve_element_filename(name: &str) -> String {
+    let lower = name.to_lowercase();
+    
+    if lower.ends_with(".png") {
+        if lower.starts_with("element_") {
+            return lower;
+        } else {
+            let without_ext = lower.trim_end_matches(".png");
+            return format!("element_{}.png", without_ext);
+        }
+    }
+    
+    if lower.starts_with("element_") {
+        return format!("{}.png", lower);
+    }
+    
+    format!("element_{}.png", lower)
 }
 
 /// Helper to parse asset type from string

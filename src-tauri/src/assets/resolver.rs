@@ -1,14 +1,8 @@
 // src-tauri/src/assets/resolver.rs
-//! Unified asset resolver
-//! 
-//! Provides a single interface for resolving assets by various methods:
-//! - By display name (e.g., "Jiyan", "Emerald of Genesis")
-//! - By filename (e.g., "jiyan_card.webp")
-//! - By category and filters (e.g., all 5-star Spectro characters)
-//! - By fuzzy search
+//! Unified asset resolver with enhanced element support
 
 use super::mapper::{AssetMapper, AssetMetadata};
-use super::hardcoded_mappings;
+use super::mappings;
 use std::collections::HashMap;
 
 pub struct AssetResolver {
@@ -19,31 +13,75 @@ pub struct AssetResolver {
 impl AssetResolver {
     /// Create a new resolver with combined mappings
     pub fn new(mapper: AssetMapper) -> Self {
+        let hardcoded = mappings::get_all_mappings();
+        
+        // DEBUG: Check if Mornye is actually in the hardcoded mappings
+        eprintln!("DEBUG [AssetResolver::new]: Loaded {} hardcoded mappings", hardcoded.len());
+        
+        // Check for Mornye specifically
+        let mornye_found = hardcoded.values().find(|m| m.display_name == "Mornye");
+        if let Some(meta) = mornye_found {
+            eprintln!("DEBUG [AssetResolver::new]: ✅ Mornye found! Filename: {}", meta.filename);
+        } else {
+            eprintln!("DEBUG [AssetResolver::new]: ❌ Mornye NOT found in hardcoded mappings!");
+        }
+        
+        // Check for Lynae specifically
+        let lynae_found = hardcoded.values().find(|m| m.display_name == "Lynae");
+        if let Some(meta) = lynae_found {
+            eprintln!("DEBUG [AssetResolver::new]: ✅ Lynae found! Filename: {}", meta.filename);
+        } else {
+            eprintln!("DEBUG [AssetResolver::new]: ❌ Lynae NOT found in hardcoded mappings!");
+        }
+        
         Self {
             mapper,
-            hardcoded: hardcoded_mappings::get_all_hardcoded_mappings(),
+            hardcoded,
         }
     }
 
-    /// Resolve asset by display name
-    /// Example: resolve("Jiyan") -> AssetMetadata
+    /// Resolve asset by display name with flexible element matching
     pub fn resolve_by_name(&self, name: &str) -> Option<&AssetMetadata> {
+        eprintln!("DEBUG [resolve_by_name]: Looking for '{}'", name);
+        
         // Try exact match first
         if let Some(meta) = self.mapper.get_by_name(name) {
+            eprintln!("DEBUG [resolve_by_name]: Found in mapper");
             return Some(meta);
         }
 
-        // Try case-insensitive
+        // Try case-insensitive in mapper
         let name_lower = name.to_lowercase();
-        for (_key, meta) in &self.mapper.assets {
+        for meta in self.mapper.assets.values() {
             if meta.display_name.to_lowercase() == name_lower {
+                eprintln!("DEBUG [resolve_by_name]: Found in mapper (case-insensitive)");
                 return Some(meta);
             }
         }
 
-        // Check hardcoded
-        for meta in self.hardcoded.values() {
+        // Check hardcoded mappings with exact key
+        if let Some(meta) = self.hardcoded.get(name) {
+            eprintln!("DEBUG [resolve_by_name]: Found in hardcoded by exact key");
+            return Some(meta);
+        }
+
+        // Try case-insensitive in hardcoded
+        eprintln!("DEBUG [resolve_by_name]: Searching {} hardcoded entries...", self.hardcoded.len());
+        for (key, meta) in &self.hardcoded {
             if meta.display_name.to_lowercase() == name_lower {
+                eprintln!("DEBUG [resolve_by_name]: ✅ FOUND '{}' in hardcoded! Key: {}, Filename: {}", 
+                    meta.display_name, key, meta.filename);
+                return Some(meta);
+            }
+        }
+        
+        eprintln!("DEBUG [resolve_by_name]: ❌ NOT FOUND after checking all hardcoded entries");
+
+        // For elements, try with "element_" prefix
+        if !name_lower.starts_with("element_") {
+            let element_key = format!("element_{}", name_lower);
+            if let Some(meta) = self.hardcoded.get(&element_key) {
+                eprintln!("DEBUG [resolve_by_name]: Found as element with prefix");
                 return Some(meta);
             }
         }
@@ -52,14 +90,12 @@ impl AssetResolver {
     }
 
     /// Resolve asset by filename
-    /// Example: resolve_by_filename("jiyan_card.webp") -> AssetMetadata
     pub fn resolve_by_filename(&self, filename: &str) -> Option<&AssetMetadata> {
         self.mapper.get_by_filename(filename)
             .or_else(|| self.hardcoded.get(filename))
     }
 
     /// Fuzzy search for assets
-    /// Example: fuzzy_search("jiy") -> ["Jiyan"]
     pub fn fuzzy_search(&self, query: &str) -> Vec<&AssetMetadata> {
         let query_lower = query.to_lowercase();
         let mut results = Vec::new();
@@ -80,7 +116,7 @@ impl AssetResolver {
             }
         }
 
-        // Sort by relevance (exact match > starts with > contains)
+        // Sort by relevance
         results.sort_by(|a, b| {
             let a_name = a.display_name.to_lowercase();
             let b_name = b.display_name.to_lowercase();
@@ -100,11 +136,9 @@ impl AssetResolver {
     }
 
     /// Get all assets by type
-    /// Example: get_by_type("character") -> [all characters]
     pub fn get_by_type(&self, asset_type: &str) -> Vec<&AssetMetadata> {
         let mut results = self.mapper.get_by_type(asset_type);
         
-        // Add hardcoded matches
         for meta in self.hardcoded.values() {
             if meta.asset_type == asset_type {
                 results.push(meta);
@@ -121,28 +155,24 @@ impl AssetResolver {
 
         all_assets.into_iter()
             .filter(|meta| {
-                // Filter by type
                 if let Some(ref asset_type) = filters.asset_type {
                     if &meta.asset_type != asset_type {
                         return false;
                     }
                 }
 
-                // Filter by rarity
                 if let Some(rarity) = filters.rarity {
                     if meta.rarity != Some(rarity) {
                         return false;
                     }
                 }
 
-                // Filter by element
                 if let Some(ref element) = filters.element {
                     if meta.element.as_ref() != Some(element) {
                         return false;
                     }
                 }
 
-                // Filter by tags
                 if !filters.tags.is_empty() {
                     let has_any_tag = filters.tags.iter()
                         .any(|tag| meta.tags.contains(tag));
@@ -157,24 +187,29 @@ impl AssetResolver {
     }
 
     /// Get asset filename for use in the frontend
-    /// This is the main method components should use
+    /// Enhanced to handle element lookups better
     pub fn get_asset_filename(&self, identifier: &str) -> Option<String> {
+        eprintln!("DEBUG [get_asset_filename]: Called with '{}'", identifier);
+        
         // Try direct filename first
         if self.resolve_by_filename(identifier).is_some() {
+            eprintln!("DEBUG [get_asset_filename]: Found as direct filename");
             return Some(identifier.to_string());
         }
 
-        // Try by display name
+        // Try by display name (works for elements like "Aero", "Spectro")
         if let Some(meta) = self.resolve_by_name(identifier) {
+            eprintln!("DEBUG [get_asset_filename]: ✅ Resolved to filename: {}", meta.filename);
             return Some(meta.filename.clone());
         }
 
+        eprintln!("DEBUG [get_asset_filename]: ❌ Could not resolve '{}'", identifier);
         None
     }
 
     /// Categorize an unknown numeric ID
     pub fn categorize_unknown(&self, filename: &str) -> Option<String> {
-        hardcoded_mappings::categorize_numeric_id(filename)
+        mappings::categorize_numeric_id(filename)
     }
 }
 
@@ -211,32 +246,5 @@ impl AssetFilters {
     pub fn with_tag(mut self, tag: impl Into<String>) -> Self {
         self.tags.push(tag.into());
         self
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_fuzzy_search() {
-        let mapper = AssetMapper::new();
-        let resolver = AssetResolver::new(mapper);
-        
-        // Add test cases here
-    }
-
-    #[test]
-    fn test_filter() {
-        let mapper = AssetMapper::new();
-        let resolver = AssetResolver::new(mapper);
-        
-        let filters = AssetFilters::new()
-            .with_type("character")
-            .with_rarity(5)
-            .with_element("Spectro");
-        
-        let results = resolver.filter(filters);
-        // Should return only 5-star Spectro characters
     }
 }
