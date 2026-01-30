@@ -51,7 +51,10 @@ This branch is focused on slowly and granullarly implement assets loading into t
 - Load assets for pull history
 
 #### Endgame:
-- Load assets for teams characters
+- Add astrite icon besides the corresponding fields.
+
+#### Build:
+- Complete revamp of build modal, of course with assets
 
 ### Remaining To-Dos unrelated to assets:
 #### Dashboard:

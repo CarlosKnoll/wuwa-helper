@@ -180,6 +180,14 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
     };
   };
 
+  const handleModeClick = (mode: EndgameMode) => {
+    if (selectedMode === mode) {
+      setSelectedMode(null);
+    } else {
+      setSelectedMode(mode);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -203,14 +211,15 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
         cancelText="Cancel"
         onConfirm={handleResetConfirm}
         onCancel={() => setShowResetDialog(null)}
-        variant="danger"
+        disabled={resetting}
       />
 
       {/* Endgame Mode Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Tower of Adversity Card */}
         <div
-          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden ${
+          onClick={() => handleModeClick('tower')}
+          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden cursor-pointer ${
             selectedMode === 'tower' 
               ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' 
               : 'border-slate-800 hover:border-cyan-500/50'
@@ -232,42 +241,38 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                 </button>
               )}
             </div>
-            <button
-              onClick={() => setSelectedMode('tower')}
-              className="text-left w-full"
-            >
-              <h3 className="font-bold text-xl mb-2">Tower of Adversity</h3>
-              {towerInfo && (
-                <>
-                  <p className="text-sm text-slate-400 mb-3">
-                    Last Reset: {towerInfo.last_reset}
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Astrite Earned:</span>
-                      <span className="font-semibold text-yellow-400">
-                        {towerCompletion.earned} / {towerCompletion.max}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300"
-                        style={{ width: `${towerCompletion.percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 text-right">
-                      {towerCompletion.percentage.toFixed(1)}% Complete
-                    </p>
+            <h3 className="font-bold text-xl mb-2">Tower of Adversity</h3>
+            {towerInfo && (
+              <>
+                <p className="text-sm text-slate-400 mb-3">
+                  Last Reset: {towerInfo.last_reset}
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Astrite Earned:</span>
+                    <span className="font-semibold text-yellow-400">
+                      {towerCompletion.earned} / {towerCompletion.max}
+                    </span>
                   </div>
-                </>
-              )}
-            </button>
+                  <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300"
+                      style={{ width: `${towerCompletion.percentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 text-right">
+                    {towerCompletion.percentage.toFixed(1)}% Complete
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Whimpering Wastes Card */}
         <div
-          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden ${
+          onClick={() => handleModeClick('wastes')}
+          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden cursor-pointer ${
             selectedMode === 'wastes' 
               ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
               : 'border-slate-800 hover:border-purple-500/50'
@@ -289,42 +294,38 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                 </button>
               )}
             </div>
-            <button
-              onClick={() => setSelectedMode('wastes')}
-              className="text-left w-full"
-            >
-              <h3 className="font-bold text-xl mb-2">Whimpering Wastes</h3>
-              {wastesInfo && (
-                <>
-                  <p className="text-sm text-slate-400 mb-3">
-                    Last Reset: {wastesInfo.last_reset}
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Astrite Earned:</span>
-                      <span className="font-semibold text-yellow-400">
-                        {wastesCompletion.earned} / {wastesCompletion.max}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300"
-                        style={{ width: `${wastesCompletion.percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 text-right">
-                      {wastesCompletion.percentage.toFixed(1)}% Complete
-                    </p>
+            <h3 className="font-bold text-xl mb-2">Whimpering Wastes</h3>
+            {wastesInfo && (
+              <>
+                <p className="text-sm text-slate-400 mb-3">
+                  Last Reset: {wastesInfo.last_reset}
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Astrite Earned:</span>
+                    <span className="font-semibold text-yellow-400">
+                      {wastesCompletion.earned} / {wastesCompletion.max}
+                    </span>
                   </div>
-                </>
-              )}
-            </button>
+                  <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300"
+                      style={{ width: `${wastesCompletion.percentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 text-right">
+                    {wastesCompletion.percentage.toFixed(1)}% Complete
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Troop Matrix Card */}
         <div
-          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden ${
+          onClick={() => handleModeClick('matrix')}
+          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden cursor-pointer ${
             selectedMode === 'matrix' 
               ? 'border-orange-500 shadow-lg shadow-orange-500/20' 
               : 'border-slate-800 hover:border-orange-500/50'
@@ -346,36 +347,31 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                 </button>
               )}
             </div>
-            <button
-              onClick={() => setSelectedMode('matrix')}
-              className="text-left w-full"
-            >
-              <h3 className="font-bold text-xl mb-2">Doubled Pawns Matrix</h3>
-              {troopMatrix && (
-                <>
-                  <p className="text-sm text-slate-400 mb-3">
-                    Last Reset: {troopMatrix.last_reset}
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Astrite Earned:</span>
-                      <span className="font-semibold text-yellow-400">
-                        {matrixCompletion.earned} / {matrixCompletion.max}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-orange-500 to-red-500 h-full transition-all duration-300"
-                        style={{ width: `${matrixCompletion.percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 text-right">
-                      {matrixCompletion.percentage.toFixed(1)}% Complete
-                    </p>
+            <h3 className="font-bold text-xl mb-2">Doubled Pawns Matrix</h3>
+            {troopMatrix && (
+              <>
+                <p className="text-sm text-slate-400 mb-3">
+                  Last Reset: {troopMatrix.last_reset}
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Astrite Earned:</span>
+                    <span className="font-semibold text-yellow-400">
+                      {matrixCompletion.earned} / {matrixCompletion.max}
+                    </span>
                   </div>
-                </>
-              )}
-            </button>
+                  <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-orange-500 to-red-500 h-full transition-all duration-300"
+                      style={{ width: `${matrixCompletion.percentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 text-right">
+                    {matrixCompletion.percentage.toFixed(1)}% Complete
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
