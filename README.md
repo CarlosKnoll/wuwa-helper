@@ -47,12 +47,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 ### To-Do:
 This branch is focused on slowly and granullarly implement assets loading into the existing tabs.
 
-#### Dashboard:
-- Load assets for the areas: Resources, Pull Calculator (maybe more?)
-
-#### Resources:
-- Load assets
-
 #### Pity Counter:
 - Load assets for pull history
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Target, Star, Shield, Edit2, Save, Coins } from 'lucide-react';
+import { Edit2, Save } from 'lucide-react';
 import { Resources } from '../types';
 import { safeInvoke } from '../utils';
+import { CurrencyIcon } from '../components/CurrencyIcon';
 
 export default function ResourcesTab({ resources, onUpdate }: { resources: Resources | null; onUpdate: () => void }) {
   const [editing, setEditing] = useState(false);
@@ -71,17 +72,17 @@ export default function ResourcesTab({ resources, onUpdate }: { resources: Resou
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {[
-          { label: 'Astrite', key: 'astrite', icon: Star, color: 'text-yellow-400' },
-          { label: 'Lustrous Tide', key: 'lustrous_tide', icon: Target, color: 'text-blue-400' },
-          { label: 'Radiant Tide', key: 'radiant_tide', icon: Target, color: 'text-purple-400' },
-          { label: 'Forged Tide', key: 'forged_tide', icon: Target, color: 'text-cyan-400' },
-          { label: 'Afterglow Coral', key: 'afterglow_coral', icon: Shield, color: 'text-pink-400' },
-          { label: 'Oscillated Coral', key: 'oscillated_coral', icon: Shield, color: 'text-orange-400' },
-          { label: 'Shell Credits', key: 'shell_credits', icon: Coins, color: 'text-green-400' },
-        ].map(({ label, key, icon: Icon, color }) => (
+          { label: 'Astrite', key: 'astrite', currencyName: 'astrite' },
+          { label: 'Lustrous Tide', key: 'lustrous_tide', currencyName: 'lustrous_tide' },
+          { label: 'Radiant Tide', key: 'radiant_tide', currencyName: 'radiant_tide' },
+          { label: 'Forged Tide', key: 'forged_tide', currencyName: 'forged_tide' },
+          { label: 'Afterglow Coral', key: 'afterglow_coral', currencyName: 'afterglow_coral' },
+          { label: 'Oscillated Coral', key: 'oscillated_coral', currencyName: 'oscillated_coral' },
+          { label: 'Shell Credits', key: 'shell_credits', currencyName: 'shell_credits' },
+        ].map(({ label, key, currencyName }) => (
           <div key={key} className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
             <div className="flex items-center gap-3 mb-3">
-              <Icon className={`w-6 h-6 ${color}`} />
+              <CurrencyIcon currencyName={currencyName} className="w-8 h-8" />
               <span className="text-slate-400 text-sm">{label}</span>
             </div>
             {editing ? (

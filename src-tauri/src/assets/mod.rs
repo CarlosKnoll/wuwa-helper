@@ -177,6 +177,28 @@ impl AssetManager {
             }
         }
         
+        // For misc assets (currency icons, etc.), try direct filesystem access
+        if matches!(asset_type, AssetType::Misc) {
+            let direct_path = self.base_path
+                .join(asset_type.as_str())
+                .join(name);
+            
+            if direct_path.exists() {
+                return Some(direct_path);
+            }
+            
+            // Try with .png if not present
+            if !name.ends_with(".png") {
+                let with_png = self.base_path
+                    .join(asset_type.as_str())
+                    .join(format!("{}.png", name));
+                
+                if with_png.exists() {
+                    return Some(with_png);
+                }
+            }
+        }
+        
         // Cache lookup for other types or as fallback
         self.cache.get_asset_path(asset_type, name)
     }

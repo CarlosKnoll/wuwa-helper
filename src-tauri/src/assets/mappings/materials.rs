@@ -4,12 +4,12 @@ use std::collections::HashMap;
 /// Currency materials
 fn get_currencies() -> Vec<(&'static str, &'static str, &'static str, Vec<&'static str>)> {
     vec![
-        ("shell_icon.png", "Shell Credit", "currency", vec!["currency"]),
-        ("astrite_icon.png", "Astrite", "currency", vec!["currency"]),
-        ("lustrous_icon.png", "Lustrous Tide", "currency", vec!["currency"]),
-        ("radiant_icon.png", "Radiant Tide", "currency", vec!["currency"]),
-        ("oscillated_icon.png", "Oscillated Coral", "currency", vec!["currency"]),
-        ("afterglow_icon.png", "Afterflow Coral", "currency", vec!["currency"]),
+        ("shell_icon.png", "Shell Credit", "misc", vec!["currency"]),
+        ("astrite_icon.png", "Astrite", "misc", vec!["currency"]),
+        ("lustrous_icon.png", "Lustrous Tide", "misc", vec!["currency"]),
+        ("radiant_icon.png", "Radiant Tide", "misc", vec!["currency"]),
+        ("oscillated_icon.png", "Oscillated Coral", "misc", vec!["currency"]),
+        ("afterglow_icon.png", "Afterflow Coral", "misc", vec!["currency"]),
     ]
 }
 

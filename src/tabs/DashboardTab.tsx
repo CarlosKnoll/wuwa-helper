@@ -3,6 +3,7 @@ import { Coins, Target, Calculator, Plus, Trash2, Trophy, Zap, Users, Calendar, 
 import { Goal } from '../types';
 import { safeInvoke } from '../utils';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { CurrencyIcon } from '../components/CurrencyIcon';
 
 export default function DashboardTab({ characters, resources, pityStatus, onUpdate }: any) {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -249,7 +250,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <Coins className="w-5 h-5 text-yellow-400" />
+            <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
             Resources
           </h2>
           {!editingResources ? (
@@ -280,7 +281,10 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         {editingResources ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Astrite</label>
+              <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
+                <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                Astrite
+              </label>
               <input
                 type="number"
                 value={resourcesForm.astrite}
@@ -289,7 +293,10 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Lustrous Tide</label>
+              <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
+                <CurrencyIcon currencyName="lustrous_tide" className="w-5 h-5" />
+                Lustrous Tide
+              </label>
               <input
                 type="number"
                 value={resourcesForm.lustrous_tide}
@@ -298,7 +305,10 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Radiant Tide</label>
+              <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
+                <CurrencyIcon currencyName="radiant_tide" className="w-5 h-5" />
+                Radiant Tide
+              </label>
               <input
                 type="number"
                 value={resourcesForm.radiant_tide}
@@ -307,7 +317,10 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Forged Tide</label>
+              <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
+                <CurrencyIcon currencyName="forged_tide" className="w-5 h-5" />
+                Forged Tide
+              </label>
               <input
                 type="number"
                 value={resourcesForm.forged_tide}
@@ -319,19 +332,31 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-slate-800/50 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Astrite</div>
+              <div className="text-xs text-slate-400 flex items-center gap-1">
+                <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                Astrite
+              </div>
               <div className="text-lg font-bold text-yellow-400">{astrite.toLocaleString()}</div>
             </div>
             <div className="bg-slate-800/50 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Lustrous</div>
+              <div className="text-xs text-slate-400 flex items-center gap-1">
+                <CurrencyIcon currencyName="lustrous_tide" className="w-5 h-5" />
+                Lustrous
+              </div>
               <div className="text-lg font-bold text-blue-400">{lustrousTide}</div>
             </div>
             <div className="bg-slate-800/50 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Radiant</div>
+              <div className="text-xs text-slate-400 flex items-center gap-1">
+                <CurrencyIcon currencyName="radiant_tide" className="w-5 h-5" />
+                Radiant
+              </div>
               <div className="text-lg font-bold text-purple-400">{radiantTide}</div>
             </div>
             <div className="bg-slate-800/50 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Forged</div>
+              <div className="text-xs text-slate-400 flex items-center gap-1">
+                <CurrencyIcon currencyName="forged_tide" className="w-5 h-5" />
+                Forged
+              </div>
               <div className="text-lg font-bold text-orange-400">{forgedTide}</div>
             </div>
           </div>
@@ -346,17 +371,26 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-lg p-4 border border-yellow-500/30">
-            <div className="text-sm text-yellow-400 mb-1">From Astrite</div>
+            <div className="text-sm text-yellow-400 mb-1 flex items-center gap-1">
+              <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+              From Astrite
+            </div>
             <div className="text-3xl font-bold text-yellow-400">{pullsFromAstrite}</div>
             <div className="text-xs text-slate-400 mt-1">{astrite} ÷ 160</div>
           </div>
           <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-lg p-4 border border-purple-500/30">
-            <div className="text-sm text-purple-400 mb-1">From Tides</div>
+            <div className="text-sm text-purple-400 mb-1 flex items-center gap-1">
+              <CurrencyIcon currencyName="radiant_tide" className="w-5 h-5" />
+              From Tides
+            </div>
             <div className="text-3xl font-bold text-purple-400">{pullsFromTides}</div>
             <div className="text-xs text-slate-400 mt-1">Radiant Tides</div>
           </div>
           <div className="bg-gradient-to-br from-pink-500/10 to-pink-600/10 rounded-lg p-4 border border-pink-500/30">
-            <div className="text-sm text-pink-400 mb-1">From Corals</div>
+            <div className="text-sm text-pink-400 mb-1 flex items-center gap-1">
+              <CurrencyIcon currencyName="afterglow_coral" className="w-5 h-5" />
+              From Corals
+            </div>
             <div className="text-3xl font-bold text-pink-400">{pullsFromCorals}</div>
             <div className="text-xs text-slate-400 mt-1">{afterglowCoral} ÷ 8</div>
           </div>
@@ -458,7 +492,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               <Trophy className="w-4 h-4" />
               Tower of Adversity
             </div>
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2">
+              <CurrencyIcon currencyName="astrite" className="w-8 h-8" />
               <span className="text-3xl font-bold text-yellow-400">{endgameData.tower_astrite}</span>
               <span className="text-slate-400">/ {endgameData.tower_max}</span>
             </div>
@@ -476,7 +511,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               <Zap className="w-4 h-4" />
               Whimpering Wastes
             </div>
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2">
+              <CurrencyIcon currencyName="astrite" className="w-8 h-8" />
               <span className="text-3xl font-bold text-yellow-400">{endgameData.wastes_astrite}</span>
               <span className="text-slate-400">/ {endgameData.wastes_max}</span>
             </div>
@@ -494,7 +530,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               <Users className="w-4 h-4" />
               Doubled Pawns Matrix
             </div>
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2">
+              <CurrencyIcon currencyName="astrite" className="w-8 h-8" />
               <span className="text-3xl font-bold text-yellow-400">{endgameData.matrix_astrite}</span>
               <span className="text-slate-400">/ {endgameData.matrix_max}</span>
             </div>
@@ -510,7 +547,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-400">Total Endgame Astrite This Cycle:</span>
-            <span className="text-xl font-bold text-yellow-400">
+            <span className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+              <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
               {endgameData.tower_astrite + endgameData.wastes_astrite + endgameData.matrix_astrite} 
               <span className="text-sm text-slate-400 ml-1">/ {endgameData.tower_max + endgameData.wastes_max + endgameData.matrix_max}</span>
             </span>
@@ -668,7 +706,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                       </span>
                       {goal.astrite_needed && (
                         <div className="flex items-center gap-1 text-sm text-purple-400 mt-2">
-                          <Coins className="w-4 h-4" />
+                          <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
                           {goal.astrite_needed.toLocaleString()} Astrite
                         </div>
                       )}
