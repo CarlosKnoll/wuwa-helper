@@ -269,3 +269,134 @@ export function calculatePityFromPulls(pulls: Array<Omit<PullHistory, 'id'>>) {
 
   return { currentPity, guaranteed };
 }
+
+/* =======================
+   Endgame Astrite Calculation Utilities
+   ======================= */
+
+/**
+ * Calculate Tower of Adversity astrite based on total stars
+ * - 3-24 stars: 75 astrite per 3 stars (8 tiers × 75 = 600)
+ * - 27-36 stars: 50 astrite per 3 stars (4 tiers × 50 = 200)
+ * Total max: 800 astrite
+ */
+export function calculateTowerAstrite(totalStars: number): number {
+  let astrite = 0;
+  
+  // First tier: 3-24 stars (8 rewards of 75 each)
+  const tier1Stars = Math.min(totalStars, 24);
+  const tier1Rewards = Math.floor(tier1Stars / 3);
+  astrite += tier1Rewards * 75;
+  
+  // Second tier: 27-36 stars (4 rewards of 50 each)
+  if (totalStars > 24) {
+    const tier2Stars = Math.min(totalStars - 24, 12);
+    const tier2Rewards = Math.floor(tier2Stars / 3);
+    astrite += tier2Rewards * 50;
+  }
+  
+  return astrite;
+}
+
+/**
+ * Calculate Whimpering Wastes - Chasm astrite based on score
+ * Breakpoints: 5000, 7000, 9500, 12000, 15000 (125 astrite each)
+ * Total max: 625 astrite (but documentation says 600, using 5 breakpoints)
+ */
+export function calculateChasmAstrite(score: number): number {
+  const breakpoints = [5000, 7000, 9500, 12000, 15000];
+  const rewardPerBreakpoint = 125;
+  
+  let astrite = 0;
+  for (const breakpoint of breakpoints) {
+    if (score >= breakpoint) {
+      astrite += rewardPerBreakpoint;
+    }
+  }
+  
+  return astrite;
+}
+
+/**
+ * Calculate Whimpering Wastes - Torrents astrite based on score
+ * Breakpoints: 3500 (75), 4000 (50), 4500 (50)
+ * Total max: 175 astrite (but documentation says 200, need to verify)
+ */
+export function calculateTorrentsAstrite(score: number): number {
+  let astrite = 0;
+  
+  if (score >= 3500) astrite += 75;
+  if (score >= 4000) astrite += 50;
+  if (score >= 4500) astrite += 50;
+  
+  return astrite;
+}
+
+/**
+ * Calculate Troop Matrix - Stability Accords astrite based on score
+ * Breakpoints: 4800, 7200, 10000 (50 astrite each)
+ * Total max: 150 astrite
+ */
+export function calculateStabilityAccordsAstrite(score: number): number {
+  const breakpoints = [4800, 7200, 10000];
+  const rewardPerBreakpoint = 50;
+  
+  let astrite = 0;
+  for (const breakpoint of breakpoints) {
+    if (score >= breakpoint) {
+      astrite += rewardPerBreakpoint;
+    }
+  }
+  
+  return astrite;
+}
+
+/**
+ * Calculate Troop Matrix - Singularity Expansion astrite
+ * Based on total score and team count achievements
+ */
+export function calculateSingularityExpansionAstrite(
+  totalScore: number,
+  teamScores: number[]
+): { astrite: number; missingNonAstriteRewards: string[] } {
+  let astrite = 0;
+  const missingRewards: string[] = [];
+  
+  // Score-based rewards
+  const scoreBreakpoints = [
+    { score: 12000, reward: 50 },
+    { score: 16000, reward: 50 },
+    { score: 21000, reward: 50 },
+  ];
+  
+  for (const breakpoint of scoreBreakpoints) {
+    if (totalScore >= breakpoint.score) {
+      astrite += breakpoint.reward;
+    }
+  }
+  
+  // Non-astrite score rewards (just for notification)
+  const nonAstriteBreakpoints = [29000, 37000, 45000, 58000];
+  for (const breakpoint of nonAstriteBreakpoints) {
+    if (totalScore >= breakpoint) {
+      // Already achieved, no notification needed
+    } else {
+      // Could be achieved - note it
+      missingRewards.push(`${breakpoint} total score`);
+      break; // Only show the next missing one
+    }
+  }
+  
+  // Team count achievements (reaching 5000 with X teams)
+  const teamsAt5000 = teamScores.filter(score => score >= 5000).length;
+  
+  if (teamsAt5000 >= 3) astrite += 50;
+  if (teamsAt5000 >= 4) astrite += 50;
+  if (teamsAt5000 >= 6) {
+    // Non-astrite reward, just note it
+  } else if (teamsAt5000 >= 4) {
+    missingRewards.push('6 teams at 5000+ (non-astrite reward)');
+  }
+  
+  return { astrite, missingNonAstriteRewards: missingRewards };
+}

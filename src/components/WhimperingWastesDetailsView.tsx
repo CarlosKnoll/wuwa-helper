@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Zap, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { WhimperingWastes, TorrentsStage } from '../types';
-import { safeInvoke } from '../utils';
+import { safeInvoke, calculateChasmAstrite, calculateTorrentsAstrite } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
 import { CurrencyIcon } from './CurrencyIcon';
 
@@ -25,9 +25,7 @@ export default function WhimperingWastesDetailsView({
   // Main edit states
   const [editChasmStage, setEditChasmStage] = useState(0);
   const [editChasmPoints, setEditChasmPoints] = useState(0);
-  const [editChasmAstrite, setEditChasmAstrite] = useState(0);
   const [editTorrentsPoints, setEditTorrentsPoints] = useState(0);
-  const [editTorrentsAstrite, setEditTorrentsAstrite] = useState(0);
   const [editNotes, setEditNotes] = useState('');
 
   // Stage edit states
@@ -45,9 +43,7 @@ export default function WhimperingWastesDetailsView({
     if (wastesInfo) {
       setEditChasmStage(wastesInfo.chasm_highest_stage);
       setEditChasmPoints(wastesInfo.chasm_total_points);
-      setEditChasmAstrite(wastesInfo.chasm_astrite);
       setEditTorrentsPoints(wastesInfo.torrents_total_points);
-      setEditTorrentsAstrite(wastesInfo.torrents_astrite);
       setEditNotes(wastesInfo.notes || '');
       setEditing(true);
     }
@@ -56,12 +52,15 @@ export default function WhimperingWastesDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
+      const calculatedChasmAstrite = calculateChasmAstrite(editChasmPoints);
+      const calculatedTorrentsAstrite = calculateTorrentsAstrite(editTorrentsPoints);
+      
       await safeInvoke('update_whimpering_wastes', {
         chasmHighestStage: editChasmStage,
         chasmTotalPoints: editChasmPoints,
-        chasmAstrite: editChasmAstrite,
+        chasmAstrite: calculatedChasmAstrite,
         torrentsTotalPoints: editTorrentsPoints,
-        torrentsAstrite: editTorrentsAstrite,
+        torrentsAstrite: calculatedTorrentsAstrite,
         notes: editNotes || null
       });
       setEditing(false);
@@ -198,15 +197,14 @@ export default function WhimperingWastesDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Chasm Astrite</label>
-                <input
-                  type="number"
-                  value={editChasmAstrite}
-                  onChange={(e) => setEditChasmAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="600"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Chasm Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {calculateChasmAstrite(editChasmPoints)} / 625
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Breakpoints at 5k, 7k, 9.5k, 12k, 15k (125 each)
+                </p>
               </div>
               <div>
                 <label className="text-sm text-slate-400 block mb-1">Torrents Points</label>
@@ -219,15 +217,14 @@ export default function WhimperingWastesDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Torrents Astrite</label>
-                <input
-                  type="number"
-                  value={editTorrentsAstrite}
-                  onChange={(e) => setEditTorrentsAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="200"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Torrents Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {calculateTorrentsAstrite(editTorrentsPoints)} / 175
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Breakpoints at 3.5k (75), 4k (50), 4.5k (50)
+                </p>
               </div>
             </div>
             <div>

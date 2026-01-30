@@ -44,16 +44,19 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 | whimpering_wastes   | 0        | 0       | 8       | Table |
 
 
-### To-Do:
-This branch is focused on slowly and granullarly implement assets loading into the existing tabs.
+### To-Do (Assets):
+Since this branch is focused on slowly and granullarly implement assets loading into the existing tabs, these are the goals before pulling into main.
 
 #### Pity Counter:
-- Load assets for pull history
+- Load assets for pull history (either limit pull history table or make the icons lazy load to prevent multiple assets loading at one time)
 
-#### Build:
-- Complete revamp of build modal, of course with assets
+#### Build modals:
+Complete revamp of build modal, of course with assets.
+- Show character card on modal.
+- Show weapon icon on modal.
+- Show echoes sets and echoes icons on modal.
 
-### Remaining To-Dos unrelated to assets:
+### Remaining To-Dos (Unrelated to assets):
 #### Dashboard:
 - Editing notes not showing time category (longterm, immediate, so on). 
 
@@ -73,8 +76,8 @@ This branch is focused on slowly and granullarly implement assets loading into t
 
 #### Builds:
 - Remove the ability to add echoes to a build if there are already 5 echoes.
-- Modify new characters talents field generation to start at level 1
-- Add fields to represent traces upgrades.
+- Modify new characters talents field generation to start at level 1 (currently starts at 0).
+- Add clickable fields to represent traces upgrades.
 - Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
 - Change the talents order to reflect ingame order (swap forte and liberation)
 
@@ -82,4 +85,8 @@ This branch is focused on slowly and granullarly implement assets loading into t
 - Add calculation to display pity at which the 5 star was pulled.
 
 #### Endgame:
-- Add functionailty to automatically calculate astrite earned based on user input for endgame progress (and, in turn, remove ability to directly edit those fields)
+- Add functionailty to automatically calculate endgame progress based on individual user input of progress (and, in turn, remove ability to directly edit those fields), so:
+    - In Tower of Adversity, calculate the stars earned.
+    - In Whimpering Wastes and Troop Matrix, calculate the points.
+
+- Add subtle alerts for troop matrix missing rewards that do not reward astrite: The breakpoints are in Total Singularity Expansion Score (sum of all teams scores): 29000, 37000, 45000 and 58000, and reaching 5000 points with 6 teams.

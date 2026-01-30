@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Users, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { TroopMatrix, MatrixTeam } from '../types';
-import { safeInvoke } from '../utils';
+import { safeInvoke, calculateStabilityAccordsAstrite, calculateSingularityExpansionAstrite } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
 import { CurrencyIcon } from './CurrencyIcon';
 
@@ -25,9 +25,7 @@ export default function TroopMatrixDetailsView({
   // Main edit states
   const [editUnlocked, setEditUnlocked] = useState(false);
   const [editStabilityPoints, setEditStabilityPoints] = useState(0);
-  const [editStabilityAstrite, setEditStabilityAstrite] = useState(0);
   const [editSingularityPoints, setEditSingularityPoints] = useState(0);
-  const [editSingularityAstrite, setEditSingularityAstrite] = useState(0);
   const [editSingularityRound, setEditSingularityRound] = useState(0);
   const [editNotes, setEditNotes] = useState('');
 
@@ -45,9 +43,7 @@ export default function TroopMatrixDetailsView({
     if (troopMatrix) {
       setEditUnlocked(troopMatrix.unlocked);
       setEditStabilityPoints(troopMatrix.stability_accords_points);
-      setEditStabilityAstrite(troopMatrix.stability_accords_astrite);
       setEditSingularityPoints(troopMatrix.singularity_expansion_points);
-      setEditSingularityAstrite(troopMatrix.singularity_expansion_astrite);
       setEditSingularityRound(troopMatrix.singularity_expansion_highest_round);
       setEditNotes(troopMatrix.notes || '');
       setEditing(true);
@@ -57,12 +53,21 @@ export default function TroopMatrixDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
+      const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(editStabilityPoints);
+      
+      // Get all singularity team scores for proper calculation
+      const singularityTeamScores = singularityTeams.map(t => t.points);
+      const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
+        editSingularityPoints,
+        singularityTeamScores
+      );
+      
       await safeInvoke('update_troop_matrix', {
         unlocked: editUnlocked,
         stabilityAccordsPoints: editStabilityPoints,
-        stabilityAccordsAstrite: editStabilityAstrite,
+        stabilityAccordsAstrite: calculatedStabilityAstrite,
         singularityExpansionPoints: editSingularityPoints,
-        singularityExpansionAstrite: editSingularityAstrite,
+        singularityExpansionAstrite: calculatedSingularityAstrite,
         singularityExpansionHighestRound: editSingularityRound,
         notes: editNotes || null
       });
@@ -291,7 +296,7 @@ export default function TroopMatrixDetailsView({
                 Unlocked (required to track teams)
               </label>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-slate-400 block mb-1">Stability Points</label>
                 <input
@@ -303,15 +308,14 @@ export default function TroopMatrixDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Stability Astrite</label>
-                <input
-                  type="number"
-                  value={editStabilityAstrite}
-                  onChange={(e) => setEditStabilityAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="150"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Stability Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {calculateStabilityAccordsAstrite(editStabilityPoints)} / 150
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Breakpoints at 4.8k, 7.2k, 10k (50 each)
+                </p>
               </div>
               <div>
                 <label className="text-sm text-slate-400 block mb-1">Singularity Points</label>
@@ -324,17 +328,35 @@ export default function TroopMatrixDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Singularity Astrite</label>
-                <input
-                  type="number"
-                  value={editSingularityAstrite}
-                  onChange={(e) => setEditSingularityAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="250"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Singularity Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {(() => {
+                    const singularityTeamScores = singularityTeams.map(t => t.points);
+                    const { astrite, missingNonAstriteRewards } = calculateSingularityExpansionAstrite(
+                      editSingularityPoints,
+                      singularityTeamScores
+                    );
+                    return astrite;
+                  })()} / 250
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Score: 12k, 16k, 21k (50 each) + Teams at 5k: 3 teams (50), 4 teams (50)
+                </p>
+                {(() => {
+                  const singularityTeamScores = singularityTeams.map(t => t.points);
+                  const { missingNonAstriteRewards } = calculateSingularityExpansionAstrite(
+                    editSingularityPoints,
+                    singularityTeamScores
+                  );
+                  return missingNonAstriteRewards.length > 0 && (
+                    <p className="text-xs text-amber-400 mt-1">
+                      ⚠️ Missing rewards: {missingNonAstriteRewards.join(', ')}
+                    </p>
+                  );
+                })()}
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="text-sm text-slate-400 block mb-1">Highest Round</label>
                 <input
                   type="number"
