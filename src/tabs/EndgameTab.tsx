@@ -16,6 +16,7 @@ import TowerDetailsView from '../components/TowerDetailsView';
 import WhimperingWastesDetailsView from '../components/WhimperingWastesDetailsView';
 import TroopMatrixDetailsView from '../components/TroopMatrixDetailsView';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { CurrencyIcon } from '../components/CurrencyIcon';
 
 type EndgameMode = 'tower' | 'wastes' | 'matrix' | null;
 
@@ -250,7 +251,8 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Astrite Earned:</span>
-                    <span className="font-semibold text-yellow-400">
+                    <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                      <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
                       {towerCompletion.earned} / {towerCompletion.max}
                     </span>
                   </div>
@@ -303,7 +305,8 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Astrite Earned:</span>
-                    <span className="font-semibold text-yellow-400">
+                    <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                      <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
                       {wastesCompletion.earned} / {wastesCompletion.max}
                     </span>
                   </div>
@@ -356,7 +359,8 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Astrite Earned:</span>
-                    <span className="font-semibold text-yellow-400">
+                    <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                      <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
                       {matrixCompletion.earned} / {matrixCompletion.max}
                     </span>
                   </div>

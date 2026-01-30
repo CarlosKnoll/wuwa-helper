@@ -3,6 +3,7 @@ import { Users, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { TroopMatrix, MatrixTeam } from '../types';
 import { safeInvoke } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
+import { CurrencyIcon } from './CurrencyIcon';
 
 interface TroopMatrixDetailsViewProps {
   troopMatrix: TroopMatrix | null;
@@ -383,7 +384,10 @@ export default function TroopMatrixDetailsView({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{troopMatrix.stability_accords_astrite} / 150</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {troopMatrix.stability_accords_astrite} / 150
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
@@ -411,7 +415,10 @@ export default function TroopMatrixDetailsView({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{troopMatrix.singularity_expansion_astrite} / 250</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {troopMatrix.singularity_expansion_astrite} / 250
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 

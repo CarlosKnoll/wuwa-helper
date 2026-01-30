@@ -3,6 +3,7 @@ import { Zap, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { WhimperingWastes, TorrentsStage } from '../types';
 import { safeInvoke } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
+import { CurrencyIcon } from './CurrencyIcon';
 
 interface WhimperingWastesDetailsViewProps {
   wastesInfo: WhimperingWastes | null;
@@ -272,7 +273,10 @@ export default function WhimperingWastesDetailsView({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{wastesInfo.chasm_astrite} / 600</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {wastesInfo.chasm_astrite} / 600
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
@@ -293,7 +297,10 @@ export default function WhimperingWastesDetailsView({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{wastesInfo.torrents_astrite} / 200</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {wastesInfo.torrents_astrite} / 200
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 

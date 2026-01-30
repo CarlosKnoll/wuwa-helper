@@ -3,6 +3,7 @@ import { Trophy, Edit2, Save, X, Plus, Trash2, Star } from 'lucide-react';
 import { TowerOfAdversity, TowerDetails, TowerFloor, TowerAreaEffect, TowerTeam } from '../types';
 import { safeInvoke } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
+import { CurrencyIcon } from './CurrencyIcon';
 
 interface TowerDetailsViewProps {
   towerInfo: TowerOfAdversity | null;
@@ -349,7 +350,10 @@ export default function TowerDetailsView({
             </div>
             <div className="bg-slate-800/50 rounded-lg p-4">
               <p className="text-sm text-slate-400 mb-1">Astrite Earned</p>
-              <p className="text-2xl font-bold text-yellow-400">{towerInfo.astrite_earned} / 800</p>
+              <p className="text-2xl font-bold text-yellow-400 flex items-center gap-2">
+                <CurrencyIcon currencyName="astrite" className="w-6 h-6" />
+                {towerInfo.astrite_earned} / 800
+              </p>
             </div>
             <div className="bg-slate-800/50 rounded-lg p-4">
               <p className="text-sm text-slate-400 mb-1">Completion</p>

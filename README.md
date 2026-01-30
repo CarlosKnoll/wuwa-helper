@@ -50,9 +50,6 @@ This branch is focused on slowly and granullarly implement assets loading into t
 #### Pity Counter:
 - Load assets for pull history
 
-#### Endgame:
-- Add astrite icon besides the corresponding fields.
-
 #### Build:
 - Complete revamp of build modal, of course with assets
 
@@ -83,3 +80,6 @@ This branch is focused on slowly and granullarly implement assets loading into t
 
 #### Pity/Tracker:
 - Add calculation to display pity at which the 5 star was pulled.
+
+#### Endgame:
+- Add functionailty to automatically calculate astrite earned based on user input for endgame progress (and, in turn, remove ability to directly edit those fields)
