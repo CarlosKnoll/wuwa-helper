@@ -47,9 +47,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 ### To-Do (Assets):
 Since this branch is focused on slowly and granullarly implement assets loading into the existing tabs, these are the goals before pulling into main.
 
-#### Pity Counter:
-- Load assets for pull history (either limit pull history table or make the icons lazy load to prevent multiple assets loading at one time)
-
 #### Build modals:
 Complete revamp of build modal, of course with assets.
 - Show character card on modal.
@@ -82,11 +79,20 @@ Complete revamp of build modal, of course with assets.
 - Change the talents order to reflect ingame order (swap forte and liberation)
 
 #### Pity/Tracker:
-- Add calculation to display pity at which the 5 star was pulled.
+- Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
+- Import JSON ignores 10 pulls (these are recorded with the same timestamp)
+- If JSON import fails, subsequent attempts are ignored.
 
 #### Endgame:
 - Add functionailty to automatically calculate endgame progress based on individual user input of progress (and, in turn, remove ability to directly edit those fields), so:
-    - In Tower of Adversity, calculate the stars earned.
+    - In Tower of Adversity, remove the ability to edit the total stars achieved manually.
     - In Whimpering Wastes and Troop Matrix, calculate the points.
 
 - Add subtle alerts for troop matrix missing rewards that do not reward astrite: The breakpoints are in Total Singularity Expansion Score (sum of all teams scores): 29000, 37000, 45000 and 58000, and reaching 5000 points with 6 teams.
+
+#### Exploration:
+- Add collpasing for the region cards.
+
+### Cleanup:
+- Sanity check for loose ends.
+- Remove any remainder debug statments.

@@ -1,39 +1,3 @@
-// src-tauri/src/assets/mappings/weapons.rs
-//! Weapon asset mappings
-//!
-//! ## How to Add Weapon Mappings
-//!
-//! ### Step 1: Download assets
-//! ```bash
-//! python ww_asset_manager.py
-//! ```
-//!
-//! ### Step 2: Check weapon folders
-//! Look in these directories:
-//! - `ww_assets/weapons/broadblade/` (2101XXXX pattern)
-//! - `ww_assets/weapons/sword/` (2102XXXX pattern)
-//! - `ww_assets/weapons/pistol/` (2103XXXX pattern)
-//! - `ww_assets/weapons/gauntlet/` (2104XXXX pattern)
-//! - `ww_assets/weapons/rectifier/` (2105XXXX pattern)
-//!
-//! ### Step 3: Identify the weapon
-//! - Open the image file
-//! - Match it to Prydwen.gg or in-game
-//! - Note: name, rarity, element (if any), weapon type
-//!
-//! ### Step 4: Add to the appropriate list below
-//!
-//! ### Example Entry
-//! ```rust
-//! ("21010001.webp", "Lustrous Razor", 5, Some("Spectro"), "Broadblade", vec!["5star", "limited"]),
-//! ```
-//!
-//! ### Template
-//! Copy and modify this:
-//! ```
-//! ("FILENAME.webp", "Display Name", RARITY, Some("Element") or None, "WeaponType", vec!["tag1", "tag2"]),
-//! ```
-
 use crate::assets::mapper::AssetMetadata;
 use std::collections::HashMap;
 
@@ -48,8 +12,6 @@ fn get_weapon_type_icons() -> Vec<(&'static str, &'static str, &'static str)> {
     ]
 }
 
-/// Get broadblade weapon mappings (2101XXXX)
-/// Format: (filename, display_name, rarity, weapon_type, tags)
 fn get_broadblades() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
         //5-STARS LIMITED WEAPONS
@@ -89,7 +51,6 @@ fn get_broadblades() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&
     ]
 }
 
-/// Get sword weapon mappings (2102XXXX)
 fn get_swords() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
         //5-STARS LIMITED WEAPONS
@@ -129,7 +90,6 @@ fn get_swords() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'stat
     ]
 }
 
-/// Get pistol weapon mappings (2103XXXX)
 fn get_pistols() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
         //5-STARS LIMITED WEAPONS
@@ -153,7 +113,7 @@ fn get_pistols() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'sta
         ("21030104.webp", "Solar Flame", 4, "Pistol", vec!["4stars"]),
 
         //3-STARS WEAPONS
-        ("21030013.webp", "Pistol of Night", 3, "Pistol", vec!["3stars"]),
+        ("21030013.webp", "Pistols of Night", 3, "Pistol", vec!["3stars"]),
         ("21030023.webp", "Originite: Type III", 3, "Pistol", vec!["3stars"]),
         ("21030043.webp", "Pistols of Voyager", 3, "Pistol", vec!["3stars"]),
         ("21030053.webp", "Guardian Pistols", 3, "Pistol", vec!["3stars"]),
@@ -166,7 +126,6 @@ fn get_pistols() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'sta
     ]
 }
 
-/// Get gauntlet weapon mappings (2104XXXX)
 fn get_gauntlets() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
         //5-STARS LIMITED WEAPONS
@@ -203,7 +162,6 @@ fn get_gauntlets() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'s
     ]
 }
 
-/// Get rectifier weapon mappings (2105XXXX)
 fn get_rectifiers() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
         //5-STARS LIMITED WEAPONS

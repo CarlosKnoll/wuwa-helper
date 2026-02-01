@@ -100,13 +100,11 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
     floorResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         newFloors[towerTypes[index]] = result.value as TowerFloor[];
-        console.log(`Loaded ${(result.value as TowerFloor[]).length} floors for ${towerTypes[index]}`);
       } else {
         console.error(`Failed to load floors for ${towerTypes[index]}:`, result.reason);
       }
     });
     setTowerFloors(newFloors);
-    console.log('Total floor data:', newFloors);
   };
 
   const handleResetConfirm = async () => {

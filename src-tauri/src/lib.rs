@@ -39,6 +39,7 @@ pub fn run() {
             account::get_resources,
             account::update_resources,
             gacha::get_pity_status,
+            gacha::get_pull_count,
             gacha::get_pull_history,
             gacha::check_pull_exists,
             gacha::add_pull,

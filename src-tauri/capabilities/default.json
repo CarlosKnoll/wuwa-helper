@@ -13,6 +13,8 @@
     "fs:allow-write-file",
     "fs:allow-copy-file",
     "fs:allow-appdata-read-recursive",
-    "fs:allow-appdata-write-recursive"
+    "fs:allow-appdata-write-recursive",
+    "shell:default",
+    "shell:allow-open"
   ]
 }

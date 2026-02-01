@@ -24,6 +24,7 @@ pub struct PullHistory {
     pub is_guaranteed: bool,
     pub pull_date: String,
     pub notes: Option<String>,
+    pub group_order: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -50,9 +51,9 @@ pub fn get_pull_history(app: tauri::AppHandle) -> Result<Vec<PullHistory>, Strin
     let conn = init_db(&app)?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, banner_type, pull_number, item_name, rarity, item_type, is_guaranteed, pull_date, notes
+        "SELECT id, banner_type, pull_number, item_name, rarity, item_type, is_guaranteed, pull_date, notes, group_order
          FROM pull_history
-         ORDER BY pull_date DESC, id DESC",
+         ORDER BY pull_date DESC, COALESCE(group_order, 0) DESC, id DESC",
     ).map_err(|e| e.to_string())?;
 
     let pulls = stmt.query_map([], |row| {
@@ -66,6 +67,7 @@ pub fn get_pull_history(app: tauri::AppHandle) -> Result<Vec<PullHistory>, Strin
             is_guaranteed: row.get(6)?,
             pull_date: row.get(7)?,
             notes: row.get(8)?,
+            group_order: row.get(9)?,
         })
     })
     .map_err(|e| e.to_string())?
@@ -73,6 +75,25 @@ pub fn get_pull_history(app: tauri::AppHandle) -> Result<Vec<PullHistory>, Strin
     .map_err(|e| e.to_string())?;
 
     Ok(pulls)
+}
+
+#[tauri::command]
+pub fn get_pull_count(
+    app: tauri::AppHandle,
+    banner_type: String,
+    item_name: String,
+    pull_date: String,
+) -> Result<i64, String> {
+    let conn = init_db(&app)?;
+
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM pull_history
+         WHERE banner_type = ? AND item_name = ? AND pull_date = ?",
+        params![banner_type, item_name, pull_date],
+        |row| row.get(0),
+    ).map_err(|e| e.to_string())?;
+
+    Ok(count)
 }
 
 #[tauri::command]
@@ -106,8 +127,14 @@ pub fn add_pull(
     is_guaranteed: bool,
     pull_date: String,
     notes: Option<String>,
+    group_order: Option<i64>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
+
+    // Wrap in a transaction so the MAX query and INSERT are atomic.
+    // Without this, concurrent connections can read the same MAX and
+    // both try to insert the same pull_number.
+    conn.execute_batch("BEGIN IMMEDIATE").map_err(|e| e.to_string())?;
 
     let pull_number: i64 = conn.query_row(
         "SELECT COALESCE(MAX(pull_number), 0) FROM pull_history WHERE banner_type = ?",
@@ -115,10 +142,10 @@ pub fn add_pull(
         |row| row.get(0),
     ).unwrap_or(0) + 1;
 
-    conn.execute(
+    let result = conn.execute(
         "INSERT INTO pull_history
-        (banner_type, pull_number, item_name, rarity, item_type, is_guaranteed, pull_date, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (banner_type, pull_number, item_name, rarity, item_type, is_guaranteed, pull_date, notes, group_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         params![
             banner_type,
             pull_number,
@@ -127,11 +154,21 @@ pub fn add_pull(
             item_type,
             is_guaranteed,
             pull_date,
-            notes
+            notes,
+            group_order
         ],
-    ).map_err(|e| e.to_string())?;
+    );
 
-    Ok("Pull added".into())
+    match result {
+        Ok(_) => {
+            conn.execute_batch("COMMIT").map_err(|e| e.to_string())?;
+            Ok("Pull added".into())
+        }
+        Err(e) => {
+            let _ = conn.execute_batch("ROLLBACK");
+            Err(e.to_string())
+        }
+    }
 }
 
 #[tauri::command]
@@ -223,16 +260,17 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
             };
 
             fetched += records.len();
-            let mut stop = false;
+
+            eprintln!("[DEBUG] === PAGE {} | {} records ===", page, records.len());
 
             for r in records {
-                // Normalize the incoming date to standard format
                 let normalized_date = normalize_date_format(&r.time);
-                
-                // Check for duplicates - need to handle both:
-                // 1. Exact matches (same format)
-                // 2. Timezone offset matches (API time in local vs DB time in UTC)
-                // The API appears to return UTC time despite not having timezone markers
+
+                eprintln!(
+                    "[DEBUG] INCOMING | name='{}' | rarity={} | raw_time='{}' | normalized='{}'",
+                    r.name, r.quality_level, r.time, normalized_date
+                );
+
                 let exists: bool = conn.query_row(
                     "SELECT EXISTS(
                         SELECT 1 FROM pull_history
@@ -244,10 +282,32 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     |row| row.get(0),
                 ).unwrap_or(false);
 
+                // Count ALL rows for this (banner, name) ignoring date
+                let count_any_date: i64 = conn.query_row(
+                    "SELECT COUNT(*) FROM pull_history WHERE banner_type = ? AND item_name = ?",
+                    params![banner, r.name],
+                    |row| row.get(0),
+                ).unwrap_or(0);
+
+                // Fetch actual stored dates in their own block so the stmt is dropped
+                let stored_dates: Vec<String> = {
+                    let mut s = conn.prepare(
+                        "SELECT pull_date FROM pull_history WHERE banner_type = ? AND item_name = ? LIMIT 5"
+                    ).unwrap();
+                    s.query_map(params![banner, r.name], |row| row.get(0))
+                        .unwrap()
+                        .filter_map(|r| r.ok())
+                        .collect()
+                };
+
+                eprintln!(
+                    "[DEBUG] DB    | exists={} | rows_any_date={} | stored_dates={:?}",
+                    exists, count_any_date, stored_dates
+                );
 
                 if exists {
-                    stop = true;
-                    break;
+                    eprintln!("[DEBUG] -> SKIPPED");
+                    continue;
                 }
 
                 let item_type = if r.resource_type == "Resonator" {
@@ -265,13 +325,11 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     false,
                     normalized_date.clone(),
                     Some("Imported from game URL".into()),
+                    None, // group_order not available from game API
                 )?;
 
+                eprintln!("[DEBUG] -> INSERTED");
                 imported += 1;
-            }
-
-            if stop {
-                break;
             }
 
             page += 1;

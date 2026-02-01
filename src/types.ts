@@ -220,6 +220,7 @@ export interface PullHistory {
   is_guaranteed: boolean;
   pull_date: string;
   notes: string | null;
+  group_order: number | null;
 }
 
 // WuwaTracker export/import format

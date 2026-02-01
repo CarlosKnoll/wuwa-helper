@@ -31,7 +31,6 @@ export const AssetManager: React.FC = () => {
   const handleUpdate = async () => {
     const summary = await updateAssets();
     if (summary) {
-      console.log('Update complete:', summary);
       setNeedsUpdate(false);
     }
   };

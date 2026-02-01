@@ -164,6 +164,7 @@ export function wuwaTrackerPullToInternal(pull: WuwaTrackerPull, pullNumber: num
     is_guaranteed: false, // We can't determine this from WuwaTracker data
     pull_date: pull.time,
     notes: null,
+    group_order: pull.group || null,
   };
 }
 
@@ -225,27 +226,39 @@ export function importFromWuwaTrackerFormat(
 ): Map<string, Array<Omit<PullHistory, 'id'>>> {
   const pullsByBanner = new Map<string, Array<Omit<PullHistory, 'id'>>>();
 
+  console.log('[DEBUG importFromWuwaTrackerFormat] Input pull count:', wuwaData.pulls.length);
+
   // Sort pulls by time (oldest first) to maintain correct pull order
+  // The group field is preserved in group_order and will be used for display ordering
   const sortedPulls = [...wuwaData.pulls].sort((a, b) => 
     new Date(a.time).getTime() - new Date(b.time).getTime()
   );
 
+  console.log('[DEBUG importFromWuwaTrackerFormat] After sort, count:', sortedPulls.length);
+
   // Group by banner type and calculate pull numbers
-  sortedPulls.forEach(pull => {
+  sortedPulls.forEach((pull, index) => {
     const bannerType = cardPoolTypeToBannerType(pull.cardPoolType);
     
     // Skip beginner, selector, and other ignored banner types
     if (bannerType === null) {
+      console.log('[DEBUG importFromWuwaTrackerFormat] SKIPPED (null bannerType) index=' + index, { cardPoolType: pull.cardPoolType, name: pull.name, time: pull.time });
       return;
     }
     
     const bannerPulls = pullsByBanner.get(bannerType) || [];
     
     const internalPull = wuwaTrackerPullToInternal(pull, bannerPulls.length + 1);
+    console.log('[DEBUG importFromWuwaTrackerFormat] Converted index=' + index, { bannerType, name: internalPull.item_name, rarity: internalPull.rarity, item_type: internalPull.item_type, pull_date: internalPull.pull_date, pull_number: internalPull.pull_number });
     bannerPulls.push(internalPull);
     
     pullsByBanner.set(bannerType, bannerPulls);
   });
+
+  console.log('[DEBUG importFromWuwaTrackerFormat] Output banners:');
+  for (const [banner, pulls] of pullsByBanner) {
+    console.log('  ' + banner + ': ' + pulls.length + ' pulls');
+  }
 
   return pullsByBanner;
 }

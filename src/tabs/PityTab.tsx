@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Download, Upload, FileText, Filter, Calendar, Star } from 'lucide-react';
 import { PityStatus, PullHistory, WuwaTrackerExport } from '../types';
 import { safeInvoke, formatBannerType } from '../utils';
+import { PullHistoryItem } from '../components/PullHistoryItem';
+import { FiveStarHistory } from '../components/FiveStarHistory';
+import { open } from '@tauri-apps/plugin-shell';
 
 // Standard pool items (if pulled on featured banner, next 5-star is guaranteed)
 const STANDARD_CHARACTERS = ['Calcharo', 'Encore', 'Jianxin', 'Lingyang', 'Verina'];
@@ -145,6 +148,42 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         let processedCount = 0;
         const totalPulls = Array.from(pullsByBanner.values()).reduce((sum, pulls) => sum + pulls.length, 0);
 
+        // Pre-build two maps before the insert loop:
+        //   dbCounts  — how many rows already exist per key (queried once, before anything is inserted)
+        //   seenCount — how many times we've encountered each key so far in the incoming data
+        // A pull is only inserted when seenCount for its key exceeds dbCounts.
+        // This correctly handles 10-pulls where the same item appears twice at the
+        // same timestamp: both copies get inserted on a fresh import, and both are
+        // skipped on a re-import.
+        const dbCounts = new Map<string, number>();
+        const seenCount = new Map<string, number>();
+
+        if (!cleanImport) {
+          // Collect every unique key from the incoming data first
+          const uniqueKeys = new Set<string>();
+          for (const [, pulls] of pullsByBanner) {
+            for (const pull of pulls) {
+              uniqueKeys.add(`${pull.banner_type}|${pull.item_name}|${pull.pull_date}`);
+            }
+          }
+
+          console.log('[DEBUG PityTab] uniqueKeys count:', uniqueKeys.size, 'totalPulls:', totalPulls);
+          console.log('[DEBUG PityTab] uniqueKeys:', Array.from(uniqueKeys));
+
+          setImportProgress('Checking existing pulls...');
+          for (const key of uniqueKeys) {
+            const [bannerType, itemName, pullDate] = key.split('|');
+            console.log('[DEBUG PityTab] get_pull_count args:', { bannerType, itemName, pullDate });
+            const count = await safeInvoke('get_pull_count', {
+              bannerType,
+              itemName,
+              pullDate
+            }) as number;
+            console.log('[DEBUG PityTab] get_pull_count result for key "' + key + '":', count);
+            dbCounts.set(key, count);
+          }
+        }
+
         for (const [bannerType, pulls] of pullsByBanner) {
           for (const pull of pulls) {
             processedCount++;
@@ -153,14 +192,30 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
               setImportProgress(`Importing pulls: ${processedCount}/${totalPulls}...`);
             }
 
-            // If clean import, don't check for existing (we already cleared everything)
-            const existing = cleanImport ? false : await safeInvoke('check_pull_exists', {
-              bannerType: pull.banner_type,
-              itemName: pull.item_name,
-              pullDate: pull.pull_date
-            });
+            if (!cleanImport) {
+              const key = `${pull.banner_type}|${pull.item_name}|${pull.pull_date}`;
+              const seen = (seenCount.get(key) ?? 0) + 1;
+              seenCount.set(key, seen);
+              const dbCount = dbCounts.get(key) ?? 0;
 
-            if (!existing) {
+              console.log('[DEBUG PityTab] INSERT LOOP #' + processedCount, {
+                key,
+                seen,
+                dbCount,
+                decision: seen <= dbCount ? 'SKIP' : 'INSERT',
+                pull_name: pull.item_name,
+                pull_rarity: pull.rarity,
+                pull_date: pull.pull_date,
+              });
+
+              // Skip as long as we haven't exceeded the number already in the DB
+              if (seen <= dbCount) {
+                continue;
+              }
+            }
+
+            console.log('[DEBUG PityTab] Calling add_pull for:', pull.item_name, { bannerType: pull.banner_type, rarity: pull.rarity, itemType: pull.item_type, pullDate: pull.pull_date, groupOrder: pull.group_order });
+            try {
               await safeInvoke('add_pull', {
                 bannerType: pull.banner_type,
                 itemName: pull.item_name,
@@ -168,9 +223,13 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 itemType: pull.item_type,
                 isGuaranteed: pull.is_guaranteed,
                 pullDate: pull.pull_date,
-                notes: cleanImport ? 'Imported from WuwaTracker (Clean Import)' : 'Imported from WuwaTracker'
+                notes: cleanImport ? 'Imported from WuwaTracker (Clean Import)' : 'Imported from WuwaTracker',
+                groupOrder: pull.group_order
               });
+              console.log('[DEBUG PityTab] add_pull SUCCESS for:', pull.item_name);
               totalImported++;
+            } catch (addErr) {
+              console.error('[DEBUG PityTab] add_pull FAILED for:', pull.item_name, addErr);
             }
           }
         }
@@ -370,14 +429,12 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                   Import
                 </button>
               </div>
-              <a
-                href="https://github.com/wuwatracker/wuwatracker/blob/main/import.ps1"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-cyan-400 hover:underline mt-1 inline-block"
+              <button
+                onClick={() => open('https://github.com/wuwatracker/wuwatracker/blob/main/import.ps1')}
+                className="text-xs text-cyan-400 hover:underline mt-1 inline-block cursor-pointer"
               >
                 How to get your Convene URL →
-              </a>
+              </button>
             </div>
 
             <div className="border-t border-slate-700 pt-4">
@@ -533,51 +590,60 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             const nextIsGuaranteed = isNextGuaranteed(selectedBanner);
             
             return (
-              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 max-w-md">
-                <div className="text-sm text-slate-400 uppercase tracking-wide mb-3 flex items-center justify-between">
-                  <span>Current Pity</span>
-                  {isFeatured && (
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${nextIsGuaranteed ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                      {nextIsGuaranteed ? '✓ Guaranteed' : '50/50'}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* 5-Star Pity */}
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl font-bold text-cyan-400">{currentPity.current_pity_5star}</span>
-                      <span className="text-sm text-slate-400">/ 80</span>
-                    </div>
-
-                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-1">
-                      <div 
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300" 
-                        style={{ width: `${(currentPity.current_pity_5star / 80) * 100}%` }}
-                      />
-                    </div>
-                    
-                    <div className="text-xs text-slate-500">5-Star Pity</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Current Pity Card - Vertical Layout */}
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                  <div className="text-sm text-slate-400 uppercase tracking-wide mb-3 flex items-center justify-between">
+                    <span>Current Pity</span>
+                    {isFeatured && (
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${nextIsGuaranteed ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                        {nextIsGuaranteed ? '✓ Guaranteed' : '50/50'}
+                      </div>
+                    )}
                   </div>
 
-                  {/* 4-Star Pity */}
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-2xl font-bold text-purple-400">{currentPity.current_pity_4star}</span>
-                      <span className="text-sm text-slate-400">/ 10</span>
+                  <div className="space-y-4">
+                    {/* 5-Star Pity */}
+                    <div>
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-2xl font-bold text-cyan-400">{currentPity.current_pity_5star}</span>
+                        <span className="text-sm text-slate-400">/ 80</span>
+                      </div>
+
+                      <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-1">
+                        <div 
+                          className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300" 
+                          style={{ width: `${(currentPity.current_pity_5star / 80) * 100}%` }}
+                        />
+                      </div>
+                      
+                      <div className="text-xs text-slate-500">5-Star Pity</div>
                     </div>
 
-                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-1">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" 
-                        style={{ width: `${(currentPity.current_pity_4star / 10) * 100}%` }}
-                      />
+                    {/* 4-Star Pity */}
+                    <div>
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-2xl font-bold text-purple-400">{currentPity.current_pity_4star}</span>
+                        <span className="text-sm text-slate-400">/ 10</span>
+                      </div>
+
+                      <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden mb-1">
+                        <div 
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300" 
+                          style={{ width: `${(currentPity.current_pity_4star / 10) * 100}%` }}
+                        />
+                      </div>
+                      
+                      <div className="text-xs text-slate-500">4-Star Pity</div>
                     </div>
-                    
-                    <div className="text-xs text-slate-500">4-Star Pity</div>
                   </div>
                 </div>
+
+                {/* 5-Star Pull History */}
+                <FiveStarHistory 
+                  pulls={pullHistory}
+                  selectedBanner={selectedBanner}
+                />
               </div>
             );
           })()}
@@ -594,50 +660,16 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             </div>
           ) : (
             <div className="space-y-1">
-              {filteredPulls.map(pull => {
-                const isFeaturedBanner = selectedBanner === 'featuredCharacter' || selectedBanner === 'featuredWeapon';
-                const isStandard = pull.rarity === 5 && isStandardItem(pull.item_name, pull.item_type);
-                
-                return (
-                  <div 
-                    key={pull.id} 
-                    className={`flex items-center gap-3 px-3 py-2 rounded border ${getRarityColor(pull.rarity)} hover:brightness-110 transition-all`}
-                  >
-                    {/* Rarity Badge */}
-                    <div className={`px-2 py-1 rounded text-xs font-bold ${getRarityBadge(pull.rarity)} min-w-[40px] text-center`}>
-                      {'★'.repeat(pull.rarity)}
-                    </div>
-
-                    {/* Item Name */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{pull.item_name}</div>
-                      <div className="text-xs text-slate-400">
-                        #{pull.pull_number} • {pull.item_type}
-                      </div>
-                    </div>
-
-                    {/* Date */}
-                    <div className="text-xs text-slate-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(pull.pull_date).toLocaleDateString()}
-                    </div>
-
-                    {/* Standard Badge (for 5-star standard items on featured banners) */}
-                    {isFeaturedBanner && isStandard && (
-                      <div className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs">
-                        Standard
-                      </div>
-                    )}
-
-                    {/* Guarantee Badge */}
-                    {pull.is_guaranteed && (
-                      <div className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">
-                        Guaranteed
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {filteredPulls.map(pull => (
+                <PullHistoryItem
+                  key={pull.id}
+                  pull={pull}
+                  selectedBanner={selectedBanner}
+                  isStandardItem={isStandardItem}
+                  getRarityColor={getRarityColor}
+                  getRarityBadge={getRarityBadge}
+                />
+              ))}
             </div>
           )}
         </div>
