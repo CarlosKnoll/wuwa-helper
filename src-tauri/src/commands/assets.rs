@@ -119,6 +119,7 @@ fn parse_asset_type(s: &str) -> Result<AssetType, String> {
         "character" | "characters" => Ok(AssetType::Character),
         "weapon" | "weapons" => Ok(AssetType::Weapon),
         "echo" | "echoes" => Ok(AssetType::Echo),
+        "echo_set" | "echoset" | "echo_sets" => Ok(AssetType::EchoSet),
         "element" | "elements" => Ok(AssetType::Element),
         "misc" => Ok(AssetType::Misc),
         _ => Err(format!("Invalid asset type: {}", s)),

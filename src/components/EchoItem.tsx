@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Save, ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
+import { Edit2, Save, Plus, Trash2, X } from 'lucide-react';
 import { EchoSubstat, EchoItemProps } from '../types';
 import { safeInvoke, getRarityStars } from '../utils';
 import ConfirmDialog from './ConfirmDialog';
@@ -8,7 +8,6 @@ import ConfirmDialog from './ConfirmDialog';
 
 export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
   const [editing, setEditing] = useState(false);
-  const [showSubstats, setShowSubstats] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [form, setForm] = useState({
     echo_name: '',
@@ -145,7 +144,15 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
   const totalSubstats = visibleSubstats.length + newSubstats.length;
 
   return (
-    <div className="bg-slate-900/50 rounded-lg border border-slate-700">
+    <div className={`bg-slate-900/50 rounded-lg border-2 ${
+      form.rarity === 5 
+        ? 'border-yellow-500/50' 
+        : form.rarity === 4 
+        ? 'border-purple-500/50'
+        : form.rarity === 3
+        ? 'border-blue-500/50'
+        : 'border-green-500/50'
+    }`}>
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={deleteConfirm}
@@ -171,27 +178,18 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
                 placeholder="Echo name"
               />
             ) : (
-              <div className="font-medium text-white">{form.echo_name}</div>
+              <div className="font-semibold text-white text-base">{form.echo_name}</div>
             )}
-            <div className="flex gap-2 mt-1 text-sm text-slate-400">
-              {form.cost > 0 && <span>Cost: {form.cost}</span>}
-              {form.rarity > 0 && <span>{getRarityStars(form.rarity)}</span>}
-            </div>
+            {editing && (
+              <div className="flex gap-2 mt-1 text-sm text-slate-400">
+                {form.cost > 0 && <span>Cost: {form.cost}</span>}
+                {form.rarity > 0 && <span>{getRarityStars(form.rarity)}</span>}
+              </div>
+            )}
           </div>
           <div className="flex items-start gap-2">
             {!editing ? (
               <>
-                {form.level > 0 && (
-                  <div className="text-right">
-                    <div className="text-sm text-cyan-400">Lv.{form.level}</div>
-                  </div>
-                )}
-                {form.main_stat && (
-                  <div className="text-right">
-                    <div className="text-sm text-purple-400">{form.main_stat}</div>
-                    <div className="text-xs text-slate-400">{form.main_stat_value}</div>
-                  </div>
-                )}
                 <button
                   onClick={() => setEditing(true)}
                   className="p-1 bg-cyan-500 hover:bg-cyan-600 rounded text-xs transition-colors"
@@ -223,6 +221,16 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
             )}
           </div>
         </div>
+
+        {/* Main Stat Display (when not editing) */}
+        {!editing && form.main_stat && (
+          <div className="mb-3">
+            <div className="flex justify-between items-center bg-slate-800/50 border border-purple-500/50 rounded-lg px-3 py-2">
+              <span className="text-purple-400 font-medium">{form.main_stat}</span>
+              <span className="text-white font-medium">{form.main_stat_value}</span>
+            </div>
+          </div>
+        )}
 
         {/* Echo Main Stats Editing */}
         {editing && (
@@ -300,122 +308,116 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
         )}
       </div>
 
-      {/* Collapsible Substats Section */}
+      {/* Substats Section - Always Visible */}
       {(visibleSubstats.length > 0 || newSubstats.length > 0 || editing) && (
         <div className="border-t border-slate-700">
-          <button
-            onClick={() => setShowSubstats(!showSubstats)}
-            className="w-full px-3 py-2 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
-          >
-            <span className="text-xs text-slate-400">
+          <div className="px-3 py-2 bg-slate-800/30">
+            <span className="text-xs text-slate-400 font-semibold">
               Substats ({visibleSubstats.length + newSubstats.length})
             </span>
-            {showSubstats ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
-            )}
-          </button>
+          </div>
 
-          {showSubstats && (
-            <div className="px-3 pb-3">
-              {editing ? (
-                <div className="space-y-2">
-                  {/* Existing substats */}
-                  {visibleSubstats.map((sub) => (
-                    <div key={sub.id} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={sub.stat_name}
-                        onChange={e => {
-                          const newSubstats = [...substatForms];
-                          const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
-                          if (actualIdx >= 0) {
-                            newSubstats[actualIdx] = { ...sub, stat_name: e.target.value };
-                            setSubstatForms(newSubstats);
-                          }
-                        }}
-                        className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
-                        placeholder="Stat name"
-                      />
-                      <input
-                        type="text"
-                        value={sub.stat_value}
-                        onChange={e => {
-                          const newSubstats = [...substatForms];
-                          const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
-                          if (actualIdx >= 0) {
-                            newSubstats[actualIdx] = { ...sub, stat_value: e.target.value };
-                            setSubstatForms(newSubstats);
-                          }
-                        }}
-                        className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
-                        placeholder="Value"
-                      />
-                      <button
-                        onClick={() => removeExistingSubstat(sub.id)}
-                        className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded text-red-400"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {/* New substats */}
-                  {newSubstats.map((sub, idx) => (
-                    <div key={`new-${idx}`} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={sub.stat_name}
-                        onChange={e => {
-                          const updated = [...newSubstats];
-                          updated[idx] = { ...sub, stat_name: e.target.value };
-                          setNewSubstats(updated);
-                        }}
-                        className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
-                        placeholder="Stat name (new)"
-                      />
-                      <input
-                        type="text"
-                        value={sub.stat_value}
-                        onChange={e => {
-                          const updated = [...newSubstats];
-                          updated[idx] = { ...sub, stat_value: e.target.value };
-                          setNewSubstats(updated);
-                        }}
-                        className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
-                        placeholder="Value"
-                      />
-                      <button
-                        onClick={() => removeNewSubstat(idx)}
-                        className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded text-red-400"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  <button
-                    onClick={addNewSubstat}
-                    disabled={totalSubstats >= 5}
-                    className="w-full py-1 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded text-xs text-cyan-400 disabled:text-slate-500 flex items-center justify-center gap-1"
-                    title={totalSubstats >= 5 ? "Maximum 5 substats per echo" : "Add substat"}
+          <div className="px-3 pb-3 pt-2">
+            {editing ? (
+              <div className="space-y-2">
+                {/* Existing substats */}
+                {visibleSubstats.map((sub) => (
+                  <div key={sub.id} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={sub.stat_name}
+                      onChange={e => {
+                        const newSubstats = [...substatForms];
+                        const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
+                        if (actualIdx >= 0) {
+                          newSubstats[actualIdx] = { ...sub, stat_name: e.target.value };
+                          setSubstatForms(newSubstats);
+                        }
+                      }}
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                      placeholder="Stat name"
+                    />
+                    <input
+                      type="text"
+                      value={sub.stat_value}
+                      onChange={e => {
+                        const newSubstats = [...substatForms];
+                        const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
+                        if (actualIdx >= 0) {
+                          newSubstats[actualIdx] = { ...sub, stat_value: e.target.value };
+                          setSubstatForms(newSubstats);
+                        }
+                      }}
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                      placeholder="Value"
+                    />
+                    <button
+                      onClick={() => removeExistingSubstat(sub.id)}
+                      className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded text-red-400"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                
+                {/* New substats */}
+                {newSubstats.map((sub, idx) => (
+                  <div key={`new-${idx}`} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={sub.stat_name}
+                      onChange={e => {
+                        const updated = [...newSubstats];
+                        updated[idx] = { ...sub, stat_name: e.target.value };
+                        setNewSubstats(updated);
+                      }}
+                      className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
+                      placeholder="Stat name (new)"
+                    />
+                    <input
+                      type="text"
+                      value={sub.stat_value}
+                      onChange={e => {
+                        const updated = [...newSubstats];
+                        updated[idx] = { ...sub, stat_value: e.target.value };
+                        setNewSubstats(updated);
+                      }}
+                      className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
+                      placeholder="Value"
+                    />
+                    <button
+                      onClick={() => removeNewSubstat(idx)}
+                      className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded text-red-400"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                
+                <button
+                  onClick={addNewSubstat}
+                  disabled={totalSubstats >= 5}
+                  className="w-full py-1 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded text-xs text-cyan-400 disabled:text-slate-500 flex items-center justify-center gap-1"
+                  title={totalSubstats >= 5 ? "Maximum 5 substats per echo" : "Add substat"}
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Substat {totalSubstats >= 5 && "(Max 5)"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {substats.map(sub => (
+                  <div 
+                    key={sub.id} 
+                    className="flex justify-between items-center text-sm bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2"
                   >
-                    <Plus className="w-3 h-3" />
-                    Add Substat {totalSubstats >= 5 && "(Max 5)"}
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-1 mt-2">
-                  {substats.map(sub => (
-                    <div key={sub.id} className="text-xs text-slate-400">
-                      {sub.stat_name}: <span className="text-white">{sub.stat_value}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                    <span className="text-slate-400">{sub.stat_name}</span>
+                    <span className="text-white font-medium">{sub.stat_value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

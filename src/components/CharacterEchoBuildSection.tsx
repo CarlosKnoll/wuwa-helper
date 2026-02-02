@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Save, X, Shield, Plus, Info } from 'lucide-react';
+import { Edit2, Save, X, Shield, Plus, Info, AlertTriangle } from 'lucide-react';
 import { CharacterEchoBuildSectionProps, EchoSetData } from '../types';
 import { safeInvoke } from '../utils';
 import EchoItem from './EchoItem';
+import { invoke } from '@tauri-apps/api/core';
 
 export default function CharacterEchoBuildSection({
   echoBuild,
@@ -12,6 +13,8 @@ export default function CharacterEchoBuildSection({
 }: CharacterEchoBuildSectionProps) {
   const [editing, setEditing] = useState(false);
   const [echoSets, setEchoSets] = useState<EchoSetData[]>([]);
+  const [selectedEchoId, setSelectedEchoId] = useState<number | null>(null);
+  const [echoSetImages, setEchoSetImages] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     primary_set_key: null as string | null,
     secondary_set_key: null as string | null,
@@ -40,10 +43,37 @@ export default function CharacterEchoBuildSection({
     }
   }, [echoBuild]);
 
+  // Auto-select first echo when echoes list changes
+  useEffect(() => {
+    if (echoes.length > 0 && !selectedEchoId) {
+      setSelectedEchoId(echoes[0].id);
+    } else if (echoes.length === 0) {
+      setSelectedEchoId(null);
+    } else if (selectedEchoId && !echoes.find(e => e.id === selectedEchoId)) {
+      // If selected echo was deleted, select first available
+      setSelectedEchoId(echoes[0]?.id || null);
+    }
+  }, [echoes, selectedEchoId]);
+
   const loadEchoSets = async () => {
     try {
       const sets = await safeInvoke<EchoSetData[]>('get_all_echo_sets');
       setEchoSets(sets);
+      
+      // Load images for all echo sets using the echo_set asset type
+      const images: Record<string, string> = {};
+      for (const set of sets) {
+        try {
+          const base64 = await invoke<string>('get_asset', {
+            assetType: 'echo_set',
+            name: set.key,
+          });
+          images[set.key] = `data:image/webp;base64,${base64}`;
+        } catch (err) {
+          console.error(`Failed to load echo set image for ${set.key}:`, err);
+        }
+      }
+      setEchoSetImages(images);
     } catch (err) {
       console.error('Failed to load echo sets:', err);
     }
@@ -108,8 +138,8 @@ export default function CharacterEchoBuildSection({
     }
   };
 
-  // Handle configuration change (5pc, 3pc+2pc, or 2pc+3pc)
-  const handleConfigurationChange = (config: '5pc' | '3pc+2pc' | '2pc+3pc') => {
+  // Handle configuration change (5pc or 3pc+2pc only, removed 2pc+3pc)
+  const handleConfigurationChange = (config: '5pc' | '3pc+2pc') => {
     if (config === '5pc') {
       setForm({
         ...form,
@@ -122,12 +152,6 @@ export default function CharacterEchoBuildSection({
         ...form,
         primary_set_pieces: 3,
         secondary_set_pieces: 2,
-      });
-    } else if (config === '2pc+3pc') {
-      setForm({
-        ...form,
-        primary_set_pieces: 2,
-        secondary_set_pieces: 3,
       });
     }
   };
@@ -158,6 +182,11 @@ export default function CharacterEchoBuildSection({
     });
   };
 
+  // Calculate total echo cost
+  const getTotalCost = () => {
+    return echoes.reduce((sum, echo) => sum + (echo.cost || 0), 0);
+  };
+
   if (!echoBuild) return null;
 
   const canAddMoreEchoes = echoes.length < 5;
@@ -171,32 +200,108 @@ export default function CharacterEchoBuildSection({
     ? `${form.primary_set_pieces}pc + ${form.secondary_set_pieces}pc`
     : `${form.primary_set_pieces}pc`;
 
+  const totalCost = getTotalCost();
+  const costOverLimit = totalCost > 12;
+
   return (
-    <div className="min-h-[600px] relative flex">
-      {/* Echo Build Info Panel - Left Side */}
-      <div className="w-96 p-6 space-y-6 flex-shrink-0">
-        {/* Header with Edit Button */}
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3">
-            <Shield size={24} className="text-purple-400" />
-            <div>
-              <h3 className="text-xl font-bold text-purple-400">Echo Build</h3>
-              {!editing && <div className="text-cyan-400 text-sm">{configLabel}</div>}
+    <div className="relative flex gap-6 p-6">
+      {/* Left Side - Echo Icons */}
+      <div className="w-48 flex-shrink-0 space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-slate-400">Echoes</h4>
+          <span className="text-xs text-cyan-400">{echoes.length}/5</span>
+        </div>
+        
+        {/* Cost Warning */}
+        {costOverLimit && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 flex items-start gap-2">
+            <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-red-400">
+              <div className="font-semibold">Cost Limit Exceeded!</div>
+              <div className="mt-0.5">Total: {totalCost}/12</div>
             </div>
           </div>
-          {!editing ? (
-            <button onClick={() => setEditing(true)} className="p-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
-              <Edit2 size={18} className="text-cyan-400" />
+        )}
+
+        {/* Echo Icons */}
+        <div className="space-y-2">
+          {echoes.map(echo => (
+            <button
+              key={echo.id}
+              onClick={() => setSelectedEchoId(echo.id)}
+              className={`w-full rounded-lg border-2 transition-all ${
+                selectedEchoId === echo.id
+                  ? 'border-cyan-500 bg-cyan-500/10'
+                  : echo.rarity === 5
+                  ? 'border-yellow-500/50 bg-slate-800/50 hover:border-yellow-500/70'
+                  : echo.rarity === 4
+                  ? 'border-purple-500/50 bg-slate-800/50 hover:border-purple-500/70'
+                  : echo.rarity === 3
+                  ? 'border-blue-500/50 bg-slate-800/50 hover:border-blue-500/70'
+                  : 'border-green-500/50 bg-slate-800/50 hover:border-green-500/70'
+              }`}
+            >
+              <div className="p-2 flex flex-col items-center justify-center">
+                <div className="text-white text-sm font-medium w-full text-center break-words">
+                  {echo.echo_name || 'Echo'}
+                </div>
+                <div className="text-xs text-slate-400 mt-1">
+                  Cost {echo.cost} • Lv.{echo.level}
+                </div>
+              </div>
             </button>
-          ) : (
-            <div className="flex gap-2">
-              <button onClick={handleSave} className="p-2 bg-green-500/20 hover:bg-green-500/30 rounded transition-colors">
-                <Save size={18} className="text-green-400" />
-              </button>
-              <button onClick={handleCancel} className="p-2 bg-slate-600/20 hover:bg-slate-600/30 rounded transition-colors">
-                <X size={18} className="text-slate-400" />
-              </button>
+          ))}
+
+          {/* Add New Echo Button */}
+          {canAddMoreEchoes && (
+            <button
+              onClick={addNewEcho}
+              className="w-full rounded-lg border-2 border-dashed border-slate-700 bg-slate-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all"
+            >
+              <div className="py-3 flex flex-col items-center justify-center">
+                <Plus size={20} className="text-slate-500" />
+                <span className="text-xs text-slate-500 mt-1">Add Echo</span>
+              </div>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Middle - Selected Echo Details */}
+      <div className="flex-1 min-w-0">
+        {selectedEchoId && echoes.find(e => e.id === selectedEchoId) ? (
+          <EchoItem
+            echo={echoes.find(e => e.id === selectedEchoId)!}
+            substats={echoSubstats[selectedEchoId] || []}
+            onUpdate={onUpdate}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <Shield size={48} className="text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-500">No echo selected</p>
+              <p className="text-slate-600 text-sm mt-1">Click an echo to view details</p>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right Side - Echo Set Info */}
+      <div className="w-80 flex-shrink-0 bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Shield size={20} className="text-cyan-400" />
+            Echo Set
+          </h3>
+          {/* Edit Button - MOVED HERE TO RIGHT COLUMN */}
+          {!editing && (
+            <button
+              onClick={() => setEditing(true)}
+              className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-sm"
+            >
+              <Edit2 size={14} />
+              Edit
+            </button>
           )}
         </div>
 
@@ -204,76 +309,84 @@ export default function CharacterEchoBuildSection({
           <div className="space-y-4">
             {/* Configuration Selection */}
             <div>
-              <label className="text-sm text-slate-400 mb-2 block">Build Configuration</label>
-              <div className="space-y-2">
+              <label className="text-sm text-slate-400 mb-2 block">Configuration</label>
+              <div className="flex gap-2">
                 <button
-                  type="button"
                   onClick={() => handleConfigurationChange('5pc')}
-                  className={`w-full px-4 py-3 rounded-lg border text-left transition-colors ${
-                    form.primary_set_pieces === 5 && form.secondary_set_pieces === 0
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                      : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600'
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    form.primary_set_pieces === 5
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
-                  <div className="font-semibold">5pc (Full Set)</div>
-                  <div className="text-xs text-slate-500">Use all 5 pieces from one echo set</div>
+                  5-Piece
                 </button>
-                
                 <button
-                  type="button"
                   onClick={() => handleConfigurationChange('3pc+2pc')}
-                  className={`w-full px-4 py-3 rounded-lg border text-left transition-colors ${
-                    form.primary_set_pieces === 3 && form.secondary_set_pieces === 2
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                      : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600'
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    form.primary_set_pieces === 3
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
-                  <div className="font-semibold">3pc + 2pc (Mixed Set)</div>
-                  <div className="text-xs text-slate-500">3 pieces from one set, 2 from another</div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => handleConfigurationChange('2pc+3pc')}
-                  className={`w-full px-4 py-3 rounded-lg border text-left transition-colors ${
-                    form.primary_set_pieces === 2 && form.secondary_set_pieces === 3
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400'
-                      : 'border-slate-700 bg-slate-800/30 text-slate-300 hover:border-slate-600'
-                  }`}
-                >
-                  <div className="font-semibold">2pc + 3pc (Mixed Set)</div>
-                  <div className="text-xs text-slate-500">2 pieces from one set, 3 from another</div>
+                  3pc + 2pc
                 </button>
               </div>
             </div>
 
-            {/* Primary Set Selection */}
+            {/* Primary Set Selection - GRID OF CLICKABLE ICONS */}
             <div>
               <label className="text-sm text-slate-400 mb-2 block">
                 Primary Set ({form.primary_set_pieces} pieces)
               </label>
-              <select
-                value={form.primary_set_key || ''}
-                onChange={e => {
-                  const value = e.target.value || null;
-                  setForm({ ...form, primary_set_key: value });
-                }}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
-              >
-                <option value="">Select primary set...</option>
+              <div className="grid grid-cols-8 gap-2 max-h-[300px] overflow-y-auto p-1">
                 {getAvailablePrimarySets().map(set => (
-                  <option key={set.key} value={set.key}>
-                    {set.name}
-                  </option>
+                  <button
+                    key={set.key}
+                    onClick={() => setForm({ ...form, primary_set_key: set.key })}
+                    className={`relative aspect-square rounded-lg border-2 transition-all ${
+                      form.primary_set_key === set.key
+                        ? 'border-cyan-500 bg-cyan-500/20 opacity-100'
+                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 opacity-50 hover:opacity-75'
+                    }`}
+                    title={set.name}
+                  >
+                    {echoSetImages[set.key] ? (
+                      <img
+                        src={echoSetImages[set.key]}
+                        alt={set.name}
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Shield size={20} className="text-slate-600" />
+                      </div>
+                    )}
+                  </button>
                 ))}
-              </select>
+              </div>
               
               {/* Show primary set effect */}
               {primarySet && (
-                <div className="mt-2 bg-slate-800/30 border border-slate-700/50 rounded-lg p-3">
+                <div className="mt-2 bg-slate-800/30 border border-slate-700/50 rounded-lg p-2.5 space-y-2">
+                  <div className="text-xs font-semibold text-white">{primarySet.name}</div>
+                  {/* For 5pc sets: show 2pc bonus first */}
+                  {form.primary_set_pieces === 5 && primarySet.has_2pc && primarySet.two_piece_bonus && (
+                    <div className="flex items-start gap-2">
+                      <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-green-400 leading-relaxed">
+                        {primarySet.two_piece_bonus}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Main bonus for the selected configuration */}
+                  {form.primary_set_pieces === 5 && primarySet.has_2pc && primarySet.two_piece_bonus && (
+                    <div className="border-t border-slate-700/30 pt-2" />
+                  )}
                   <div className="flex items-start gap-2">
-                    <Info size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-green-400">
+                    <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-green-400 leading-relaxed">
                       {form.primary_set_pieces === 5 && primarySet.five_piece_bonus}
                       {form.primary_set_pieces === 3 && primarySet.two_piece_bonus}
                       {form.primary_set_pieces === 2 && primarySet.two_piece_bonus}
@@ -283,34 +396,46 @@ export default function CharacterEchoBuildSection({
               )}
             </div>
 
-            {/* Secondary Set Selection (only shown for mixed builds) */}
+            {/* Secondary Set Selection (only shown for mixed builds) - GRID OF CLICKABLE ICONS */}
             {isMixedBuild && (
               <div>
                 <label className="text-sm text-slate-400 mb-2 block">
                   Secondary Set ({form.secondary_set_pieces} pieces)
                 </label>
-                <select
-                  value={form.secondary_set_key || ''}
-                  onChange={e => {
-                    const value = e.target.value || null;
-                    setForm({ ...form, secondary_set_key: value });
-                  }}
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
-                >
-                  <option value="">Select secondary set...</option>
+                <div className="grid grid-cols-8 gap-2 max-h-[200px] overflow-y-auto p-1">
                   {getAvailableSecondarySets().map(set => (
-                    <option key={set.key} value={set.key}>
-                      {set.name}
-                    </option>
+                    <button
+                      key={set.key}
+                      onClick={() => setForm({ ...form, secondary_set_key: set.key })}
+                      className={`relative aspect-square rounded-lg border-2 transition-all ${
+                        form.secondary_set_key === set.key
+                          ? 'border-cyan-500 bg-cyan-500/20 opacity-100'
+                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 opacity-50 hover:opacity-75'
+                      }`}
+                      title={set.name}
+                    >
+                      {echoSetImages[set.key] ? (
+                        <img
+                          src={echoSetImages[set.key]}
+                          alt={set.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Shield size={20} className="text-slate-600" />
+                        </div>
+                      )}
+                    </button>
                   ))}
-                </select>
+                </div>
                 
                 {/* Show secondary set effect */}
                 {secondarySet && (
-                  <div className="mt-2 bg-slate-800/30 border border-slate-700/50 rounded-lg p-3">
+                  <div className="mt-2 bg-slate-800/30 border border-slate-700/50 rounded-lg p-2.5">
+                    <div className="text-xs font-semibold text-white mb-1">{secondarySet.name}</div>
                     <div className="flex items-start gap-2">
-                      <Info size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-green-400">
+                      <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-green-400 leading-relaxed">
                         {form.secondary_set_pieces === 2 && secondarySet.two_piece_bonus}
                         {form.secondary_set_pieces === 3 && secondarySet.two_piece_bonus}
                       </div>
@@ -325,7 +450,7 @@ export default function CharacterEchoBuildSection({
               <select
                 value={form.overall_quality}
                 onChange={e => setForm({ ...form, overall_quality: e.target.value })}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
               >
                 <option value="">Select quality...</option>
                 <option value="Poor">Poor</option>
@@ -342,53 +467,107 @@ export default function CharacterEchoBuildSection({
               <textarea
                 value={form.notes}
                 onChange={e => setForm({ ...form, notes: e.target.value })}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 min-h-[60px] text-sm"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 min-h-[60px]"
                 placeholder="Additional build notes..."
               />
             </div>
+
+            {/* Save/Cancel Buttons in Edit Mode */}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleSave}
+                className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
+              >
+                <Save size={14} />
+                Save
+              </button>
+              <button
+                onClick={handleCancel}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
+              >
+                <X size={14} />
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {primarySet ? (
               <>
                 {/* Primary Set Display */}
                 <div>
-                  <div className="text-slate-400 text-sm mb-2">Primary Set</div>
-                  <div className="text-white font-semibold text-lg">{primarySet.name}</div>
-                  <div className="text-cyan-400 text-sm mt-1">
-                    {form.primary_set_pieces} pieces
+                  <div className="flex items-center gap-2">
+                    {echoSetImages[primarySet.key] && (
+                      <img
+                        src={echoSetImages[primarySet.key]}
+                        alt={primarySet.name}
+                        className="w-5 h-5 object-cover rounded-lg border border-slate-700"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="text-white font-semibold text-base">
+                        {primarySet.name} <span className="text-cyan-400 text-sm">({form.primary_set_pieces}pc)</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-800/30 rounded-lg p-3">
-                  <div className="text-cyan-400 text-xs font-semibold mb-1">
-                    {form.primary_set_pieces === 5 ? '5-Piece Bonus' : 
-                     form.primary_set_pieces === 3 ? '3-Piece Bonus' : '2-Piece Bonus'}
-                  </div>
-                  <div className="text-green-400 text-sm leading-relaxed">
-                    {form.primary_set_pieces === 5 && primarySet.five_piece_bonus}
-                    {form.primary_set_pieces === 3 && primarySet.two_piece_bonus}
-                    {form.primary_set_pieces === 2 && primarySet.two_piece_bonus}
-                  </div>
+                <div className="bg-slate-800/30 rounded-lg p-2.5 space-y-2">
+                  {/* For 5pc sets: show 2pc bonus first */}
+                  {form.primary_set_pieces === 5 && primarySet.has_2pc && primarySet.two_piece_bonus && (
+                    <>
+                      <div className="text-cyan-400 text-xs font-semibold">2-Piece Bonus</div>
+                      <div className="text-green-400 text-xs leading-relaxed">
+                        {primarySet.two_piece_bonus}
+                      </div>
+                      <div className="border-t border-slate-700/30 pt-2 mt-2">
+                        <div className="text-cyan-400 text-xs font-semibold">5-Piece Bonus</div>
+                        <div className="text-green-400 text-xs leading-relaxed mt-1">
+                          {primarySet.five_piece_bonus}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* For 3pc or 2pc sets: show only the appropriate bonus */}
+                  {form.primary_set_pieces !== 5 && (
+                    <>
+                      <div className="text-cyan-400 text-xs font-semibold">
+                        {form.primary_set_pieces === 3 ? '3-Piece Bonus' : '2-Piece Bonus'}
+                      </div>
+                      <div className="text-green-400 text-xs leading-relaxed">
+                        {primarySet.two_piece_bonus}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Secondary Set Display (for mixed builds) */}
                 {secondarySet && isMixedBuild && (
                   <>
-                    <div className="border-t border-slate-700/50" />
+                    <div className="border-t border-slate-700/50 my-3" />
                     <div>
-                      <div className="text-slate-400 text-sm mb-2">Secondary Set</div>
-                      <div className="text-white font-semibold text-lg">{secondarySet.name}</div>
-                      <div className="text-cyan-400 text-sm mt-1">
-                        {form.secondary_set_pieces} pieces
+                      <div className="flex items-center gap-2">
+                        {echoSetImages[secondarySet.key] && (
+                          <img
+                            src={echoSetImages[secondarySet.key]}
+                            alt={secondarySet.name}
+                            className="w-5 h-5 object-cover rounded-lg border border-slate-700"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="text-white font-semibold text-base">
+                            {secondarySet.name} <span className="text-cyan-400 text-sm">({form.secondary_set_pieces}pc)</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-slate-800/30 rounded-lg p-3">
-                      <div className="text-cyan-400 text-xs font-semibold mb-1">
+                    <div className="bg-slate-800/30 rounded-lg p-2.5">
+                      <div className="text-cyan-400 text-xs font-semibold">
                         {form.secondary_set_pieces === 3 ? '3-Piece Bonus' : '2-Piece Bonus'}
                       </div>
-                      <div className="text-green-400 text-sm leading-relaxed">
+                      <div className="text-green-400 text-xs leading-relaxed mt-1">
                         {secondarySet.two_piece_bonus}
                       </div>
                     </div>
@@ -396,8 +575,8 @@ export default function CharacterEchoBuildSection({
                 )}
               </>
             ) : (
-              <div className="text-center py-8">
-                <Shield size={48} className="text-slate-600 mx-auto mb-3" />
+              <div className="text-center py-6">
+                <Shield size={40} className="text-slate-600 mx-auto mb-2" />
                 <p className="text-slate-500 text-sm">No echo set selected</p>
                 <p className="text-slate-600 text-xs mt-1">Click edit to choose a set</p>
               </div>
@@ -407,8 +586,8 @@ export default function CharacterEchoBuildSection({
               <>
                 <div className="border-t border-slate-700/50" />
                 <div>
-                  <div className="text-slate-400 text-sm mb-2">Build Quality</div>
-                  <div className="text-cyan-400 font-semibold">{form.overall_quality}</div>
+                  <div className="text-slate-400 text-xs uppercase tracking-wide mb-1.5">Build Quality</div>
+                  <div className="text-cyan-400 font-semibold text-sm">{form.overall_quality}</div>
                 </div>
               </>
             )}
@@ -417,60 +596,11 @@ export default function CharacterEchoBuildSection({
               <>
                 <div className="border-t border-slate-700/50" />
                 <div>
-                  <div className="text-slate-400 text-sm mb-2">Notes</div>
-                  <p className="text-slate-300 text-sm italic whitespace-pre-line">{form.notes}</p>
+                  <div className="text-slate-400 text-xs uppercase tracking-wide mb-1.5">Notes</div>
+                  <p className="text-slate-300 text-xs italic whitespace-pre-line">{form.notes}</p>
                 </div>
               </>
             )}
-          </div>
-        )}
-
-        {/* Decorative Elements */}
-        <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-purple-500/50 via-pink-500/50 to-transparent" />
-      </div>
-
-      {/* Echoes Section - Right Side */}
-      <div className="flex-1 p-6 border-l border-slate-700/50">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h4 className="text-lg font-semibold text-white mb-1">Equipped Echoes</h4>
-            <p className="text-sm text-slate-400">
-              <span className="text-cyan-400 font-semibold">{echoes.length}</span> / 5 Echoes
-            </p>
-          </div>
-          <button
-            onClick={addNewEcho}
-            disabled={!canAddMoreEchoes}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors ${
-              canAddMoreEchoes
-                ? 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/50'
-                : 'bg-slate-700/20 cursor-not-allowed opacity-50 text-slate-500 border border-slate-700'
-            }`}
-            title={canAddMoreEchoes ? 'Add Echo' : 'Maximum 5 echoes reached'}
-          >
-            <Plus className="w-4 h-4" />
-            Add Echo {!canAddMoreEchoes && '(Max)'}
-          </button>
-        </div>
-        
-        {echoes.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {echoes.map(echo => (
-              <EchoItem
-                key={echo.id}
-                echo={echo}
-                substats={echoSubstats[echo.id] || []}
-                onUpdate={onUpdate}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-64 border-2 border-dashed border-slate-700/50 rounded-lg">
-            <div className="text-center">
-              <Shield size={48} className="text-slate-600 mx-auto mb-4" />
-              <p className="text-slate-500 text-sm mb-2">No echoes equipped</p>
-              <p className="text-slate-600 text-xs">Click "Add Echo" to start building</p>
-            </div>
           </div>
         )}
       </div>

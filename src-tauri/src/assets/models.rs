@@ -12,6 +12,7 @@ pub enum AssetType {
     Character,
     Weapon,
     Echo,
+    EchoSet,
     Element,
     Misc,
 }
@@ -22,6 +23,7 @@ impl AssetType {
             AssetType::Character => "characters",
             AssetType::Weapon => "weapons",
             AssetType::Echo => "echoes",
+            AssetType::EchoSet => "echo_sets",
             AssetType::Element => "elements",
             AssetType::Misc => "misc",
         }
@@ -35,6 +37,8 @@ impl AssetType {
             AssetType::Character
         } else if url_lower.contains("weapon") {
             AssetType::Weapon
+        } else if url_lower.contains("set_") || url_lower.contains("echo_set") {
+            AssetType::EchoSet
         } else if url_lower.contains("echo") {
             AssetType::Echo
         } else {

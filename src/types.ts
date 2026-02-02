@@ -92,6 +92,18 @@ export interface CharacterTalents {
   forte_level: number;
   intro_level: number;
   notes: string | null;
+  // Minor traces (2 per talent, except Forte which has major traces)
+  basic_minor_1: number;
+  basic_minor_2: number;
+  skill_minor_1: number;
+  skill_minor_2: number;
+  liberation_minor_1: number;
+  liberation_minor_2: number;
+  intro_minor_1: number;
+  intro_minor_2: number;
+  // Major traces (2 for Forte)
+  forte_major_1: number;
+  forte_major_2: number;
 }
 
 export interface CharacterTalentsSectionProps {

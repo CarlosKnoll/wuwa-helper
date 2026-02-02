@@ -26,6 +26,18 @@ pub struct CharacterTalents {
     pub forte_level: Option<i64>,
     pub intro_level: Option<i64>,
     pub notes: Option<String>,
+    // Minor traces (2 per talent, except Forte which has major traces)
+    pub basic_minor_1: Option<i64>,
+    pub basic_minor_2: Option<i64>,
+    pub skill_minor_1: Option<i64>,
+    pub skill_minor_2: Option<i64>,
+    pub liberation_minor_1: Option<i64>,
+    pub liberation_minor_2: Option<i64>,
+    pub intro_minor_1: Option<i64>,
+    pub intro_minor_2: Option<i64>,
+    // Major traces (2 for Forte)
+    pub forte_major_1: Option<i64>,
+    pub forte_major_2: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

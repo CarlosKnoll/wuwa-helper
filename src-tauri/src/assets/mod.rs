@@ -177,6 +177,28 @@ impl AssetManager {
             }
         }
         
+        // For echo_sets, try direct filesystem access
+        if matches!(asset_type, AssetType::EchoSet) {
+            let direct_path = self.base_path
+                .join(asset_type.as_str())
+                .join(name);
+            
+            if direct_path.exists() {
+                return Some(direct_path);
+            }
+            
+            // Try with .webp if not present
+            if !name.ends_with(".webp") {
+                let with_webp = self.base_path
+                    .join(asset_type.as_str())
+                    .join(format!("{}.webp", name));
+                
+                if with_webp.exists() {
+                    return Some(with_webp);
+                }
+            }
+        }
+        
         // For misc assets (currency icons, etc.), try direct filesystem access
         if matches!(asset_type, AssetType::Misc) {
             let direct_path = self.base_path

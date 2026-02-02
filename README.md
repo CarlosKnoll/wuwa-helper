@@ -51,22 +51,17 @@ Since this branch is focused on slowly and granullarly implement assets loading 
 Complete revamp of build modal, of course with assets.
 - Show echoes sets and echoes icons on modal.
 
+#### Forte modal:
+- Improve aesthetics. (Not set on whether scrape assets from the game or just offer better UI).
+
 ---
 
 ### Characters modal revamp:
 - Assets
 
-#### Echoes tab:
-- Change UI so it matches with ingame one: It should have the echoes as icons in the left side, with the echo set info on the right side and main stats/substats in the center.
-- Add small UI warning if total echoes cost is over 12 (ingame limit).
-
-#### Forte tab:
-- Add clickable fields to represent traces upgrades. (Not the 1-10 level of major traces, but upgraded/not upgraded minor ones). UI should resemble the ingame one (with the minor traces above the major ones). May need backend changes and even database changes to accomodate extra data regarding these minor traces status.
-
 #### Echoes:
 - Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
 - Backend mapping of echoes assets.
-- Remove redundant 3+2 / 2+3 echoes combination.
 
 ---
 
@@ -78,6 +73,7 @@ Complete revamp of build modal, of course with assets.
 - Clicking delete icon also opens build modal (functionality works, if I close the build modal I can see the delete confimation modal)
 - Allow editing of rarity (for user error cases)
 - Make it so Rover display concatenates with its element before (so instead of three rover entries differentiated by their element icons we have actually display names of Aero Rover, Spectro Rover and Havoc Rover)
+- Display character notes in the card.
 
 #### Add Characters:
 - Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (still allow to add custom characters that are not matching with any of the list)
@@ -102,6 +98,7 @@ Complete revamp of build modal, of course with assets.
 - Fix astrite auto-calc not recalculating if changing the stars achieved in the subcards under ToA gamemode.
 - Add subtle alerts for troop matrix missing rewards that do not reward astrite: The breakpoints are in Total Singularity Expansion Score (sum of all teams scores): 29000, 37000, 45000 and 58000, and reaching 5000 points with 6 teams.
 - Allow editing of last reset date.
+- Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
 
 #### Exploration:
 - Add collpasing for the region cards.
