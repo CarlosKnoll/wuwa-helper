@@ -7,7 +7,7 @@
 
 mod weapons;
 mod echoes;
-mod echo_sets;
+pub mod echo_sets;
 mod materials;
 mod characters;
 mod elements;

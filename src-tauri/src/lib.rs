@@ -32,6 +32,8 @@ pub fn run() {
             echoes::update_echo,
             echoes::add_echo,
             echoes::delete_echo,
+            echoes::get_all_echo_sets,
+            echoes::get_echo_set_by_key,
             echoes::update_echo_substat,
             echoes::add_echo_substat,
             echoes::delete_echo_substat,

@@ -1,13 +1,19 @@
+// Updated echoes.rs - Replace the EchoBuild-related parts with this code
+
 use crate::db::init_db;
+use crate::assets::mappings::echo_sets::get_echo_set_mappings;
 use rusqlite::{Result, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
+// Updated Models
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EchoBuild {
     pub id: i64,
     pub character_id: i64,
-    pub set_bonus: Option<String>,
-    pub set_effect: Option<String>,
+    pub primary_set_key: Option<String>,      // Primary echo set
+    pub secondary_set_key: Option<String>,     // Secondary set for mixed builds
+    pub primary_set_pieces: i64,               // Number of pieces for primary set
+    pub secondary_set_pieces: i64,             // Number of pieces for secondary set
     pub overall_quality: Option<String>,
     pub notes: Option<String>,
 }
@@ -33,22 +39,106 @@ pub struct EchoSubstat {
     pub stat_value: String,
 }
 
+// ============================================
+// Echo Set Commands (Updated with piece count info)
+// ============================================
+
+/// Returns all echo set definitions from the asset mappings
+/// Includes information about available piece counts (2pc, 3pc, 5pc)
+#[tauri::command]
+pub fn get_all_echo_sets() -> Result<Vec<serde_json::Value>, String> {
+    let mappings = get_echo_set_mappings();
+    
+    let mut sets: Vec<_> = mappings
+        .iter()
+        .map(|(filename, metadata)| {
+            let set_key = filename.replace(".webp", "");
+            let two_piece = metadata.tags.get(0).cloned().unwrap_or_default();
+            let five_piece = metadata.tags.get(1).cloned().unwrap_or_default();
+            
+            // Determine if this is a 3pc-only set (no 5pc effect)
+            let is_three_piece_only = five_piece.is_empty();
+            
+            serde_json::json!({
+                "key": set_key,
+                "name": metadata.display_name,
+                "filename": metadata.filename,
+                "two_piece_bonus": two_piece,
+                "five_piece_bonus": five_piece,
+                "has_2pc": !two_piece.is_empty() && two_piece.contains("2 Set:"),
+                "has_3pc": is_three_piece_only && two_piece.contains("3 Set:"),
+                "has_5pc": !five_piece.is_empty(),
+                "asset_type": metadata.asset_type,
+            })
+        })
+        .collect();
+    
+    // Sort by key (set_1, set_2, etc.)
+    sets.sort_by(|a, b| {
+        let key_a = a["key"].as_str().unwrap_or("");
+        let key_b = b["key"].as_str().unwrap_or("");
+        
+        let num_a: i32 = key_a.replace("set_", "").parse().unwrap_or(999);
+        let num_b: i32 = key_b.replace("set_", "").parse().unwrap_or(999);
+        
+        num_a.cmp(&num_b)
+    });
+    
+    Ok(sets)
+}
+
+/// Get a specific echo set by key
+#[tauri::command]
+pub fn get_echo_set_by_key(set_key: String) -> Result<Option<serde_json::Value>, String> {
+    let mappings = get_echo_set_mappings();
+    let filename = format!("{}.webp", set_key);
+    
+    if let Some(metadata) = mappings.get(&filename) {
+        let two_piece = metadata.tags.get(0).cloned().unwrap_or_default();
+        let five_piece = metadata.tags.get(1).cloned().unwrap_or_default();
+        let is_three_piece_only = five_piece.is_empty();
+        
+        Ok(Some(serde_json::json!({
+            "key": set_key,
+            "name": metadata.display_name,
+            "filename": metadata.filename,
+            "two_piece_bonus": two_piece,
+            "five_piece_bonus": five_piece,
+            "has_2pc": !two_piece.is_empty() && two_piece.contains("2 Set:"),
+            "has_3pc": is_three_piece_only && two_piece.contains("3 Set:"),
+            "has_5pc": !five_piece.is_empty(),
+            "asset_type": metadata.asset_type,
+        })))
+    } else {
+        Ok(None)
+    }
+}
+
+// ============================================
+// Echo Build Commands (Updated for mixed sets)
+// ============================================
+
 #[tauri::command]
 pub fn get_echo_build(app: tauri::AppHandle, character_id: i64) -> Result<Option<EchoBuild>, String> {
     let conn = init_db(&app)?;
     
     let build = conn
         .query_row(
-            "SELECT id, character_id, set_bonus, set_effect, overall_quality, notes FROM echo_builds WHERE character_id = ?",
+            "SELECT id, character_id, primary_set_key, secondary_set_key, 
+                    primary_set_pieces, secondary_set_pieces, overall_quality, notes 
+             FROM echo_builds 
+             WHERE character_id = ?",
             [character_id],
             |row| {
                 Ok(EchoBuild {
                     id: row.get(0)?,
                     character_id: row.get(1)?,
-                    set_bonus: row.get(2)?,
-                    set_effect: row.get(3)?,
-                    overall_quality: row.get(4)?,
-                    notes: row.get(5)?,
+                    primary_set_key: row.get(2)?,
+                    secondary_set_key: row.get(3)?,
+                    primary_set_pieces: row.get(4)?,
+                    secondary_set_pieces: row.get(5)?,
+                    overall_quality: row.get(6)?,
+                    notes: row.get(7)?,
                 })
             },
         )
@@ -57,6 +147,71 @@ pub fn get_echo_build(app: tauri::AppHandle, character_id: i64) -> Result<Option
     
     Ok(build)
 }
+
+#[tauri::command]
+pub fn update_echo_build(
+    app: tauri::AppHandle,
+    build_id: i64,
+    primary_set_key: Option<String>,
+    secondary_set_key: Option<String>,
+    primary_set_pieces: i64,
+    secondary_set_pieces: i64,
+    overall_quality: Option<String>,
+    notes: Option<String>,
+) -> Result<String, String> {
+    let conn = init_db(&app)?;
+    
+    // Validate piece counts
+    let total_pieces = primary_set_pieces + secondary_set_pieces;
+    if total_pieces != 5 {
+        return Err(format!(
+            "Invalid piece count: {} + {} = {} (must equal 5)",
+            primary_set_pieces, secondary_set_pieces, total_pieces
+        ));
+    }
+    
+    // Validate valid combinations (5+0, 3+2, 2+3)
+    if !matches!((primary_set_pieces, secondary_set_pieces), (5, 0) | (3, 2) | (2, 3)) {
+        return Err(format!(
+            "Invalid set combination: {}pc + {}pc (valid: 5+0, 3+2, 2+3)",
+            primary_set_pieces, secondary_set_pieces
+        ));
+    }
+    
+    // If using secondary set, ensure both set keys are provided and different
+    if secondary_set_pieces > 0 {
+        if secondary_set_key.is_none() {
+            return Err("Secondary set key required when secondary_set_pieces > 0".to_string());
+        }
+        if primary_set_key == secondary_set_key {
+            return Err("Primary and secondary sets must be different".to_string());
+        }
+    }
+    
+    conn.execute(
+        "UPDATE echo_builds 
+         SET primary_set_key = ?, secondary_set_key = ?, 
+             primary_set_pieces = ?, secondary_set_pieces = ?,
+             overall_quality = ?, notes = ? 
+         WHERE id = ?",
+        (
+            primary_set_key,
+            secondary_set_key,
+            primary_set_pieces,
+            secondary_set_pieces,
+            overall_quality,
+            notes,
+            build_id
+        ),
+    )
+    .map_err(|e| e.to_string())?;
+    
+    Ok("Echo build updated successfully".to_string())
+}
+
+// ============================================
+// Echo Commands (Keep existing, no changes needed)
+// ============================================
 
 #[tauri::command]
 pub fn get_echoes(app: tauri::AppHandle, build_id: i64) -> Result<Vec<Echo>, String> {
@@ -109,26 +264,6 @@ pub fn get_echo_substats(app: tauri::AppHandle, echo_id: i64) -> Result<Vec<Echo
         .map_err(|e| e.to_string())?;
     
     Ok(substats)
-}
-
-#[tauri::command]
-pub fn update_echo_build(
-    app: tauri::AppHandle,
-    build_id: i64,
-    set_bonus: Option<String>,
-    set_effect: Option<String>,
-    overall_quality: Option<String>,
-    notes: Option<String>,
-) -> Result<String, String> {
-    let conn = init_db(&app)?;
-    
-    conn.execute(
-        "UPDATE echo_builds SET set_bonus = ?, set_effect = ?, overall_quality = ?, notes = ? WHERE id = ?",
-        (set_bonus, set_effect, overall_quality, notes, build_id),
-    )
-    .map_err(|e| e.to_string())?;
-    
-    Ok("Echo build updated successfully".to_string())
 }
 
 #[tauri::command]

@@ -1,6 +1,10 @@
-import { Edit2, Save, X } from 'lucide-react';
-import { CharacterInfoProps } from '../types'
-import { getBuildStatusColor, getBuildStatusOptions } from '../utils';
+import { Edit2, Save, X, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CharacterInfoProps, Weapon, Character } from '../types';
+import { getBuildStatusColor, getBuildStatusOptions, safeInvoke, getRarityStars } from '../utils';
+import { useAssets } from '../hooks/useAssets';
+import ElementIcon from './ElementIcon';
+import WeaponTypeIcon from './WeaponTypeIcon';
 
 export default function CharacterInfo({
   character,
@@ -12,6 +16,159 @@ export default function CharacterInfo({
   onChange
 }: CharacterInfoProps) {
   const buildStatusOptions = getBuildStatusOptions();
+  const { getAsset, isInitialized } = useAssets();
+  
+  // Character portrait state
+  const [portraitSrc, setPortraitSrc] = useState<string>('');
+  
+  // Weapon section state
+  const [weapon, setWeapon] = useState<any>(null);
+  const [weaponSrc, setWeaponSrc] = useState<string>('');
+  const [editingWeapon, setEditingWeapon] = useState(false);
+  const [availableWeapons, setAvailableWeapons] = useState<Weapon[]>([]);
+  const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
+  const [selectedWeaponWarning, setSelectedWeaponWarning] = useState<string | null>(null);
+  const [weaponForm, setWeaponForm] = useState({
+    weapon_name: '',
+    rarity: 5,
+    level: 90,
+    rank: 1,
+    notes: '',
+  });
+
+  // Load character portrait
+  useEffect(() => {
+    if (!isInitialized) return;
+    getAsset('character', character.character_name).then((r) => {
+      if (r) setPortraitSrc(`data:image/webp;base64,${r}`);
+    });
+  }, [character.character_name, isInitialized, getAsset]);
+
+  // Load weapon data
+  useEffect(() => {
+    loadWeaponData();
+    loadCurrentCharacter();
+  }, [character.id]);
+
+  // Load weapon image when weapon changes
+  useEffect(() => {
+    if (!isInitialized || !weapon || weapon.weapon_name === 'None') {
+      setWeaponSrc('');
+      return;
+    }
+    
+    getAsset('weapon', weapon.weapon_name).then((r) => {
+      if (r) setWeaponSrc(`data:image/webp;base64,${r}`);
+    });
+  }, [weapon, isInitialized, getAsset]);
+
+  const loadWeaponData = async () => {
+    try {
+      const w = await safeInvoke('get_character_weapon', { characterId: character.id });
+      setWeapon(w);
+      if (w) {
+        setWeaponForm({
+          weapon_name: w.weapon_name || '',
+          rarity: w.rarity || 5,
+          level: w.level || 90,
+          rank: w.rank || 1,
+          notes: w.notes || '',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load weapon:', err);
+    }
+  };
+
+  const loadCurrentCharacter = async () => {
+    try {
+      const characters = await safeInvoke('get_all_characters') as Character[];
+      const char = characters.find(c => c.id === character.id);
+      setCurrentCharacter(char || null);
+    } catch (err) {
+      console.error('Failed to load character:', err);
+    }
+  };
+
+  const loadAvailableWeapons = async () => {
+    try {
+      const weapons = await safeInvoke('get_all_weapons') as Weapon[];
+      if (currentCharacter) {
+        const filtered = weapons.filter(w => w.weapon_type === currentCharacter.weapon_type);
+        setAvailableWeapons(filtered);
+      } else {
+        setAvailableWeapons(weapons);
+      }
+    } catch (err) {
+      console.error('Failed to load weapons:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (editingWeapon) {
+      loadAvailableWeapons();
+    }
+  }, [editingWeapon]);
+
+  const handleWeaponSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedWeapon = availableWeapons.find(w => w.weapon_name === e.target.value);
+    if (selectedWeapon) {
+      if (selectedWeapon.equipped_on !== 'Nobody' && selectedWeapon.equipped_on !== currentCharacter?.character_name) {
+        setSelectedWeaponWarning(`This will unequip ${selectedWeapon.weapon_name} from ${selectedWeapon.equipped_on}`);
+      } else {
+        setSelectedWeaponWarning(null);
+      }
+      
+      setWeaponForm({
+        weapon_name: selectedWeapon.weapon_name,
+        rarity: selectedWeapon.rarity,
+        level: selectedWeapon.level,
+        rank: selectedWeapon.rank,
+        notes: selectedWeapon.notes || '',
+      });
+    } else if (e.target.value === 'None') {
+      setSelectedWeaponWarning(null);
+      setWeaponForm({
+        weapon_name: 'None',
+        rarity: 5,
+        level: 1,
+        rank: 1,
+        notes: '',
+      });
+    }
+  };
+
+  const handleWeaponSave = async () => {
+    try {
+      await safeInvoke('update_character_weapon', {
+        characterId: character.id,
+        weaponName: weaponForm.weapon_name,
+        rarity: weaponForm.weapon_name === 'None' ? null : (weaponForm.rarity || null),
+        level: weaponForm.weapon_name === 'None' ? null : (weaponForm.level || null),
+        rank: weaponForm.weapon_name === 'None' ? null : (weaponForm.rank || null),
+        notes: weaponForm.notes || null,
+      });
+      setEditingWeapon(false);
+      setSelectedWeaponWarning(null);
+      await loadWeaponData();
+    } catch (err) {
+      alert('Failed to update weapon: ' + err);
+    }
+  };
+
+  const handleWeaponCancel = () => {
+    setEditingWeapon(false);
+    setSelectedWeaponWarning(null);
+    if (weapon) {
+      setWeaponForm({
+        weapon_name: weapon.weapon_name || '',
+        rarity: weapon.rarity || 5,
+        level: weapon.level || 90,
+        rank: weapon.rank || 1,
+        notes: weapon.notes || '',
+      });
+    }
+  };
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -19,119 +176,295 @@ export default function CharacterInfo({
     await onSave();
   };
 
+  const equippedWeapons = availableWeapons.filter(w => 
+    w.equipped_on !== 'Nobody' && w.equipped_on !== currentCharacter?.character_name
+  );
+  const availableForEquip = availableWeapons.filter(w => 
+    w.equipped_on === 'Nobody' || w.equipped_on === currentCharacter?.character_name
+  );
+
   return (
-    <div className="bg-slate-800/50 rounded-lg p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold">Character Info</h3>
-        {!editing ? (
-          <button onClick={onEdit} className="p-2 bg-cyan-500 hover:bg-cyan-600 rounded transition-colors">
-            <Edit2 size={16} />
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button onClick={handleSave} className="p-2 bg-green-500 hover:bg-green-600 rounded transition-colors">
-              <Save size={16} />
-            </button>
-            <button onClick={onCancel} className="p-2 bg-slate-600 hover:bg-slate-700 rounded transition-colors">
-              <X size={16} />
-            </button>
+    <div className="grid grid-cols-[1fr_400px] gap-6">
+      {/* LEFT COLUMN - Character & Weapon Info Vertically Stacked */}
+      <div className="space-y-6">
+        {/* Character Section */}
+        <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-4">
+          {/* Header with Edit Button */}
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <ElementIcon element={character.element} size="sm" />
+                <h3 className="text-xl font-bold text-white">{character.character_name}</h3>
+              </div>
+            </div>
+            {!editing ? (
+              <button onClick={onEdit} className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
+                <Edit2 size={16} className="text-cyan-400" />
+              </button>
+            ) : (
+              <div className="flex gap-1.5">
+                <button onClick={handleSave} className="p-1.5 bg-green-500/20 hover:bg-green-500/30 rounded transition-colors">
+                  <Save size={16} className="text-green-400" />
+                </button>
+                <button onClick={onCancel} className="p-1.5 bg-slate-600/20 hover:bg-slate-600/30 rounded transition-colors">
+                  <X size={16} className="text-slate-400" />
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          <div className="border-t border-slate-700/50 my-3" />
+
+          {/* Character Stats Grid */}
+          <div className="grid grid-cols-4 gap-2">
+            {/* Level */}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Level</label>
+              {editing ? (
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="90"
+                  value={form.level}
+                  onChange={e => onChange({ ...form, level: parseInt(e.target.value) || 1 })}
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+              ) : (
+                <div className="text-white font-semibold">Lv. {character.level}/90</div>
+              )}
+            </div>
+
+            {/* Ascension */}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Ascension</label>
+              {editing ? (
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="6"
+                  value={form.ascension}
+                  onChange={e => onChange({ ...form, ascension: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+              ) : (
+                <div className="text-white font-semibold">{character.ascension}/6</div>
+              )}
+            </div>
+
+            {/* Waveband */}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Seq</label>
+              {editing ? (
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="6"
+                  value={form.waveband}
+                  onChange={e => onChange({ ...form, waveband: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+              ) : (
+                <div className="text-white font-semibold">S{character.waveband}</div>
+              )}
+            </div>
+
+            {/* Build Status */}
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Status</label>
+              {editing ? (
+                <select
+                  value={form.build_status}
+                  onChange={e => onChange({ ...form, build_status: e.target.value })}
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                >
+                  {buildStatusOptions.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className={`inline-block px-2 py-1 rounded text-xs font-semibold ${getBuildStatusColor(character.build_status)}`}>
+                  {character.build_status}
+                </div>
+              )}
+            </div>
+
+            {/* Notes */}
+            {(editing || form.notes) && (
+              <div className="col-span-4">
+                <label className="text-xs text-slate-400 mb-1 block">Notes</label>
+                {editing ? (
+                  <textarea
+                    value={form.notes}
+                    onChange={e => onChange({ ...form, notes: e.target.value })}
+                    className="w-full bg-slate-800/30 border border-slate-700/50 rounded px-2 py-1.5 min-h-[60px] focus:outline-none focus:border-cyan-500 text-white text-xs"
+                    placeholder="Add notes..."
+                  />
+                ) : (
+                  <p className="text-slate-300 text-xs leading-relaxed">{form.notes}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Weapon Section */}
+        <div className="bg-slate-800/30 rounded-lg border border-slate-700/50 p-4">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-2">
+              <WeaponTypeIcon weaponType={character.weapon_type} size="sm" />
+              <h3 className="text-lg font-bold text-yellow-400">Weapon</h3>
+            </div>
+            {!editingWeapon ? (
+              <button onClick={() => setEditingWeapon(true)} className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
+                <Edit2 size={16} className="text-cyan-400" />
+              </button>
+            ) : (
+              <div className="flex gap-1.5">
+                <button onClick={handleWeaponSave} className="p-1.5 bg-green-500/20 hover:bg-green-500/30 rounded transition-colors">
+                  <Save size={16} className="text-green-400" />
+                </button>
+                <button onClick={handleWeaponCancel} className="p-1.5 bg-slate-600/20 hover:bg-slate-600/30 rounded transition-colors">
+                  <X size={16} className="text-slate-400" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {editingWeapon ? (
+            <div className="space-y-3">
+              {/* Character weapon type info */}
+              {currentCharacter && (
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded px-2 py-1.5 text-xs text-cyan-300 flex items-center gap-1.5">
+                  <AlertCircle size={14} />
+                  <span>Showing {currentCharacter.weapon_type} weapons</span>
+                </div>
+              )}
+
+              {/* Weapon swap warning */}
+              {selectedWeaponWarning && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1.5 text-xs text-orange-300 flex items-start gap-1.5">
+                  <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">Weapon Swap</p>
+                    <p>{selectedWeaponWarning}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Weapon Selection */}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Select from Inventory</label>
+                <select
+                  value={weaponForm.weapon_name}
+                  onChange={handleWeaponSelect}
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="None">No Weapon</option>
+                  
+                  {availableForEquip.length > 0 && (
+                    <optgroup label="Available Weapons">
+                      {availableForEquip.map(w => (
+                        <option key={w.id} value={w.weapon_name}>
+                          {w.weapon_name} ({getRarityStars(w.rarity)}) - Lv.{w.level} R{w.rank}
+                          {w.equipped_on === currentCharacter?.character_name ? ' [Equipped]' : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  
+                  {equippedWeapons.length > 0 && (
+                    <optgroup label="Equipped on Others">
+                      {equippedWeapons.map(w => (
+                        <option key={w.id} value={w.weapon_name}>
+                          {w.weapon_name} ({getRarityStars(w.rarity)}) - Lv.{w.level} R{w.rank} [on {w.equipped_on}]
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Notes</label>
+                <textarea
+                  value={weaponForm.notes}
+                  onChange={e => setWeaponForm({ ...weaponForm, notes: e.target.value })}
+                  className="w-full bg-slate-800/30 border border-slate-700/50 rounded px-2 py-1.5 min-h-[60px] text-white text-xs focus:outline-none focus:border-cyan-500"
+                  placeholder="Weapon notes..."
+                />
+              </div>
+            </div>
+          ) : weapon ? (
+            <div>
+              {weapon.weapon_name !== 'None' ? (
+                <div className="grid grid-cols-[120px_1fr] gap-4 items-center">
+                  {/* Weapon Image */}
+                  {weaponSrc && (
+                    <div className="flex justify-center">
+                      <img 
+                        src={weaponSrc} 
+                        alt={weapon.weapon_name}
+                        className="w-28 h-28 object-contain drop-shadow-lg"
+                      />
+                    </div>
+                  )}
+
+                  {/* Weapon Details */}
+                  <div className="space-y-2">
+                    <div>
+                      <div className="text-slate-400 text-xs mb-0.5">{character.weapon_type}</div>
+                      <h4 className="text-base font-bold text-yellow-400">{weapon.weapon_name}</h4>
+                      {weapon.rarity && (
+                        <div className="text-yellow-400 text-sm">{getRarityStars(weapon.rarity)}</div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-4 text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">⚔</span>
+                        <span className="text-white font-medium">Lv. {weapon.level}/90</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">★</span>
+                        <span className="text-purple-400 font-medium">R{weapon.rank}</span>
+                      </div>
+                    </div>
+
+                    {weaponForm.notes && (
+                      <p className="text-slate-300 text-xs leading-relaxed italic">{weaponForm.notes}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-500 text-sm">
+                  No weapon equipped
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      {editing ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <label className="text-sm text-slate-400">Level</label>
-            <input
-              type="number"
-              value={form.level}
-              onChange={e => onChange({ ...form, level: parseInt(e.target.value) || 0 })}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-              min="1"
-              max="90"
+      {/* RIGHT COLUMN - Character Portrait */}
+      <div className="relative flex items-center justify-center">
+        <div className="relative w-full h-[500px]">
+          {portraitSrc ? (
+            <img 
+              src={portraitSrc} 
+              alt={character.character_name}
+              className="w-full h-full object-contain drop-shadow-2xl"
             />
-          </div>
-          <div>
-            <label className="text-sm text-slate-400">Ascension</label>
-            <input
-              type="number"
-              value={form.ascension}
-              onChange={e => onChange({ ...form, ascension: parseInt(e.target.value) || 0 })}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-              min="0"
-              max="6"
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-400">Waveband</label>
-            <input
-              type="number"
-              value={form.waveband}
-              onChange={e => onChange({ ...form, waveband: parseInt(e.target.value) || 0 })}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-              min="0"
-              max="6"
-            />
-          </div>
-          <div>
-            <label className="text-sm text-slate-400">Build Status</label>
-            <select
-              value={form.build_status}
-              onChange={e => onChange({ ...form, build_status: e.target.value })}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-            >
-              {buildStatusOptions.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      ) : (
-        <div>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
-            <div>
-              <p className="text-slate-400">Level</p>
-              <p className="text-cyan-400 font-semibold text-lg">{character.level}/90</p>
+          ) : (
+            <div className="w-full h-full bg-slate-800/30 rounded-lg animate-pulse flex items-center justify-center">
+              <span className="text-slate-600">Loading...</span>
             </div>
-            <div>
-              <p className="text-slate-400">Ascension</p>
-              <p className="text-cyan-400 font-semibold text-lg">{character.ascension}/6</p>
-            </div>
-            <div>
-              <p className="text-slate-400">Waveband</p>
-              <p className="text-purple-400 font-semibold text-lg">S{character.waveband}</p>
-            </div>
-          </div>
-
-          {/* Build Status Badge - Centered */}
-          <div className="flex justify-center">
-            <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${getBuildStatusColor(character.build_status)}`}>
-              {character.build_status}
-            </div>
-          </div>
+          )}
+          {/* Glow effect */}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-transparent blur-3xl" />
         </div>
-      )}
-
-      {/* Notes Section */}
-      {editing && (
-        <div className="mt-4">
-          <label className="text-sm text-slate-400">Notes</label>
-          <textarea
-            value={form.notes}
-            onChange={e => onChange({ ...form, notes: e.target.value })}
-            className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 mt-1 min-h-[80px] focus:outline-none focus:border-cyan-500"
-            placeholder="Add notes about this character..."
-          />
-        </div>
-      )}
-
-      {!editing && form.notes && (
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <p className="text-sm text-slate-300">{form.notes}</p>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

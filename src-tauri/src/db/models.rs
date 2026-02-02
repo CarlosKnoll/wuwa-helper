@@ -39,12 +39,15 @@ pub struct CharacterWeapon {
     pub notes: Option<String>,
 }
 
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EchoBuild {
     pub id: i64,
     pub character_id: i64,
-    pub set_bonus: Option<String>,
-    pub set_effect: Option<String>,
+    pub primary_set_key: Option<String>,      // Primary echo set ('set_1', 'set_18', etc.)
+    pub secondary_set_key: Option<String>,     // Secondary set for mixed builds (can be null)
+    pub primary_set_pieces: i64,               // Number of pieces for primary set (5, 3, or 2)
+    pub secondary_set_pieces: i64,             // Number of pieces for secondary set (0, 2, or 3)
     pub overall_quality: Option<String>,
     pub notes: Option<String>,
 }

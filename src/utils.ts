@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { WuwaTrackerPull, PullHistory, WuwaTrackerExport } from './types';
+import { WuwaTrackerPull, PullHistory, WuwaTrackerExport, EchoSetData } from './types';
 
 export async function safeInvoke(cmd: string, args?: Record<string, any>) {
   try {
@@ -412,4 +412,39 @@ export function calculateSingularityExpansionAstrite(
   }
   
   return { astrite, missingNonAstriteRewards: missingRewards };
+}
+
+// Helper functions for echo builds
+
+export function isMixedSet(build: EchoBuild): boolean {
+  return build.secondary_set_pieces > 0 && build.secondary_set_key !== null;
+}
+
+export function getSetConfigurationLabel(build: EchoBuild): string {
+  if (build.secondary_set_pieces === 0) {
+    return `${build.primary_set_pieces}pc`;
+  }
+  return `${build.primary_set_pieces}pc + ${build.secondary_set_pieces}pc`;
+}
+
+export function getValidSecondaryPieceCounts(primaryPieces: number): number[] {
+  if (primaryPieces === 5) return [];
+  if (primaryPieces === 3) return [2];
+  if (primaryPieces === 2) return [3];
+  return [];
+}
+
+export function canUseAsSecondarySet(
+  set: EchoSetData,
+  requiredPieces: number,
+  primarySetKey: string | null
+): boolean {
+  // Can't use same set twice
+  if (set.key === primarySetKey) return false;
+  
+  // Check if set has the required piece count effect
+  if (requiredPieces === 2) return set.has_2pc;
+  if (requiredPieces === 3) return set.has_3pc;
+  
+  return false;
 }

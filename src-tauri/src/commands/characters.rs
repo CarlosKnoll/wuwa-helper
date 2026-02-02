@@ -243,10 +243,10 @@ pub fn add_character(
     // Get the newly inserted character's ID
     let character_id = conn.last_insert_rowid();
     
-    // Initialize character_talents with default values
+    // Initialize character_talents with level 1 instead of NULL
     conn.execute(
         "INSERT INTO character_talents (character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes) 
-         VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)",
+         VALUES (?, 1, 1, 1, 1, 1, NULL)",
         [character_id],
     )
     .map_err(|e| e.to_string())?;

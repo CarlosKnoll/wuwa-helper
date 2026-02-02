@@ -49,9 +49,26 @@ Since this branch is focused on slowly and granullarly implement assets loading 
 
 #### Build modals:
 Complete revamp of build modal, of course with assets.
-- Show character card on modal.
-- Show weapon icon on modal.
 - Show echoes sets and echoes icons on modal.
+
+---
+
+### Characters modal revamp:
+- Assets
+
+#### Echoes tab:
+- Change UI so it matches with ingame one: It should have the echoes as icons in the left side, with the echo set info on the right side and main stats/substats in the center.
+- Add small UI warning if total echoes cost is over 12 (ingame limit).
+
+#### Forte tab:
+- Add clickable fields to represent traces upgrades. (Not the 1-10 level of major traces, but upgraded/not upgraded minor ones). UI should resemble the ingame one (with the minor traces above the major ones). May need backend changes and even database changes to accomodate extra data regarding these minor traces status.
+
+#### Echoes:
+- Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
+- Backend mapping of echoes assets.
+- Remove redundant 3+2 / 2+3 echoes combination.
+
+---
 
 ### Remaining To-Dos (Unrelated to assets):
 #### Dashboard:
@@ -71,24 +88,20 @@ Complete revamp of build modal, of course with assets.
 #### Add Weapons:
 - Add dropdown menu with hardcoded weapons, allow refining dropdown list as user is typing. (still allow to add custom weapons that are not matching with any of the list)
 
-#### Builds:
-- Remove the ability to add echoes to a build if there are already 5 echoes.
-- Modify new characters talents field generation to start at level 1 (currently starts at 0).
-- Add clickable fields to represent traces upgrades.
-- Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
-- Change the talents order to reflect ingame order (swap forte and liberation)
-
 #### Pity/Tracker:
 - Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
-- Import JSON ignores 10 pulls (these are recorded with the same timestamp)
 - If JSON import fails, subsequent attempts are ignored.
+
+#### Pity/Tracker & Dashboard:
+- Remove the 50/50 or guarantee tag for the featured weapon (In wuwa, featured weapons are guaranted always)
 
 #### Endgame:
 - Add functionailty to automatically calculate endgame progress based on individual user input of progress (and, in turn, remove ability to directly edit those fields), so:
     - In Tower of Adversity, remove the ability to edit the total stars achieved manually.
     - In Whimpering Wastes and Troop Matrix, calculate the points.
-
+- Fix astrite auto-calc not recalculating if changing the stars achieved in the subcards under ToA gamemode.
 - Add subtle alerts for troop matrix missing rewards that do not reward astrite: The breakpoints are in Total Singularity Expansion Score (sum of all teams scores): 29000, 37000, 45000 and 58000, and reaching 5000 points with 6 teams.
+- Allow editing of last reset date.
 
 #### Exploration:
 - Add collpasing for the region cards.

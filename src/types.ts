@@ -165,11 +165,25 @@ export interface Echo {
   notes: string | null;
 }
 
+export interface EchoSetData {
+  key: string; // 'set_1', 'set_2', etc.
+  name: string;
+  filename: string;
+  two_piece_bonus: string;
+  five_piece_bonus: string;
+  has_2pc: boolean;  // True if set has a 2pc effect
+  has_3pc: boolean;  // True if set has a 3pc effect (3pc-only sets)
+  has_5pc: boolean;  // True if set has a 5pc effect
+  asset_type: string;
+}
+
 export interface EchoBuild {
   id: number;
   character_id: number;
-  set_bonus: string | null;
-  set_effect: string | null;
+  primary_set_key: string | null;      // Primary echo set ('set_1', 'set_18', etc.)
+  secondary_set_key: string | null;     // Secondary set for mixed builds (null if using 5pc)
+  primary_set_pieces: number;           // Number of pieces for primary set (5, 3, or 2)
+  secondary_set_pieces: number;         // Number of pieces for secondary set (0, 2, or 3)
   overall_quality: string | null;
   notes: string | null;
 }
