@@ -29,30 +29,34 @@ export function getRarityStars(rarity: number): string {
 /**
  * Tiered Build Status Classification System
  * 
- * Tier 6 - Unbuilt: Character is not built at all
- * Tier 5 - Minimal: Basic functionality, low investment
- * Tier 4 - Functional: Character is usable with decent investment
- * Tier 3 - Optimized: Well-invested, performs well
- * Tier 2 - Maxed: High/maximum investment
+ * Tier 7 - Unbuilt: Character is not built at all
+ * Tier 6 - Minimal: Basic functionality, low investment
+ * Tier 5 - Functional: Character is usable with decent investment
+ * Tier 4 - Optimized: Well-invested, performs well
+ * Tier 3 - Maxed: High/maximum investment
+ * Tier 2 - Next ones in line to be built
  * Tier 1 - Building: Currently working on
  */
 
 export const BUILD_STATUS_TIERS = {
-  // Tier 6: Unbuilt
-  'Not built': { tier: 6, priority: 7, color: 'bg-slate-700 text-slate-400' },
+  // Tier 7: Unbuilt
+  'Not built': { tier: 7, priority: 8, color: 'bg-slate-700 text-slate-400' },
   
-  // Tier 5: Minimal Investment (Levels 1-70, basic talents and echoes)
-  'Low investment': { tier: 5, priority: 6, color: 'bg-red-500/20 text-red-400' },
+  // Tier 6: Minimal Investment (Levels 1-70, basic talents and echoes)
+  'Low investment': { tier: 6, priority: 7, color: 'bg-red-500/20 text-red-400' },
   
-  // Tier 4: Functional (Levels 40-80, decent talents and echoes)
-  'Medium investment': { tier: 4, priority: 5, color: 'bg-lime-500/20 text-lime-400' },
+  // Tier 5: Functional (Levels 40-80, decent talents and echoes)
+  'Medium investment': { tier: 5, priority: 6, color: 'bg-lime-500/20 text-lime-400' },
   
-  // Tier 3: Optimized (Levels 70-80, good talents, quality echoes)
-  'High investment': { tier: 3, priority: 4, color: 'bg-green-500/20 text-green-400' },
+  // Tier 4: Optimized (Levels 70-80, good talents, quality echoes)
+  'High investment': { tier: 4, priority: 5, color: 'bg-green-500/20 text-green-400' },
   
-  // Tier 2: Maxed (Level 90, maxed talents, optimized echoes)
-  'Hyperinvested': { tier: 2, priority: 3, color: 'bg-cyan-500/20 text-cyan-400' },
-  'Perfect': { tier: 2, priority: 2, color: 'bg-purple-500/20 text-purple-400' },
+  // Tier 3: Maxed (Level 90, maxed talents, optimized echoes)
+  'Hyperinvested': { tier: 3, priority: 4, color: 'bg-cyan-500/20 text-cyan-400' },
+  'Perfect': { tier: 3, priority: 3, color: 'bg-purple-500/20 text-purple-400' },
+
+  // Tier 3: Next ones in line to be built
+  'Plan to build': { tier: 2, priority: 2, color: 'bg-yellow-500/20 text-yellow-400' },
 
   // Tier 1: Building (Characters currently being worked on)
   'Building': { tier: 1, priority: 1, color: 'bg-orange-500/20 text-orange-400' },
@@ -226,7 +230,6 @@ export function importFromWuwaTrackerFormat(
 ): Map<string, Array<Omit<PullHistory, 'id'>>> {
   const pullsByBanner = new Map<string, Array<Omit<PullHistory, 'id'>>>();
 
-  console.log('[DEBUG importFromWuwaTrackerFormat] Input pull count:', wuwaData.pulls.length);
 
   // Sort pulls by time (oldest first) to maintain correct pull order
   // The group field is preserved in group_order and will be used for display ordering
@@ -234,7 +237,6 @@ export function importFromWuwaTrackerFormat(
     new Date(a.time).getTime() - new Date(b.time).getTime()
   );
 
-  console.log('[DEBUG importFromWuwaTrackerFormat] After sort, count:', sortedPulls.length);
 
   // Group by banner type and calculate pull numbers
   sortedPulls.forEach((pull, index) => {
@@ -242,23 +244,16 @@ export function importFromWuwaTrackerFormat(
     
     // Skip beginner, selector, and other ignored banner types
     if (bannerType === null) {
-      console.log('[DEBUG importFromWuwaTrackerFormat] SKIPPED (null bannerType) index=' + index, { cardPoolType: pull.cardPoolType, name: pull.name, time: pull.time });
       return;
     }
     
     const bannerPulls = pullsByBanner.get(bannerType) || [];
     
     const internalPull = wuwaTrackerPullToInternal(pull, bannerPulls.length + 1);
-    console.log('[DEBUG importFromWuwaTrackerFormat] Converted index=' + index, { bannerType, name: internalPull.item_name, rarity: internalPull.rarity, item_type: internalPull.item_type, pull_date: internalPull.pull_date, pull_number: internalPull.pull_number });
     bannerPulls.push(internalPull);
     
     pullsByBanner.set(bannerType, bannerPulls);
   });
-
-  console.log('[DEBUG importFromWuwaTrackerFormat] Output banners:');
-  for (const [banner, pulls] of pullsByBanner) {
-    console.log('  ' + banner + ': ' + pulls.length + ' pulls');
-  }
 
   return pullsByBanner;
 }

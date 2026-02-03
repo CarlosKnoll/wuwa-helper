@@ -27,6 +27,7 @@ pub fn run() {
             characters::delete_character,
             echoes::get_echo_build,
             echoes::get_echoes,
+            echoes::get_echo_metadata_direct,
             echoes::get_echo_substats,
             echoes::update_echo_build,
             echoes::update_echo,

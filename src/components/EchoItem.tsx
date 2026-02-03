@@ -6,9 +6,14 @@ import ConfirmDialog from './ConfirmDialog';
 
 
 
-export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
+export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMetadata }: EchoItemProps) {
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  
+  // Debug log to check if metadata is being received
+  useEffect(() => {
+  }, [echo.echo_name, echoMetadata]);
+  
   const [form, setForm] = useState({
     echo_name: '',
     cost: 0,
@@ -168,24 +173,38 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
       {/* Echo Header */}
       <div className="p-3">
         <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            {editing ? (
-              <input
-                type="text"
-                value={form.echo_name}
-                onChange={e => setForm({ ...form, echo_name: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-cyan-500 mb-2"
-                placeholder="Echo name"
-              />
-            ) : (
-              <div className="font-semibold text-white text-base">{form.echo_name}</div>
-            )}
-            {editing && (
-              <div className="flex gap-2 mt-1 text-sm text-slate-400">
-                {form.cost > 0 && <span>Cost: {form.cost}</span>}
-                {form.rarity > 0 && <span>{getRarityStars(form.rarity)}</span>}
+          <div className="flex-1 flex items-center gap-3">
+            {/* Echo Image on the left - ALWAYS SHOW if available */}
+            {echoImage && (
+              <div className="w-16 h-16 rounded-lg bg-slate-900 border-2 border-cyan-500/50 overflow-hidden flex-shrink-0">
+                <img
+                  src={echoImage}
+                  alt={form.echo_name}
+                  className="w-full h-full object-cover"
+                />
               </div>
             )}
+            
+            {/* Echo Name */}
+            <div className="flex-1 min-w-0">
+              {editing ? (
+                <input
+                  type="text"
+                  value={form.echo_name}
+                  onChange={e => setForm({ ...form, echo_name: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-cyan-500 mb-2"
+                  placeholder="Echo name"
+                />
+              ) : (
+                <div className="font-semibold text-white text-base">{form.echo_name}</div>
+              )}
+              {editing && (
+                <div className="flex gap-2 mt-1 text-sm text-slate-400">
+                  {form.cost > 0 && <span>Cost: {form.cost}</span>}
+                  {form.rarity > 0 && <span>{getRarityStars(form.rarity)}</span>}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-start gap-2">
             {!editing ? (
@@ -213,7 +232,7 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="p-1 bg-slate-600 hover:bg-slate-700 rounded text-xs transition-colors"
+                  className="p-1 bg-slate-500 hover:bg-slate-600 rounded text-xs transition-colors"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -221,6 +240,36 @@ export default function EchoItem({ echo, substats, onUpdate }: EchoItemProps) {
             )}
           </div>
         </div>
+
+        {/* Echo Passives and Cooldown (when not editing and metadata is available) */}
+        {!editing && echoMetadata && (echoMetadata.passive1 || echoMetadata.passive2 || echoMetadata.cooldown > 0) && (
+          <div className="mb-3 bg-slate-800/30 rounded-lg p-2.5 space-y-2">
+            {echoMetadata.passive1 && (
+              <div>
+                <div className="text-cyan-400 text-xs font-semibold mb-1">Echo Skill</div>
+                <div className="text-green-400 text-xs leading-relaxed">
+                  {echoMetadata.passive1}
+                </div>
+              </div>
+            )}
+            {echoMetadata.passive2 && (
+              <div className={echoMetadata.passive1 ? "border-t border-slate-700/30 pt-2" : ""}>
+                <div className="text-cyan-400 text-xs font-semibold mb-1">Outro Skill</div>
+                <div className="text-green-400 text-xs leading-relaxed">
+                  {echoMetadata.passive2}
+                </div>
+              </div>
+            )}
+            {echoMetadata.cooldown > 0 && (
+              <div className={echoMetadata.passive1 || echoMetadata.passive2 ? "border-t border-slate-700/30 pt-2" : ""}>
+                <div className="flex items-center gap-2">
+                  <span className="text-cyan-400 text-xs font-semibold">Cooldown:</span>
+                  <span className="text-white text-xs font-medium">{echoMetadata.cooldown}s</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Main Stat Display (when not editing) */}
         {!editing && form.main_stat && (

@@ -43,13 +43,10 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 | weapons_inventory   | 0        | 0       | 9       | Table |
 | whimpering_wastes   | 0        | 0       | 8       | Table |
 
+---
 
 ### To-Do (Assets):
 Since this branch is focused on slowly and granullarly implement assets loading into the existing tabs, these are the goals before pulling into main.
-
-#### Build modals:
-Complete revamp of build modal, of course with assets.
-- Show echoes sets and echoes icons on modal.
 
 #### Forte modal:
 - Improve aesthetics. (Not set on whether scrape assets from the game or just offer better UI).
@@ -57,15 +54,19 @@ Complete revamp of build modal, of course with assets.
 ---
 
 ### Characters modal revamp:
-- Assets
+- Reorder tabs (info > talents > echoes) - Swap talents and echoes order.
+
+#### Talents:
+- Fix traces not saving if toggled (workaround right now is to toggle, then edit comment and save).
 
 #### Echoes:
 - Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
 - Backend mapping of echoes assets.
+- Fix assets loading noticeable slowly.
 
 ---
 
-### Remaining To-Dos (Unrelated to assets):
+### Remaining To-Dos (Not the focus of the branch):
 #### Dashboard:
 - Editing notes not showing time category (longterm, immediate, so on). 
 
@@ -74,12 +75,14 @@ Complete revamp of build modal, of course with assets.
 - Allow editing of rarity (for user error cases)
 - Make it so Rover display concatenates with its element before (so instead of three rover entries differentiated by their element icons we have actually display names of Aero Rover, Spectro Rover and Havoc Rover)
 - Display character notes in the card.
+- Change "Seq" string to Resonance Chain
 
 #### Add Characters:
 - Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (still allow to add custom characters that are not matching with any of the list)
 
 #### Weapons:
 - Allow editing of rarity (for user error cases)
+- Colored outline according to rarity.
 
 #### Add Weapons:
 - Add dropdown menu with hardcoded weapons, allow refining dropdown list as user is typing. (still allow to add custom weapons that are not matching with any of the list)
@@ -87,6 +90,7 @@ Complete revamp of build modal, of course with assets.
 #### Pity/Tracker:
 - Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
 - If JSON import fails, subsequent attempts are ignored.
+- Rename any "pull" mention to Convene.
 
 #### Pity/Tracker & Dashboard:
 - Remove the 50/50 or guarantee tag for the featured weapon (In wuwa, featured weapons are guaranted always)

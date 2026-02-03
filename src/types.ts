@@ -211,6 +211,12 @@ export interface EchoItemProps {
   echo: Echo;
   substats: EchoSubstat[];
   onUpdate: () => void;
+  echoImage?: string; // Optional base64 image data for the echo
+  echoMetadata?: {
+    passive1: string;
+    passive2: string;
+    cooldown: number;
+  };
 }
 
 /* =======================

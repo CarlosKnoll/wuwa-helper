@@ -65,6 +65,52 @@ impl AssetManager {
     /// Get path to asset - uses resolver for lookups and handles nested weapon directories
     pub fn get_asset_path(&self, asset_type: AssetType, name: &str) -> Option<PathBuf> {
         
+        // For echoes, try multiple strategies
+        if matches!(asset_type, AssetType::Echo) {
+            // Strategy 1: Try to resolve by display name first
+            if let Some(metadata) = self.resolver.resolve_by_name(name) {
+                let path = self.base_path
+                    .join(asset_type.as_str())
+                    .join(&metadata.filename);
+                
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+            
+            // Strategy 2: Try the name as filename directly
+            let direct_path = self.base_path
+                .join(asset_type.as_str())
+                .join(name);
+            
+            if direct_path.exists() {
+                return Some(direct_path);
+            }
+            
+            // Strategy 3: Try with .webp extension if not present
+            if !name.ends_with(".webp") && !name.ends_with(".png") {
+                let with_webp = self.base_path
+                    .join(asset_type.as_str())
+                    .join(format!("{}.webp", name));
+                
+                if with_webp.exists() {
+                    return Some(with_webp);
+                }
+            }
+            
+            // Strategy 4: Try converting name to ID format (lowercase, underscores)
+            let name_id = name.to_lowercase().replace(" ", "_").replace("'", "");
+            if let Some(metadata) = self.resolver.resolve_by_name(&name_id) {
+                let path = self.base_path
+                    .join(asset_type.as_str())
+                    .join(&metadata.filename);
+                
+                if path.exists() {
+                    return Some(path);
+                }
+            }
+        }
+        
         // For characters, use the resolver to find the correct filename
         if matches!(asset_type, AssetType::Character) {
             if let Some(filename) = self.resolver.get_asset_filename(name) {

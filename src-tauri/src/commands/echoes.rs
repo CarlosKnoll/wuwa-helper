@@ -39,6 +39,14 @@ pub struct EchoSubstat {
     pub stat_value: String,
 }
 
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EchoMetadataResponse {
+    pub passive1: String,
+    pub passive2: String,
+    pub cooldown: u8,
+}
+
 // ============================================
 // Echo Set Commands (Updated with piece count info)
 // ============================================
@@ -387,4 +395,43 @@ pub fn delete_echo(
     .map_err(|e| e.to_string())?;
     
     Ok("Echo deleted successfully".to_string())
+}
+
+#[tauri::command]
+pub fn get_echo_metadata_direct(echo_name: String) -> Result<Option<EchoMetadataResponse>, String> {
+    // Import the echo mappings function
+    use crate::assets::mappings::echoes::get_echo_mappings;
+    
+    let mappings = get_echo_mappings();
+    
+    // Search by display name (case-insensitive)
+    let echo_name_lower = echo_name.to_lowercase();
+    
+    for (_filename, metadata) in mappings.iter() {
+        if metadata.display_name.to_lowercase() == echo_name_lower {
+            // Tags are in order: [passive1, passive2, "Cooldown: Xs"]
+            if metadata.tags.len() >= 3 {
+                let passive1 = metadata.tags[0].clone();
+                let passive2 = metadata.tags[1].clone();
+                
+                // Parse cooldown from "Cooldown: 20s" format
+                let cooldown_str = &metadata.tags[2];
+                let cooldown = cooldown_str
+                    .replace("Cooldown:", "")
+                    .replace("s", "")
+                    .trim()
+                    .parse::<u8>()
+                    .unwrap_or(0);
+                
+                return Ok(Some(EchoMetadataResponse {
+                    passive1,
+                    passive2,
+                    cooldown,
+                }));
+            }
+        }
+    }
+    
+    // Not found
+    Ok(None)
 }

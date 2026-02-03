@@ -15,6 +15,9 @@ export default function CharacterEchoBuildSection({
   const [echoSets, setEchoSets] = useState<EchoSetData[]>([]);
   const [selectedEchoId, setSelectedEchoId] = useState<number | null>(null);
   const [echoSetImages, setEchoSetImages] = useState<Record<string, string>>({});
+  const [echoImages, setEchoImages] = useState<Record<number, string>>({});
+  const [echoMetadata, setEchoMetadata] = useState<Record<number, { passive1: string; passive2: string; cooldown: number }>>({});
+  const [assetResolverReady, setAssetResolverReady] = useState(false);
   const [form, setForm] = useState({
     primary_set_key: null as string | null,
     secondary_set_key: null as string | null,
@@ -24,10 +27,27 @@ export default function CharacterEchoBuildSection({
     notes: '',
   });
 
+  // Initialize asset resolver first (non-blocking)
+  useEffect(() => {
+    const initAssetResolver = async () => {
+      try {
+        await invoke('init_asset_resolver');
+        setAssetResolverReady(true);
+      } catch (err) {
+        // If initialization fails, still try to load assets without resolver
+        console.warn('Asset resolver initialization failed, will try loading assets directly:', err);
+        setAssetResolverReady(true);
+      }
+    };
+    initAssetResolver();
+  }, []);
+
   // Load echo sets from backend asset mappings
   useEffect(() => {
-    loadEchoSets();
-  }, []);
+    if (assetResolverReady) {
+      loadEchoSets();
+    }
+  }, [assetResolverReady]);
 
   // Update form when echoBuild changes
   useEffect(() => {
@@ -43,17 +63,23 @@ export default function CharacterEchoBuildSection({
     }
   }, [echoBuild]);
 
-  // Auto-select first echo when echoes list changes
+  // Auto-select first echo when echoes list changes (but don't auto-select on mount)
   useEffect(() => {
-    if (echoes.length > 0 && !selectedEchoId) {
-      setSelectedEchoId(echoes[0].id);
-    } else if (echoes.length === 0) {
+    if (echoes.length === 0) {
       setSelectedEchoId(null);
     } else if (selectedEchoId && !echoes.find(e => e.id === selectedEchoId)) {
       // If selected echo was deleted, select first available
       setSelectedEchoId(echoes[0]?.id || null);
     }
+    // Don't auto-select first echo - let user click to expand
   }, [echoes, selectedEchoId]);
+
+  // Load echo images when echoes change
+  useEffect(() => {
+    if (assetResolverReady && echoes.length > 0) {
+      loadEchoImages();
+    }
+  }, [echoes, assetResolverReady]);
 
   const loadEchoSets = async () => {
     try {
@@ -77,6 +103,58 @@ export default function CharacterEchoBuildSection({
     } catch (err) {
       console.error('Failed to load echo sets:', err);
     }
+  };
+
+  const loadEchoImages = async () => {
+    const images: Record<number, string> = {};
+    const metadata: Record<number, { passive1: string; passive2: string; cooldown: number }> = {};
+    
+    for (const echo of echoes) {
+      if (!echo.echo_name) continue;
+      
+      // Image loading (keep existing logic)
+      try {
+        // Try multiple strategies to get the echo image
+        let base64: string | null = null;
+        
+        if (!base64) {
+          try {
+            base64 = await invoke<string>('get_asset', {
+              assetType: 'echo',
+              name: echo.echo_name,
+            });
+          } catch (asIsErr) {
+            console.log("Error fetching echo asset:", asIsErr);
+          }
+        }
+        
+        if (base64) {
+          images[echo.id] = `data:image/webp;base64,${base64}`;
+        } else {
+        }
+      } catch (err) {
+      }
+
+      // Metadata fetching (independent of image loading)
+      try {
+        
+        // Use get_echo_metadata_direct - accesses hardcoded mappings directly
+        const echoMetadata = await invoke<any>('get_echo_metadata_direct', {
+          echoName: echo.echo_name,
+        });
+        
+        if (echoMetadata) {
+          const { passive1, passive2, cooldown } = echoMetadata;
+        
+          
+          metadata[echo.id] = { passive1, passive2, cooldown };
+        } else {
+        }
+      } catch (metadataErr) {
+      }
+    }
+    setEchoImages(images);
+    setEchoMetadata(metadata);
   };
 
   const handleSave = async () => {
@@ -135,6 +213,15 @@ export default function CharacterEchoBuildSection({
       await onUpdate();
     } catch (err) {
       alert('Failed to add echo: ' + err);
+    }
+  };
+
+  // Handle echo selection - toggle to deselect if same echo clicked
+  const handleEchoClick = (echoId: number) => {
+    if (selectedEchoId === echoId) {
+      setSelectedEchoId(null); // Deselect if clicking the same echo
+    } else {
+      setSelectedEchoId(echoId); // Select the new echo
     }
   };
 
@@ -207,11 +294,6 @@ export default function CharacterEchoBuildSection({
     <div className="relative flex gap-6 p-6">
       {/* Left Side - Echo Icons */}
       <div className="w-48 flex-shrink-0 space-y-4">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-slate-400">Echoes</h4>
-          <span className="text-xs text-cyan-400">{echoes.length}/5</span>
-        </div>
-        
         {/* Cost Warning */}
         {costOverLimit && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 flex items-start gap-2">
@@ -223,30 +305,42 @@ export default function CharacterEchoBuildSection({
           </div>
         )}
 
-        {/* Echo Icons */}
-        <div className="space-y-2">
+        {/* Echo Icons - CIRCULAR LAYOUT (CENTERED, NO NAMES, NO BOX) */}
+        <div className="space-y-3">
           {echoes.map(echo => (
             <button
               key={echo.id}
-              onClick={() => setSelectedEchoId(echo.id)}
-              className={`w-full rounded-lg border-2 transition-all ${
-                selectedEchoId === echo.id
-                  ? 'border-cyan-500 bg-cyan-500/10'
-                  : echo.rarity === 5
-                  ? 'border-yellow-500/50 bg-slate-800/50 hover:border-yellow-500/70'
-                  : echo.rarity === 4
-                  ? 'border-purple-500/50 bg-slate-800/50 hover:border-purple-500/70'
-                  : echo.rarity === 3
-                  ? 'border-blue-500/50 bg-slate-800/50 hover:border-blue-500/70'
-                  : 'border-green-500/50 bg-slate-800/50 hover:border-green-500/70'
-              }`}
+              onClick={() => handleEchoClick(echo.id)}
+              className="w-full flex justify-center transition-all p-2 hover:scale-105"
+              title={echo.echo_name || 'Echo'}
             >
-              <div className="p-2 flex flex-col items-center justify-center">
-                <div className="text-white text-sm font-medium w-full text-center break-words">
-                  {echo.echo_name || 'Echo'}
+              {/* Circular Echo Icon - Centered */}
+              <div className="relative flex-shrink-0">
+                {/* Main Circle - Increased size from w-14 h-14 to w-20 h-20 */}
+                <div className={`w-20 h-20 rounded-full bg-slate-900 border-3 overflow-hidden relative flex items-center justify-center transition-all ${
+                  selectedEchoId === echo.id
+                    ? 'border-cyan-400 shadow-lg shadow-cyan-500/50'
+                    : 'border-cyan-500/50'
+                }`}>
+                  {echoImages[echo.id] ? (
+                    <img
+                      src={echoImages[echo.id]}
+                      alt={echo.echo_name || 'Echo'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="animate-pulse bg-slate-700 w-full h-full" />
+                  )}
                 </div>
-                <div className="text-xs text-slate-400 mt-1">
-                  Cost {echo.cost} • Lv.{echo.level}
+
+                {/* Cost Badge - Top Left - Increased size */}
+                <div className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-purple-800 border-2 border-slate-900 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{echo.cost || 1}</span>
+                </div>
+
+                {/* Level Badge - Bottom Right - Increased size */}
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 border-2 border-slate-900 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{echo.level || 0}</span>
                 </div>
               </div>
             </button>
@@ -256,11 +350,10 @@ export default function CharacterEchoBuildSection({
           {canAddMoreEchoes && (
             <button
               onClick={addNewEcho}
-              className="w-full rounded-lg border-2 border-dashed border-slate-700 bg-slate-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all"
+              className="w-full flex justify-center transition-all hover:scale-105"
             >
-              <div className="py-3 flex flex-col items-center justify-center">
-                <Plus size={20} className="text-slate-500" />
-                <span className="text-xs text-slate-500 mt-1">Add Echo</span>
+              <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 bg-slate-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all flex items-center justify-center">
+                <Plus size={24} className="text-slate-500" />
               </div>
             </button>
           )}
@@ -274,6 +367,8 @@ export default function CharacterEchoBuildSection({
             echo={echoes.find(e => e.id === selectedEchoId)!}
             substats={echoSubstats[selectedEchoId] || []}
             onUpdate={onUpdate}
+            echoImage={echoImages[selectedEchoId]}
+            echoMetadata={echoMetadata[selectedEchoId]}
           />
         ) : (
           <div className="h-full flex items-center justify-center">

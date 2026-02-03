@@ -167,19 +167,14 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             }
           }
 
-          console.log('[DEBUG PityTab] uniqueKeys count:', uniqueKeys.size, 'totalPulls:', totalPulls);
-          console.log('[DEBUG PityTab] uniqueKeys:', Array.from(uniqueKeys));
-
           setImportProgress('Checking existing pulls...');
           for (const key of uniqueKeys) {
             const [bannerType, itemName, pullDate] = key.split('|');
-            console.log('[DEBUG PityTab] get_pull_count args:', { bannerType, itemName, pullDate });
             const count = await safeInvoke('get_pull_count', {
               bannerType,
               itemName,
               pullDate
             }) as number;
-            console.log('[DEBUG PityTab] get_pull_count result for key "' + key + '":', count);
             dbCounts.set(key, count);
           }
         }
@@ -198,23 +193,12 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
               seenCount.set(key, seen);
               const dbCount = dbCounts.get(key) ?? 0;
 
-              console.log('[DEBUG PityTab] INSERT LOOP #' + processedCount, {
-                key,
-                seen,
-                dbCount,
-                decision: seen <= dbCount ? 'SKIP' : 'INSERT',
-                pull_name: pull.item_name,
-                pull_rarity: pull.rarity,
-                pull_date: pull.pull_date,
-              });
-
               // Skip as long as we haven't exceeded the number already in the DB
               if (seen <= dbCount) {
                 continue;
               }
             }
 
-            console.log('[DEBUG PityTab] Calling add_pull for:', pull.item_name, { bannerType: pull.banner_type, rarity: pull.rarity, itemType: pull.item_type, pullDate: pull.pull_date, groupOrder: pull.group_order });
             try {
               await safeInvoke('add_pull', {
                 bannerType: pull.banner_type,
@@ -226,7 +210,6 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 notes: cleanImport ? 'Imported from WuwaTracker (Clean Import)' : 'Imported from WuwaTracker',
                 groupOrder: pull.group_order
               });
-              console.log('[DEBUG PityTab] add_pull SUCCESS for:', pull.item_name);
               totalImported++;
             } catch (addErr) {
               console.error('[DEBUG PityTab] add_pull FAILED for:', pull.item_name, addErr);
