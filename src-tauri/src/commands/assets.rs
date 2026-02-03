@@ -2,11 +2,11 @@
 //! Tauri commands for asset management
 
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::assets::{AssetManager, AssetType, CacheStats, UpdateProgress, UpdateSummary};
 
-pub type AssetManagerState = Mutex<AssetManager>;
+pub type AssetManagerState = RwLock<AssetManager>;
 
 /// Initialize the asset manager
 #[tauri::command]
@@ -14,7 +14,7 @@ pub async fn init_assets(app: AppHandle) -> Result<(), String> {
     let manager = AssetManager::new(app.clone())
         .map_err(|e| format!("Failed to initialize asset manager: {}", e))?;
     
-    app.manage(Mutex::new(manager));
+    app.manage(RwLock::new(manager));
     Ok(())
 }
 
@@ -25,7 +25,7 @@ pub async fn get_asset(
     name: String,
     state: State<'_, AssetManagerState>,
 ) -> Result<String, String> {
-    let manager = state.lock().await;
+    let manager = state.read().await;
     let asset_type_enum = parse_asset_type(&asset_type)?;
     
     // For elements, resolve the display name to the actual filename
@@ -47,7 +47,7 @@ pub async fn get_asset_path(
     name: String,
     state: State<'_, AssetManagerState>,
 ) -> Result<String, String> {
-    let manager = state.lock().await;
+    let manager = state.read().await;
     let asset_type_enum = parse_asset_type(&asset_type)?;
     
     let resolved_name = if matches!(asset_type_enum, AssetType::Element) {
@@ -69,7 +69,7 @@ pub async fn update_assets(
     state: State<'_, AssetManagerState>,
 ) -> Result<UpdateSummary, String> {
     let app_clone = app.clone();
-    let mut manager = state.lock().await;
+    let mut manager = state.write().await;
     
     manager
         .update_assets(Some(Box::new(move |progress: UpdateProgress| {
@@ -82,14 +82,14 @@ pub async fn update_assets(
 /// Check if assets should be updated
 #[tauri::command]
 pub async fn should_update_assets(state: State<'_, AssetManagerState>) -> Result<bool, String> {
-    let manager = state.lock().await;
+    let manager = state.read().await;
     Ok(manager.should_update())
 }
 
 /// Get cache statistics
 #[tauri::command]
 pub async fn get_asset_stats(state: State<'_, AssetManagerState>) -> Result<CacheStats, String> {
-    let manager = state.lock().await;
+    let manager = state.read().await;
     Ok(manager.get_stats())
 }
 

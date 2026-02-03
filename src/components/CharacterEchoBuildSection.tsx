@@ -14,8 +14,9 @@ export default function CharacterEchoBuildSection({
   const [editing, setEditing] = useState(false);
   const [echoSets, setEchoSets] = useState<EchoSetData[]>([]);
   const [selectedEchoId, setSelectedEchoId] = useState<number | null>(null);
-  const [echoSetImages, setEchoSetImages] = useState<Record<string, string>>({});
-  const [echoImages, setEchoImages] = useState<Record<number, string>>({});
+  const [echoSetImages, setEchoSetImages] = useState<Record<string, string>>({}); // set_key -> image
+  const [echoImages, setEchoImages] = useState<Record<number, string>>({}); // echo_id -> image
+  const [echoSpecificSetImages, setEchoSpecificSetImages] = useState<Record<number, string>>({}); // echo_id -> its set image
   const [echoMetadata, setEchoMetadata] = useState<Record<number, { passive1: string; passive2: string; cooldown: number }>>({});
   const [assetResolverReady, setAssetResolverReady] = useState(false);
   const [form, setForm] = useState({
@@ -74,12 +75,13 @@ export default function CharacterEchoBuildSection({
     // Don't auto-select first echo - let user click to expand
   }, [echoes, selectedEchoId]);
 
-  // Load echo images when echoes change
+  // Load echo images when echoes change AND when echoSets/echoSetImages are available
   useEffect(() => {
-    if (assetResolverReady && echoes.length > 0) {
+    if (assetResolverReady && echoes.length > 0 && echoSets.length > 0 && Object.keys(echoSetImages).length > 0) {
       loadEchoImages();
+    } else {
     }
-  }, [echoes, assetResolverReady]);
+  }, [echoes, assetResolverReady, echoSets, echoSetImages]);
 
   const loadEchoSets = async () => {
     try {
@@ -116,23 +118,56 @@ export default function CharacterEchoBuildSection({
       try {
         // Try multiple strategies to get the echo image
         let base64: string | null = null;
+        let successStrategy: string | null = null;
         
+        // Strategy 1: Try using asset resolver to get filename
+        try {
+          const filename = await invoke<string | null>('get_asset_filename', {
+            identifier: echo.echo_name,
+          });
+          if (filename) {
+            const cleanName = filename.replace('.webp', '').replace('.png', '');
+            base64 = await invoke<string>('get_asset', {
+              assetType: 'echo',
+              name: cleanName,
+            });
+            successStrategy = 'resolver';
+          }
+        } catch (resolverErr) {
+        }
+        
+        // Strategy 2: Try direct lookup by converting name to ID format
+        if (!base64) {
+          try {
+            const nameId = echo.echo_name.toLowerCase().replace(/\s+/g, '_').replace(/'/g, '');
+            base64 = await invoke<string>('get_asset', {
+              assetType: 'echo',
+              name: nameId,
+            });
+            successStrategy = 'name_to_id';
+          } catch (directErr) {
+          }
+        }
+        
+        // Strategy 3: Try using the echo name directly as-is
         if (!base64) {
           try {
             base64 = await invoke<string>('get_asset', {
               assetType: 'echo',
               name: echo.echo_name,
             });
+            successStrategy = 'as_is';
           } catch (asIsErr) {
-            console.log("Error fetching echo asset:", asIsErr);
           }
         }
         
         if (base64) {
           images[echo.id] = `data:image/webp;base64,${base64}`;
         } else {
+          console.warn(`[Failed] All strategies failed for: "${echo.echo_name}"`);
         }
       } catch (err) {
+        console.error(`[Error] Exception loading echo image for "${echo.echo_name}":`, err);
       }
 
       // Metadata fetching (independent of image loading)
@@ -143,18 +178,34 @@ export default function CharacterEchoBuildSection({
           echoName: echo.echo_name,
         });
         
+        
         if (echoMetadata) {
           const { passive1, passive2, cooldown } = echoMetadata;
-        
+          
           
           metadata[echo.id] = { passive1, passive2, cooldown };
         } else {
         }
       } catch (metadataErr) {
+        console.error(`[Metadata Error] Failed to load metadata for "${echo.echo_name}":`, metadataErr);
       }
     }
+    
+    // Load echo set images for each echo
+    const setImages: Record<number, string> = {};
+    for (const echo of echoes) {
+      if (echo.echo_set) {
+        // Find the set key that matches this echo's set name
+        const matchingSet = echoSets.find(set => set.name === echo.echo_set);
+        if (matchingSet && echoSetImages[matchingSet.key]) {
+          setImages[echo.id] = echoSetImages[matchingSet.key];
+        }
+      }
+    }
+    
     setEchoImages(images);
     setEchoMetadata(metadata);
+    setEchoSpecificSetImages(setImages);
   };
 
   const handleSave = async () => {
@@ -232,6 +283,7 @@ export default function CharacterEchoBuildSection({
         ...form,
         primary_set_pieces: 5,
         secondary_set_pieces: 0,
+        primary_set_key: null,  // Clear primary set selection
         secondary_set_key: null,
       });
     } else if (config === '3pc+2pc') {
@@ -239,6 +291,8 @@ export default function CharacterEchoBuildSection({
         ...form,
         primary_set_pieces: 3,
         secondary_set_pieces: 2,
+        primary_set_key: null,  // Clear primary set selection
+        secondary_set_key: null, // Clear secondary set selection
       });
     }
   };
@@ -286,6 +340,15 @@ export default function CharacterEchoBuildSection({
   const configLabel = isMixedBuild 
     ? `${form.primary_set_pieces}pc + ${form.secondary_set_pieces}pc`
     : `${form.primary_set_pieces}pc`;
+
+  // Calculate allowed echo set names based on build configuration
+  const allowedEchoSetNames: string[] = [];
+  if (primarySet) {
+    allowedEchoSetNames.push(primarySet.name);
+  }
+  if (secondarySet && isMixedBuild) {
+    allowedEchoSetNames.push(secondarySet.name);
+  }
 
   const totalCost = getTotalCost();
   const costOverLimit = totalCost > 12;
@@ -338,6 +401,17 @@ export default function CharacterEchoBuildSection({
                   <span className="text-white text-xs font-bold">{echo.cost || 1}</span>
                 </div>
 
+                {/* Echo Set Icon - Top Right */}
+                {echoSpecificSetImages[echo.id] && (
+                  <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-slate-900 border-2 border-slate-700 overflow-hidden flex items-center justify-center">
+                    <img
+                      src={echoSpecificSetImages[echo.id]}
+                      alt={echo.echo_set || 'Set'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 {/* Level Badge - Bottom Right - Increased size */}
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 border-2 border-slate-900 flex items-center justify-center">
                   <span className="text-white text-xs font-bold">{echo.level || 0}</span>
@@ -368,7 +442,9 @@ export default function CharacterEchoBuildSection({
             substats={echoSubstats[selectedEchoId] || []}
             onUpdate={onUpdate}
             echoImage={echoImages[selectedEchoId]}
+            echoSetImage={echoSpecificSetImages[selectedEchoId]}
             echoMetadata={echoMetadata[selectedEchoId]}
+            allowedEchoSets={allowedEchoSetNames}
           />
         ) : (
           <div className="h-full flex items-center justify-center">
@@ -479,14 +555,19 @@ export default function CharacterEchoBuildSection({
                   {form.primary_set_pieces === 5 && primarySet.has_2pc && primarySet.two_piece_bonus && (
                     <div className="border-t border-slate-700/30 pt-2" />
                   )}
-                  <div className="flex items-start gap-2">
-                    <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-green-400 leading-relaxed">
-                      {form.primary_set_pieces === 5 && primarySet.five_piece_bonus}
-                      {form.primary_set_pieces === 3 && primarySet.two_piece_bonus}
-                      {form.primary_set_pieces === 2 && primarySet.two_piece_bonus}
+                  {/* Only show the main bonus section if there's actually content */}
+                  {((form.primary_set_pieces === 5 && primarySet.five_piece_bonus) ||
+                    (form.primary_set_pieces === 3 && primarySet.two_piece_bonus) ||
+                    (form.primary_set_pieces === 2 && primarySet.two_piece_bonus)) && (
+                    <div className="flex items-start gap-2">
+                      <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-green-400 leading-relaxed">
+                        {form.primary_set_pieces === 5 && primarySet.five_piece_bonus}
+                        {form.primary_set_pieces === 3 && primarySet.two_piece_bonus}
+                        {form.primary_set_pieces === 2 && primarySet.two_piece_bonus}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -525,7 +606,7 @@ export default function CharacterEchoBuildSection({
                 </div>
                 
                 {/* Show secondary set effect */}
-                {secondarySet && (
+                {secondarySet && isMixedBuild && (
                   <div className="mt-2 bg-slate-800/30 border border-slate-700/50 rounded-lg p-2.5">
                     <div className="text-xs font-semibold text-white mb-1">{secondarySet.name}</div>
                     <div className="flex items-start gap-2">

@@ -9,3 +9,4 @@ pub mod database;
 pub mod goals;
 pub mod assets;
 pub mod asset_resolver;
+pub mod echo_stats;

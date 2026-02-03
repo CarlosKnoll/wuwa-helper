@@ -3,19 +3,26 @@ import { Edit2, Save, Plus, Trash2, X } from 'lucide-react';
 import { EchoSubstat, EchoItemProps } from '../types';
 import { safeInvoke, getRarityStars } from '../utils';
 import ConfirmDialog from './ConfirmDialog';
+import { invoke } from '@tauri-apps/api/core';
 
+interface StatInfo {
+  name: string;
+  is_percentage: boolean;
+}
 
+interface EchoStatsOptions {
+  main_stats_by_cost: Record<number, StatInfo[]>;
+  substats: StatInfo[];
+}
 
-export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMetadata }: EchoItemProps) {
+export default function EchoItem({ echo, substats = [], onUpdate, echoImage, echoSetImage, echoMetadata, allowedEchoSets = [] }: EchoItemProps & { allowedEchoSets?: string[] }) {
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  
-  // Debug log to check if metadata is being received
-  useEffect(() => {
-  }, [echo.echo_name, echoMetadata]);
-  
+  const [echoStatsOptions, setEchoStatsOptions] = useState<EchoStatsOptions | null>(null);
+  const [availableEchoSets, setAvailableEchoSets] = useState<string[]>([]);
   const [form, setForm] = useState({
     echo_name: '',
+    echo_set: '',
     cost: 0,
     rarity: 5,
     level: 0,
@@ -28,10 +35,27 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
   const [newSubstats, setNewSubstats] = useState<{stat_name: string, stat_value: string}[]>([]);
   const [deletedSubstatIds, setDeletedSubstatIds] = useState<number[]>([]);
 
+  // Load echo stats options on mount
+  useEffect(() => {
+    invoke<EchoStatsOptions>('get_echo_stats_options')
+      .then(options => setEchoStatsOptions(options))
+      .catch(err => console.error('Failed to load echo stats options:', err));
+  }, []);
+
+  // Load available echo sets when echo name changes
+  useEffect(() => {
+    if (echo.echo_name) {
+      invoke<string[]>('get_echo_available_sets', { echoName: echo.echo_name })
+        .then(sets => setAvailableEchoSets(sets))
+        .catch(err => console.error('Failed to load available echo sets:', err));
+    }
+  }, [echo.echo_name]);
+
   // Sync form with echo whenever it changes
   useEffect(() => {
     setForm({
       echo_name: echo.echo_name || '',
+      echo_set: echo.echo_set || '',
       cost: echo.cost || 0,
       rarity: echo.rarity || 5,
       level: echo.level || 0,
@@ -48,10 +72,11 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
 
   const handleSave = async () => {
     try {
-      // Update echo main stats including name
+      // Update echo main stats including name and set
       await safeInvoke('update_echo', {
         id: echo.id,
         echoName: form.echo_name || null,
+        echoSet: form.echo_set || null,
         cost: form.cost || null,
         rarity: form.rarity || null,
         level: form.level || null,
@@ -100,6 +125,7 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
     setEditing(false);
     setForm({
       echo_name: echo.echo_name || '',
+      echo_set: echo.echo_set || '',
       cost: echo.cost || 0,
       rarity: echo.rarity || 5,
       level: echo.level || 0,
@@ -142,6 +168,59 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
     }
   };
 
+  // Get main stat options for current echo cost
+  const getMainStatOptions = (): StatInfo[] => {
+    if (!echoStatsOptions || !form.cost) return [];
+    return echoStatsOptions.main_stats_by_cost[form.cost] || [];
+  };
+
+  // Check if a stat is a percentage stat
+  const isPercentageStat = (statName: string): boolean => {
+    if (!echoStatsOptions) return false;
+    
+    // Check in main stats
+    for (const stats of Object.values(echoStatsOptions.main_stats_by_cost)) {
+      const stat = stats.find(s => s.name === statName);
+      if (stat) return stat.is_percentage;
+    }
+    
+    // Check in substats
+    const substat = echoStatsOptions.substats.find(s => s.name === statName);
+    return substat?.is_percentage || false;
+  };
+
+  // Strip % from value for editing
+  const stripPercentage = (value: string): string => {
+    return value.replace('%', '').trim();
+  };
+
+  // Add % to value if it's a percentage stat and doesn't have it
+  const ensurePercentage = (value: string, statName: string): string => {
+    if (!value) return value;
+    const trimmed = value.trim();
+    if (isPercentageStat(statName) && !trimmed.endsWith('%')) {
+      return trimmed + '%';
+    }
+    return trimmed;
+  };
+
+  // Handle main stat value change
+  const handleMainStatValueChange = (value: string) => {
+    // Allow only numbers and decimal point
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    setForm({ ...form, main_stat_value: cleanValue });
+  };
+
+  // Handle main stat value blur (add % when user leaves field)
+  const handleMainStatValueBlur = () => {
+    if (form.main_stat && form.main_stat_value) {
+      setForm({ 
+        ...form, 
+        main_stat_value: ensurePercentage(form.main_stat_value, form.main_stat) 
+      });
+    }
+  };
+
   const visibleSubstats = editing 
     ? substatForms.filter(s => !deletedSubstatIds.includes(s.id))
     : substats;
@@ -174,9 +253,9 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
       <div className="p-3">
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1 flex items-center gap-3">
-            {/* Echo Image on the left - ALWAYS SHOW if available */}
-            {echoImage && (
-              <div className="w-16 h-16 rounded-lg bg-slate-900 border-2 border-cyan-500/50 overflow-hidden flex-shrink-0">
+            {/* Echo Image on the left */}
+            {echoImage && !editing && (
+              <div className="w-12 h-12 rounded-lg bg-slate-900 border-2 border-cyan-500/50 overflow-hidden flex-shrink-0">
                 <img
                   src={echoImage}
                   alt={form.echo_name}
@@ -196,7 +275,17 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
                   placeholder="Echo name"
                 />
               ) : (
-                <div className="font-semibold text-white text-base">{form.echo_name}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-white text-base">{form.echo_name}</div>
+                  {echoSetImage && (
+                    <img
+                      src={echoSetImage}
+                      alt={form.echo_set || 'Echo set'}
+                      className="w-5 h-5 object-cover rounded"
+                      title={form.echo_set || undefined}
+                    />
+                  )}
+                </div>
               )}
               {editing && (
                 <div className="flex gap-2 mt-1 text-sm text-slate-400">
@@ -243,31 +332,20 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
 
         {/* Echo Passives and Cooldown (when not editing and metadata is available) */}
         {!editing && echoMetadata && (echoMetadata.passive1 || echoMetadata.passive2 || echoMetadata.cooldown > 0) && (
-          <div className="mb-3 bg-slate-800/30 rounded-lg p-2.5 space-y-2">
-            {echoMetadata.passive1 && (
-              <div>
-                <div className="text-cyan-400 text-xs font-semibold mb-1">Echo Skill</div>
-                <div className="text-green-400 text-xs leading-relaxed">
-                  {echoMetadata.passive1}
+          <div className="mb-3 bg-slate-800/30 rounded-lg p-2.5">
+            <div className="text-green-400 text-xs leading-relaxed space-y-2">
+              {echoMetadata.passive1 && (
+                <div>{echoMetadata.passive1}</div>
+              )}
+              {echoMetadata.passive2 && (
+                <div>{echoMetadata.passive2}</div>
+              )}
+              {echoMetadata.cooldown > 0 && (
+                <div className="text-white">
+                  Cooldown: {echoMetadata.cooldown}s
                 </div>
-              </div>
-            )}
-            {echoMetadata.passive2 && (
-              <div className={echoMetadata.passive1 ? "border-t border-slate-700/30 pt-2" : ""}>
-                <div className="text-cyan-400 text-xs font-semibold mb-1">Outro Skill</div>
-                <div className="text-green-400 text-xs leading-relaxed">
-                  {echoMetadata.passive2}
-                </div>
-              </div>
-            )}
-            {echoMetadata.cooldown > 0 && (
-              <div className={echoMetadata.passive1 || echoMetadata.passive2 ? "border-t border-slate-700/30 pt-2" : ""}>
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-400 text-xs font-semibold">Cooldown:</span>
-                  <span className="text-white text-xs font-medium">{echoMetadata.cooldown}s</span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
@@ -319,25 +397,69 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
                 />
               </div>
             </div>
+            
+            {/* Echo Set Dropdown */}
+            {availableEchoSets.length > 0 && (
+              <div>
+                <label className="text-xs text-slate-500">Echo Set</label>
+                <select
+                  value={form.echo_set}
+                  onChange={e => setForm({ ...form, echo_set: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="">Select echo set...</option>
+                  {availableEchoSets
+                    .filter(setName => {
+                      // If build has selected sets, only show those sets
+                      // Otherwise, show all available sets for this echo
+                      if (allowedEchoSets.length > 0) {
+                        return allowedEchoSets.includes(setName);
+                      }
+                      return true;
+                    })
+                    .map(setName => (
+                      <option key={setName} value={setName}>
+                        {setName}
+                      </option>
+                    ))}
+                </select>
+                {allowedEchoSets.length > 0 && (
+                  <div className="text-xs text-slate-400 mt-1">
+                    Only showing sets from your build configuration
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Main Stat: Dropdown for name, text input for value */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-slate-500">Main Stat</label>
-                <input
-                  type="text"
+                <select
                   value={form.main_stat}
                   onChange={e => setForm({ ...form, main_stat: e.target.value })}
                   className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
-                  placeholder="e.g., ATK%"
-                />
+                  disabled={!echoStatsOptions || !form.cost}
+                >
+                  <option value="">Select main stat...</option>
+                  {getMainStatOptions().map(stat => (
+                    <option key={stat.name} value={stat.name}>
+                      {stat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="text-xs text-slate-500">Value</label>
+                <label className="text-xs text-slate-500">
+                  Value {isPercentageStat(form.main_stat) && <span className="text-slate-600">(auto-adds %)</span>}
+                </label>
                 <input
                   type="text"
-                  value={form.main_stat_value}
-                  onChange={e => setForm({ ...form, main_stat_value: e.target.value })}
+                  value={stripPercentage(form.main_stat_value)}
+                  onChange={e => handleMainStatValueChange(e.target.value)}
+                  onBlur={handleMainStatValueBlur}
                   className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
-                  placeholder="e.g., 22.8%"
+                  placeholder={isPercentageStat(form.main_stat) ? "22.8" : "e.g., 320"}
                 />
               </div>
             </div>
@@ -369,11 +491,10 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
           <div className="px-3 pb-3 pt-2">
             {editing ? (
               <div className="space-y-2">
-                {/* Existing substats */}
+                {/* Existing substats: Dropdown for name, text input for value */}
                 {visibleSubstats.map((sub) => (
                   <div key={sub.id} className="flex gap-2">
-                    <input
-                      type="text"
+                    <select
                       value={sub.stat_name}
                       onChange={e => {
                         const newSubstats = [...substatForms];
@@ -384,21 +505,40 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
                         }
                       }}
                       className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
-                      placeholder="Stat name"
-                    />
+                      disabled={!echoStatsOptions}
+                    >
+                      <option value="">Select stat...</option>
+                      {echoStatsOptions?.substats.map(stat => (
+                        <option key={stat.name} value={stat.name}>
+                          {stat.name}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="text"
-                      value={sub.stat_value}
+                      value={stripPercentage(sub.stat_value)}
                       onChange={e => {
+                        const cleanValue = e.target.value.replace(/[^\d.]/g, '');
                         const newSubstats = [...substatForms];
                         const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
                         if (actualIdx >= 0) {
-                          newSubstats[actualIdx] = { ...sub, stat_value: e.target.value };
+                          newSubstats[actualIdx] = { ...sub, stat_value: cleanValue };
+                          setSubstatForms(newSubstats);
+                        }
+                      }}
+                      onBlur={() => {
+                        const newSubstats = [...substatForms];
+                        const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
+                        if (actualIdx >= 0 && sub.stat_name && sub.stat_value) {
+                          newSubstats[actualIdx] = { 
+                            ...sub, 
+                            stat_value: ensurePercentage(sub.stat_value, sub.stat_name) 
+                          };
                           setSubstatForms(newSubstats);
                         }
                       }}
                       className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
-                      placeholder="Value"
+                      placeholder={isPercentageStat(sub.stat_name) ? "6.0" : "50"}
                     />
                     <button
                       onClick={() => removeExistingSubstat(sub.id)}
@@ -409,11 +549,10 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
                   </div>
                 ))}
                 
-                {/* New substats */}
+                {/* New substats: Dropdown for name, text input for value */}
                 {newSubstats.map((sub, idx) => (
                   <div key={`new-${idx}`} className="flex gap-2">
-                    <input
-                      type="text"
+                    <select
                       value={sub.stat_name}
                       onChange={e => {
                         const updated = [...newSubstats];
@@ -421,18 +560,36 @@ export default function EchoItem({ echo, substats, onUpdate, echoImage, echoMeta
                         setNewSubstats(updated);
                       }}
                       className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
-                      placeholder="Stat name (new)"
-                    />
+                      disabled={!echoStatsOptions}
+                    >
+                      <option value="">Select stat...</option>
+                      {echoStatsOptions?.substats.map(stat => (
+                        <option key={stat.name} value={stat.name}>
+                          {stat.name}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="text"
-                      value={sub.stat_value}
+                      value={stripPercentage(sub.stat_value)}
                       onChange={e => {
+                        const cleanValue = e.target.value.replace(/[^\d.]/g, '');
                         const updated = [...newSubstats];
-                        updated[idx] = { ...sub, stat_value: e.target.value };
+                        updated[idx] = { ...sub, stat_value: cleanValue };
                         setNewSubstats(updated);
                       }}
+                      onBlur={() => {
+                        if (sub.stat_name && sub.stat_value) {
+                          const updated = [...newSubstats];
+                          updated[idx] = { 
+                            ...sub, 
+                            stat_value: ensurePercentage(sub.stat_value, sub.stat_name) 
+                          };
+                          setNewSubstats(updated);
+                        }
+                      }}
                       className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
-                      placeholder="Value"
+                      placeholder={isPercentageStat(sub.stat_name) ? "6.0" : "50"}
                     />
                     <button
                       onClick={() => removeNewSubstat(idx)}

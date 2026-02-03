@@ -23,6 +23,7 @@ pub struct Echo {
     pub id: i64,
     pub build_id: i64,
     pub echo_name: Option<String>,
+    pub echo_set: Option<String>,  // Which echo set this echo belongs to
     pub cost: Option<i64>,
     pub level: Option<i64>,
     pub rarity: Option<i64>,
@@ -44,6 +45,7 @@ pub struct EchoSubstat {
 pub struct EchoMetadataResponse {
     pub passive1: String,
     pub passive2: String,
+    pub passive3: String,
     pub cooldown: u8,
 }
 
@@ -226,7 +228,7 @@ pub fn get_echoes(app: tauri::AppHandle, build_id: i64) -> Result<Vec<Echo>, Str
     let conn = init_db(&app)?;
     
     let mut stmt = conn
-        .prepare("SELECT id, build_id, echo_name, cost, level, rarity, main_stat, main_stat_value, notes FROM echoes WHERE build_id = ?")
+        .prepare("SELECT id, build_id, echo_name, echo_set, cost, level, rarity, main_stat, main_stat_value, notes FROM echoes WHERE build_id = ?")
         .map_err(|e| e.to_string())?;
     
     let echoes = stmt
@@ -235,12 +237,13 @@ pub fn get_echoes(app: tauri::AppHandle, build_id: i64) -> Result<Vec<Echo>, Str
                 id: row.get(0)?,
                 build_id: row.get(1)?,
                 echo_name: row.get(2)?,
-                cost: row.get(3)?,
-                level: row.get(4)?,
-                rarity: row.get(5)?,
-                main_stat: row.get(6)?,
-                main_stat_value: row.get(7)?,
-                notes: row.get(8)?,
+                echo_set: row.get(3)?,
+                cost: row.get(4)?,
+                level: row.get(5)?,
+                rarity: row.get(6)?,
+                main_stat: row.get(7)?,
+                main_stat_value: row.get(8)?,
+                notes: row.get(9)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -279,6 +282,7 @@ pub fn update_echo(
     app: tauri::AppHandle,
     id: i64,
     echo_name: Option<String>,
+    echo_set: Option<String>,
     cost: Option<i64>,
     rarity: Option<i64>,
     level: Option<i64>,
@@ -289,8 +293,8 @@ pub fn update_echo(
     let conn = init_db(&app)?;
     
     conn.execute(
-        "UPDATE echoes SET echo_name = ?, cost = ?, rarity = ?, level = ?, main_stat = ?, main_stat_value = ?, notes = ? WHERE id = ?",
-        (echo_name, cost, rarity, level, main_stat, main_stat_value, notes, id),
+        "UPDATE echoes SET echo_name = ?, echo_set = ?, cost = ?, rarity = ?, level = ?, main_stat = ?, main_stat_value = ?, notes = ? WHERE id = ?",
+        (echo_name, echo_set, cost, rarity, level, main_stat, main_stat_value, notes, id),
     )
     .map_err(|e| e.to_string())?;
     
@@ -302,6 +306,7 @@ pub fn add_echo(
     app: tauri::AppHandle,
     build_id: i64,
     echo_name: String,
+    echo_set: Option<String>,
     cost: i64,
     level: i64,
     rarity: i64,
@@ -312,9 +317,9 @@ pub fn add_echo(
     let conn = init_db(&app)?;
     
     conn.execute(
-        "INSERT INTO echoes (build_id, echo_name, cost, level, rarity, main_stat, main_stat_value, notes) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (build_id, echo_name, cost, level, rarity, main_stat, main_stat_value, notes),
+        "INSERT INTO echoes (build_id, echo_name, echo_set, cost, level, rarity, main_stat, main_stat_value, notes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (build_id, echo_name, echo_set, cost, level, rarity, main_stat, main_stat_value, notes),
     )
     .map_err(|e| e.to_string())?;
     
@@ -413,6 +418,7 @@ pub fn get_echo_metadata_direct(echo_name: String) -> Result<Option<EchoMetadata
             if metadata.tags.len() >= 3 {
                 let passive1 = metadata.tags[0].clone();
                 let passive2 = metadata.tags[1].clone();
+                let passive3 = metadata.tags[2].clone();
                 
                 // Parse cooldown from "Cooldown: 20s" format
                 let cooldown_str = &metadata.tags[2];
@@ -426,6 +432,7 @@ pub fn get_echo_metadata_direct(echo_name: String) -> Result<Option<EchoMetadata
                 return Ok(Some(EchoMetadataResponse {
                     passive1,
                     passive2,
+                    passive3,
                     cooldown,
                 }));
             }
@@ -434,4 +441,29 @@ pub fn get_echo_metadata_direct(echo_name: String) -> Result<Option<EchoMetadata
     
     // Not found
     Ok(None)
+}
+
+/// Get available echo sets for a specific echo name
+/// Returns the list of set names this echo can belong to
+#[tauri::command]
+pub fn get_echo_available_sets(echo_name: String) -> Result<Vec<String>, String> {
+    use crate::assets::mappings::echoes::get_echo_mappings;
+    
+    let mappings = get_echo_mappings();
+    let echo_name_lower = echo_name.to_lowercase();
+    
+    for (_filename, metadata) in mappings.iter() {
+        if metadata.display_name.to_lowercase() == echo_name_lower {
+            // The element field contains the comma-separated list of sets
+            if let Some(sets_str) = &metadata.element {
+                let sets: Vec<String> = sets_str
+                    .split(", ")
+                    .map(|s| s.trim().to_string())
+                    .collect();
+                return Ok(sets);
+            }
+        }
+    }
+    
+    Ok(vec![])
 }

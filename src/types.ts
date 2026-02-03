@@ -169,6 +169,7 @@ export interface Echo {
   id: number;
   build_id: number;
   echo_name: string | null;
+  echo_set: string | null;  // Which echo set this echo belongs to
   cost: number;
   level: number;
   rarity: number;
@@ -212,6 +213,7 @@ export interface EchoItemProps {
   substats: EchoSubstat[];
   onUpdate: () => void;
   echoImage?: string; // Optional base64 image data for the echo
+  echoSetImage?: string; // Optional base64 image data for the echo's set
   echoMetadata?: {
     passive1: string;
     passive2: string;

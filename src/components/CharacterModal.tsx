@@ -6,7 +6,7 @@ import CharacterInfo from './CharacterInfo';
 import CharacterTalentsSection from './CharacterTalentsSection';
 import CharacterEchoBuildSection from './CharacterEchoBuildSection';
 
-type SubMenuType = 'overview' | 'echoes' | 'talents';
+type SubMenuType = 'overview' | 'talents' | 'echoes';
 
 export default function CharacterModal({ character, onClose, onUpdate }: CharacterModalProps) {
   // Active submenu state
@@ -121,8 +121,8 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
 
   const subMenuItems = [
     { id: 'overview' as SubMenuType, label: 'Overview', icon: User },
-    { id: 'echoes' as SubMenuType, label: 'Echo', icon: Shield },
     { id: 'talents' as SubMenuType, label: 'Forte', icon: Zap },
+    { id: 'echoes' as SubMenuType, label: 'Echo', icon: Shield },
   ];
 
   return (
@@ -175,7 +175,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className={`flex-1 overflow-y-auto ${activeSubMenu === 'talents' ? 'p-0' : 'p-6'}`}>
             {activeSubMenu === 'overview' && (
               <CharacterInfo
                 character={character}
@@ -197,19 +197,19 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
               />
             )}
 
+            {activeSubMenu === 'talents' && (
+              <CharacterTalentsSection
+                talents={talents}
+                characterId={character.id}
+                onUpdate={loadDetails}
+              />
+            )}
+
             {activeSubMenu === 'echoes' && (
               <CharacterEchoBuildSection
                 echoBuild={echoBuild}
                 echoes={echoes}
                 echoSubstats={echoSubstats}
-                onUpdate={loadDetails}
-              />
-            )}
-
-            {activeSubMenu === 'talents' && (
-              <CharacterTalentsSection
-                talents={talents}
-                characterId={character.id}
                 onUpdate={loadDetails}
               />
             )}

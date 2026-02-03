@@ -45,30 +45,12 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 ---
 
-### To-Do (Assets):
-Since this branch is focused on slowly and granullarly implement assets loading into the existing tabs, these are the goals before pulling into main.
-
-#### Forte modal:
-- Improve aesthetics. (Not set on whether scrape assets from the game or just offer better UI).
-
----
-
-### Characters modal revamp:
-- Reorder tabs (info > talents > echoes) - Swap talents and echoes order.
-
-#### Talents:
-- Fix traces not saving if toggled (workaround right now is to toggle, then edit comment and save).
-
-#### Echoes:
-- Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
-- Backend mapping of echoes assets.
-- Fix assets loading noticeable slowly.
-- Remove title label of the echoes passives and make the area scrollable (so the middle column does not grows to a bigger height than the echo set (right) column).
-- Add top right icon of the echo set for each echo in the echoes list. Also add the same icon in the middle column, right side of the echo name.
-
----
-
 ### Remaining To-Dos (Not the focus of the branch):
+
+#### General:
+- Expand talents background visuals to other areas.
+- Modify edit fields to have immediate persistance instead of save button
+
 #### Dashboard:
 - Editing notes not showing time category (longterm, immediate, so on). 
 

@@ -16,10 +16,12 @@ pub async fn init_asset_resolver(
     state: State<'_, AssetResolverState>,
 ) -> Result<(), String> {
     // Load or build the asset mapper
+    // Use resource_dir to stay relative to the executable (portable)
     let base_path = app
-        .path() // Now works with Manager trait imported
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("Failed to get resource dir: {}", e))?
+        .join("resources")
         .join("assets");
 
     let mapper_path = base_path.join("asset_mapping.json");
@@ -34,6 +36,12 @@ pub async fn init_asset_resolver(
         let mapper = crate::assets::AssetMapper::build_from_prydwen(&client)
             .await
             .map_err(|e| format!("Failed to build asset mapping: {}", e))?;
+        
+        // Ensure the directory exists before saving
+        if let Some(parent) = mapper_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory for asset mapping: {}", e))?;
+        }
         
         // Save for future use
         mapper.save_to_file(&mapper_path)

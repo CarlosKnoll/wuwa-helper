@@ -25,6 +25,8 @@ pub fn run() {
             characters::update_character_weapon,
             characters::add_character,
             characters::delete_character,
+            echo_stats::get_echo_stats_options,
+            echoes::get_echo_available_sets,
             echoes::get_echo_build,
             echoes::get_echoes,
             echoes::get_echo_metadata_direct,
