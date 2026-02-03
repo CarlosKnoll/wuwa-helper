@@ -26,4 +26,4 @@ dist-ssr
 /.deploy
 /src-tauri/icons
 /__pycache__
-/src-tauri/resources/assets
+/src-tauri/resources
