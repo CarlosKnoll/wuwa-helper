@@ -1,11 +1,18 @@
 mod db;
 mod commands;
+mod assets;
 
 use commands::*;
+use tauri::Manager; // Add this import for .manage() method
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            // Initialize asset resolver state
+            app.manage(tokio::sync::Mutex::new(None::<crate::assets::AssetResolver>));
+            Ok(())
+        })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -18,13 +25,18 @@ pub fn run() {
             characters::update_character_weapon,
             characters::add_character,
             characters::delete_character,
+            echo_stats::get_echo_stats_options,
+            echoes::get_echo_available_sets,
             echoes::get_echo_build,
             echoes::get_echoes,
+            echoes::get_echo_metadata_direct,
             echoes::get_echo_substats,
             echoes::update_echo_build,
             echoes::update_echo,
             echoes::add_echo,
             echoes::delete_echo,
+            echoes::get_all_echo_sets,
+            echoes::get_echo_set_by_key,
             echoes::update_echo_substat,
             echoes::add_echo_substat,
             echoes::delete_echo_substat,
@@ -32,6 +44,7 @@ pub fn run() {
             account::get_resources,
             account::update_resources,
             gacha::get_pity_status,
+            gacha::get_pull_count,
             gacha::get_pull_history,
             gacha::check_pull_exists,
             gacha::add_pull,
@@ -81,6 +94,19 @@ pub fn run() {
             endgame::initialize_tower_floors,
             database::import_database,
             database::export_database,
+            commands::assets::init_assets,
+            commands::assets::get_asset,
+            commands::assets::get_asset_path,
+            commands::assets::update_assets,
+            commands::assets::should_update_assets,
+            commands::assets::get_asset_stats,
+            commands::asset_resolver::init_asset_resolver,
+            commands::asset_resolver::resolve_asset_by_name,
+            commands::asset_resolver::get_asset_filename,
+            commands::asset_resolver::search_assets,
+            commands::asset_resolver::get_assets_by_type,
+            commands::asset_resolver::filter_assets,
+            commands::asset_resolver::categorize_asset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

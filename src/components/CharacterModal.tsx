@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, User, Shield, Zap } from 'lucide-react';
 import { safeInvoke, getElementColor } from '../utils';
 import { CharacterTalents, CharacterWeapon, Echo, EchoBuild, EchoSubstat, CharacterModalProps } from '../types';
 import CharacterInfo from './CharacterInfo';
 import CharacterTalentsSection from './CharacterTalentsSection';
-import CharacterWeaponSection from './CharacterWeaponSection';
 import CharacterEchoBuildSection from './CharacterEchoBuildSection';
 
+type SubMenuType = 'overview' | 'talents' | 'echoes';
+
 export default function CharacterModal({ character, onClose, onUpdate }: CharacterModalProps) {
+  // Active submenu state
+  const [activeSubMenu, setActiveSubMenu] = useState<SubMenuType>('overview');
+
   // Character basic info state
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -77,7 +81,6 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
   };
 
   const handleSave = async () => {
-    
     // Enforce limits
     const level = Math.max(1, Math.min(90, form.level));
     const ascension = Math.max(0, Math.min(6, form.ascension));
@@ -97,7 +100,6 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
         notes: form.notes || null
       });
       
-      
       // Update local form state
       setForm({
         level: level,
@@ -109,9 +111,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
       
       setEditing(false);
       
-      // Trigger parent update - this will refresh the character list
-      // and because we pass characters.find() in CharactersTab, 
-      // the modal will receive the fresh character data
+      // Trigger parent update
       onUpdate();
       
     } catch (err) {
@@ -119,71 +119,101 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
     }
   };
 
+  const subMenuItems = [
+    { id: 'overview' as SubMenuType, label: 'Overview', icon: User },
+    { id: 'talents' as SubMenuType, label: 'Forte', icon: Zap },
+    { id: 'echoes' as SubMenuType, label: 'Echo', icon: Shield },
+  ];
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex justify-between items-center z-10">
-          <div>
-            <h2 className="text-2xl font-bold text-white">{character.character_name}</h2>
-            <p className={`text-${getElementColor(character.element)}`}>
-              {character.element} • {character.weapon_type}
-            </p>
+      <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex">
+        {/* Left Sidebar Navigation */}
+        <div className="w-20 bg-slate-950/50 border-r border-slate-700 flex flex-col py-6">
+          <div className="flex flex-col gap-4 px-3">
+            {subMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSubMenu === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSubMenu(item.id)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all ${
+                    isActive
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  }`}
+                  title={item.label}
+                >
+                  <Icon size={20} />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <button 
-            onClick={() => {
-              onUpdate(); // Update parent when closing
-              onClose();
-            }} 
-            className="text-slate-400 hover:text-white transition-colors"
-          >
-            <X size={24} />
-          </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Character Basic Info */}
-          <CharacterInfo
-            character={character}
-            form={form}
-            editing={editing}
-            onEdit={() => setEditing(true)}
-            onSave={handleSave}
-            onCancel={() => {
-              setEditing(false);
-              setForm({
-                level: character.level,
-                ascension: character.ascension,
-                waveband: character.waveband,
-                build_status: character.build_status,
-                notes: character.notes || ''
-              });
-            }}
-            onChange={setForm}
-          />
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="bg-slate-900 border-b border-slate-700 p-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-white">{character.character_name}</h2>
+              <p className={`text-${getElementColor(character.element)}`}>
+                {character.element} • {character.weapon_type}
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                onUpdate(); // Update parent when closing
+                onClose();
+              }} 
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
 
-          {/* Talents Section */}
-          <CharacterTalentsSection
-            talents={talents}
-            characterId={character.id}
-            onUpdate={loadDetails}
-          />
+          {/* Content */}
+          <div className={`flex-1 overflow-y-auto ${activeSubMenu === 'talents' ? 'p-0' : 'p-6'}`}>
+            {activeSubMenu === 'overview' && (
+              <CharacterInfo
+                character={character}
+                form={form}
+                editing={editing}
+                onEdit={() => setEditing(true)}
+                onSave={handleSave}
+                onCancel={() => {
+                  setEditing(false);
+                  setForm({
+                    level: character.level,
+                    ascension: character.ascension,
+                    waveband: character.waveband,
+                    build_status: character.build_status,
+                    notes: character.notes || ''
+                  });
+                }}
+                onChange={setForm}
+              />
+            )}
 
-          {/* Weapon Section */}
-          <CharacterWeaponSection
-            weapon={weapon}
-            characterId={character.id}
-            onUpdate={loadDetails}
-          />
+            {activeSubMenu === 'talents' && (
+              <CharacterTalentsSection
+                talents={talents}
+                characterId={character.id}
+                onUpdate={loadDetails}
+              />
+            )}
 
-          {/* Echo Build Section */}
-          <CharacterEchoBuildSection
-            echoBuild={echoBuild}
-            echoes={echoes}
-            echoSubstats={echoSubstats}
-            onUpdate={loadDetails}
-          />
+            {activeSubMenu === 'echoes' && (
+              <CharacterEchoBuildSection
+                echoBuild={echoBuild}
+                echoes={echoes}
+                echoSubstats={echoSubstats}
+                onUpdate={loadDetails}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

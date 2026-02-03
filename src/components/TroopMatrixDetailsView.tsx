@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Users, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { TroopMatrix, MatrixTeam } from '../types';
-import { safeInvoke } from '../utils';
+import { safeInvoke, calculateStabilityAccordsAstrite, calculateSingularityExpansionAstrite } from '../utils';
+import CharacterPortrait from './CharacterPortrait';
+import { CurrencyIcon } from './CurrencyIcon';
 
 interface TroopMatrixDetailsViewProps {
   troopMatrix: TroopMatrix | null;
@@ -16,14 +18,14 @@ export default function TroopMatrixDetailsView({
 }: TroopMatrixDetailsViewProps) {
   const [editing, setEditing] = useState(false);
   const [editingTeam, setEditingTeam] = useState<number | null>(null);
+  const [stabilityCollapsed, setStabilityCollapsed] = useState(false);
+  const [singularityCollapsed, setSingularityCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Main edit states
   const [editUnlocked, setEditUnlocked] = useState(false);
   const [editStabilityPoints, setEditStabilityPoints] = useState(0);
-  const [editStabilityAstrite, setEditStabilityAstrite] = useState(0);
   const [editSingularityPoints, setEditSingularityPoints] = useState(0);
-  const [editSingularityAstrite, setEditSingularityAstrite] = useState(0);
   const [editSingularityRound, setEditSingularityRound] = useState(0);
   const [editNotes, setEditNotes] = useState('');
 
@@ -41,9 +43,7 @@ export default function TroopMatrixDetailsView({
     if (troopMatrix) {
       setEditUnlocked(troopMatrix.unlocked);
       setEditStabilityPoints(troopMatrix.stability_accords_points);
-      setEditStabilityAstrite(troopMatrix.stability_accords_astrite);
       setEditSingularityPoints(troopMatrix.singularity_expansion_points);
-      setEditSingularityAstrite(troopMatrix.singularity_expansion_astrite);
       setEditSingularityRound(troopMatrix.singularity_expansion_highest_round);
       setEditNotes(troopMatrix.notes || '');
       setEditing(true);
@@ -53,12 +53,21 @@ export default function TroopMatrixDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
+      const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(editStabilityPoints);
+      
+      // Get all singularity team scores for proper calculation
+      const singularityTeamScores = singularityTeams.map(t => t.points);
+      const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
+        editSingularityPoints,
+        singularityTeamScores
+      );
+      
       await safeInvoke('update_troop_matrix', {
         unlocked: editUnlocked,
         stabilityAccordsPoints: editStabilityPoints,
-        stabilityAccordsAstrite: editStabilityAstrite,
+        stabilityAccordsAstrite: calculatedStabilityAstrite,
         singularityExpansionPoints: editSingularityPoints,
-        singularityExpansionAstrite: editSingularityAstrite,
+        singularityExpansionAstrite: calculatedSingularityAstrite,
         singularityExpansionHighestRound: editSingularityRound,
         notes: editNotes || null
       });
@@ -200,13 +209,13 @@ export default function TroopMatrixDetailsView({
                   className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
                 />
               </div>
-              {team.mode === 'Singularity Expansion' && (
+              {!isStability && (
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Round</label>
                   <input
                     type="number"
-                    value={editRound || 1}
-                    onChange={(e) => setEditRound(parseInt(e.target.value) || 1)}
+                    value={editRound || ''}
+                    onChange={(e) => setEditRound(parseInt(e.target.value) || null)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
                   />
                 </div>
@@ -232,14 +241,21 @@ export default function TroopMatrixDetailsView({
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span>{team.points} pts</span>
-            </div>
             <div className="flex gap-2 flex-wrap">
-              <span className={`px-2 py-1 ${bgClass} ${colorClass} rounded text-xs`}>{team.character1}</span>
-              <span className={`px-2 py-1 ${bgClass} ${colorClass} rounded text-xs`}>{team.character2}</span>
-              <span className={`px-2 py-1 ${bgClass} ${colorClass} rounded text-xs`}>{team.character3}</span>
+              <div className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded">
+                <CharacterPortrait characterName={team.character1} size="md" />
+                <span className="text-xs text-slate-300">{team.character1}</span>
+              </div>
+              <div className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded">
+                <CharacterPortrait characterName={team.character2} size="md" />
+                <span className="text-xs text-slate-300">{team.character2}</span>
+              </div>
+              <div className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded">
+                <CharacterPortrait characterName={team.character3} size="md" />
+                <span className="text-xs text-slate-300">{team.character3}</span>
+              </div>
             </div>
+            <p className="text-xs text-slate-400">{team.points.toLocaleString()} points</p>
           </>
         )}
       </div>
@@ -248,47 +264,8 @@ export default function TroopMatrixDetailsView({
 
   if (!troopMatrix) return null;
 
-  if (!troopMatrix.unlocked && !editing) {
-    return (
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Users className="w-6 h-6 text-orange-400" />
-            Doubled Pawns Matrix
-          </h3>
-          <button
-            onClick={startEdit}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="bg-slate-800/50 rounded-lg p-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-700/50 mb-4">
-            <Users className="w-8 h-8 text-slate-500" />
-          </div>
-          <h4 className="text-lg font-semibold mb-2">Doubled Pawns Matrix Not Unlocked</h4>
-          <p className="text-slate-400 text-sm mb-4">
-            Complete the following requirements to unlock:
-          </p>
-          <div className="space-y-2 text-left max-w-md mx-auto">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-              <span>Obtain 24 Crests in Tower of Adversity's Hazard Zone</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-              <span>Score 3,500+ points in Whimpering Wastes: Infinite Torrents</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Overview */}
       <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
@@ -312,11 +289,14 @@ export default function TroopMatrixDetailsView({
                 type="checkbox"
                 checked={editUnlocked}
                 onChange={(e) => setEditUnlocked(e.target.checked)}
-                className="w-4 h-4"
+                className="w-5 h-5 rounded"
+                id="unlocked"
               />
-              <label className="text-sm text-slate-300">Matrix Unlocked</label>
+              <label htmlFor="unlocked" className="text-sm text-slate-300">
+                Unlocked (required to track teams)
+              </label>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-slate-400 block mb-1">Stability Points</label>
                 <input
@@ -328,15 +308,14 @@ export default function TroopMatrixDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Stability Astrite</label>
-                <input
-                  type="number"
-                  value={editStabilityAstrite}
-                  onChange={(e) => setEditStabilityAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="150"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Stability Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {calculateStabilityAccordsAstrite(editStabilityPoints)} / 150
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Breakpoints at 4.8k, 7.2k, 10k (50 each)
+                </p>
               </div>
               <div>
                 <label className="text-sm text-slate-400 block mb-1">Singularity Points</label>
@@ -349,17 +328,35 @@ export default function TroopMatrixDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Singularity Astrite</label>
-                <input
-                  type="number"
-                  value={editSingularityAstrite}
-                  onChange={(e) => setEditSingularityAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="250"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Singularity Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {(() => {
+                    const singularityTeamScores = singularityTeams.map(t => t.points);
+                    const { astrite, missingNonAstriteRewards } = calculateSingularityExpansionAstrite(
+                      editSingularityPoints,
+                      singularityTeamScores
+                    );
+                    return astrite;
+                  })()} / 250
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Score: 12k, 16k, 21k (50 each) + Teams at 5k: 3 teams (50), 4 teams (50)
+                </p>
+                {(() => {
+                  const singularityTeamScores = singularityTeams.map(t => t.points);
+                  const { missingNonAstriteRewards } = calculateSingularityExpansionAstrite(
+                    editSingularityPoints,
+                    singularityTeamScores
+                  );
+                  return missingNonAstriteRewards.length > 0 && (
+                    <p className="text-xs text-amber-400 mt-1">
+                      ⚠️ Missing rewards: {missingNonAstriteRewards.join(', ')}
+                    </p>
+                  );
+                })()}
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="text-sm text-slate-400 block mb-1">Highest Round</label>
                 <input
                   type="number"
@@ -409,7 +406,10 @@ export default function TroopMatrixDetailsView({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{troopMatrix.stability_accords_astrite} / 150</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {troopMatrix.stability_accords_astrite} / 150
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
@@ -437,7 +437,10 @@ export default function TroopMatrixDetailsView({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{troopMatrix.singularity_expansion_astrite} / 250</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {troopMatrix.singularity_expansion_astrite} / 250
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
@@ -467,49 +470,73 @@ export default function TroopMatrixDetailsView({
           {/* Stability Accords Teams */}
           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-bold text-cyan-400">Stability Accords Teams</h4>
-              <button
-                onClick={() => addTeam('Stability Accords')}
-                className="flex items-center gap-2 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-colors text-sm"
+              <button 
+                onClick={() => setStabilityCollapsed(!stabilityCollapsed)} 
+                className="flex items-center gap-2 text-lg font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                Add Team
+                <span>Stability Accords Teams</span>
+                <span className="text-sm">{stabilityCollapsed ? '▶' : '▼'}</span>
               </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {stabilityTeams.length > 0 ? (
-                stabilityTeams.map(renderTeamCard)
-              ) : (
-                <div className="col-span-3 text-center text-slate-500 py-6">
-                  No teams added yet. Click "Add Team" to get started.
-                </div>
+              {!stabilityCollapsed && stabilityTeams.length < 3 && (
+                <button
+                  onClick={() => addTeam('Stability Accords')}
+                  className="flex items-center gap-2 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Team
+                </button>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-3">Max 3 teams can be deployed</p>
+            {!stabilityCollapsed && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {stabilityTeams.length > 0 ? (
+                    stabilityTeams.map(renderTeamCard)
+                  ) : (
+                    <div className="col-span-2 text-center text-slate-500 py-6">
+                      No teams added yet. Click "Add Team" to get started.
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-3">Max 3 teams can be deployed</p>
+              </>
+            )}
           </div>
 
           {/* Singularity Expansion Teams */}
           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-bold text-purple-400">Singularity Expansion Teams</h4>
-              <button
-                onClick={() => addTeam('Singularity Expansion')}
-                className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-sm"
+              <button 
+                onClick={() => setSingularityCollapsed(!singularityCollapsed)} 
+                className="flex items-center gap-2 text-lg font-bold text-purple-400 hover:text-purple-300 transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                Add Team
+                <span>Singularity Expansion Teams</span>
+                <span className="text-sm">{singularityCollapsed ? '▶' : '▼'}</span>
               </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {singularityTeams.length > 0 ? (
-                singularityTeams.map(renderTeamCard)
-              ) : (
-                <div className="col-span-3 text-center text-slate-500 py-6">
-                  No teams added yet. Click "Add Team" to get started.
-                </div>
+              {!singularityCollapsed && (
+                <button
+                  onClick={() => addTeam('Singularity Expansion')}
+                  className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Team
+                </button>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-3">Unlimited teams, boss HP increases each round</p>
+            {!singularityCollapsed && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {singularityTeams.length > 0 ? (
+                    singularityTeams.map(renderTeamCard)
+                  ) : (
+                    <div className="col-span-2 text-center text-slate-500 py-6">
+                      No teams added yet. Click "Add Team" to get started.
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-3">Unlimited teams, boss HP increases each round</p>
+              </>
+            )}
           </div>
         </div>
       )}

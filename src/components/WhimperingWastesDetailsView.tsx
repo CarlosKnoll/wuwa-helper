@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Zap, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { WhimperingWastes, TorrentsStage } from '../types';
-import { safeInvoke } from '../utils';
+import { safeInvoke, calculateChasmAstrite, calculateTorrentsAstrite } from '../utils';
+import CharacterPortrait from './CharacterPortrait';
+import { CurrencyIcon } from './CurrencyIcon';
 
 interface WhimperingWastesDetailsViewProps {
   wastesInfo: WhimperingWastes | null;
@@ -18,13 +20,12 @@ export default function WhimperingWastesDetailsView({
   const [editingStage, setEditingStage] = useState<number | null>(null);
   const [addingStage, setAddingStage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [torrentsCollapsed, setTorrentsCollapsed] = useState(false);
 
   // Main edit states
   const [editChasmStage, setEditChasmStage] = useState(0);
   const [editChasmPoints, setEditChasmPoints] = useState(0);
-  const [editChasmAstrite, setEditChasmAstrite] = useState(0);
   const [editTorrentsPoints, setEditTorrentsPoints] = useState(0);
-  const [editTorrentsAstrite, setEditTorrentsAstrite] = useState(0);
   const [editNotes, setEditNotes] = useState('');
 
   // Stage edit states
@@ -35,13 +36,14 @@ export default function WhimperingWastesDetailsView({
   const [editPoints, setEditPoints] = useState(0);
   const [newStageNumber, setNewStageNumber] = useState(1);
 
+  const MAX_TEAMS = 2;
+  const canAddTeam = torrentsStages.length < MAX_TEAMS;
+
   const startEdit = () => {
     if (wastesInfo) {
       setEditChasmStage(wastesInfo.chasm_highest_stage);
       setEditChasmPoints(wastesInfo.chasm_total_points);
-      setEditChasmAstrite(wastesInfo.chasm_astrite);
       setEditTorrentsPoints(wastesInfo.torrents_total_points);
-      setEditTorrentsAstrite(wastesInfo.torrents_astrite);
       setEditNotes(wastesInfo.notes || '');
       setEditing(true);
     }
@@ -50,12 +52,15 @@ export default function WhimperingWastesDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
+      const calculatedChasmAstrite = calculateChasmAstrite(editChasmPoints);
+      const calculatedTorrentsAstrite = calculateTorrentsAstrite(editTorrentsPoints);
+      
       await safeInvoke('update_whimpering_wastes', {
         chasmHighestStage: editChasmStage,
         chasmTotalPoints: editChasmPoints,
-        chasmAstrite: editChasmAstrite,
+        chasmAstrite: calculatedChasmAstrite,
         torrentsTotalPoints: editTorrentsPoints,
-        torrentsAstrite: editTorrentsAstrite,
+        torrentsAstrite: calculatedTorrentsAstrite,
         notes: editNotes || null
       });
       setEditing(false);
@@ -131,7 +136,6 @@ export default function WhimperingWastesDetailsView({
     setEditChar3('');
     setEditToken('');
     setEditPoints(0);
-    // Default to side 1 if no teams, or side 2 if side 1 exists
     const hasSide1 = torrentsStages.some(s => s.stage_number === 1);
     setNewStageNumber(hasSide1 ? 2 : 1);
     setAddingStage(true);
@@ -153,7 +157,6 @@ export default function WhimperingWastesDetailsView({
 
   return (
     <div className="space-y-6">
-      {/* Overview */}
       <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
@@ -194,15 +197,14 @@ export default function WhimperingWastesDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Chasm Astrite</label>
-                <input
-                  type="number"
-                  value={editChasmAstrite}
-                  onChange={(e) => setEditChasmAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="625"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Chasm Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {calculateChasmAstrite(editChasmPoints)} / 625
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Breakpoints at 5k, 7k, 9.5k, 12k, 15k (125 each)
+                </p>
               </div>
               <div>
                 <label className="text-sm text-slate-400 block mb-1">Torrents Points</label>
@@ -215,15 +217,14 @@ export default function WhimperingWastesDetailsView({
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Torrents Astrite</label>
-                <input
-                  type="number"
-                  value={editTorrentsAstrite}
-                  onChange={(e) => setEditTorrentsAstrite(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="175"
-                />
+                <label className="text-sm text-slate-400 block mb-1">Torrents Astrite (Auto-calculated)</label>
+                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
+                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
+                  {calculateTorrentsAstrite(editTorrentsPoints)} / 175
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Breakpoints at 3.5k (75), 4k (50), 4.5k (50)
+                </p>
               </div>
             </div>
             <div>
@@ -255,55 +256,55 @@ export default function WhimperingWastesDetailsView({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Chasm Card */}
+            {/* Respawning Waters: Chasm */}
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-orange-400 mb-3">Chasm</h4>
+              <h4 className="text-lg font-bold text-cyan-400 mb-3">Respawning Waters: Chasm</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Highest Stage:</span>
                   <span className="font-semibold">{wastesInfo.chasm_highest_stage}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Total Points:</span>
+                  <span className="text-sm text-slate-400">Points:</span>
                   <span className="font-semibold">{wastesInfo.chasm_total_points.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{wastesInfo.chasm_astrite} / 625</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {wastesInfo.chasm_astrite} / 600
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-orange-500 h-full transition-all"
-                    style={{ width: `${Math.min((wastesInfo.chasm_astrite / 625) * 100, 100)}%` }}
+                    className="bg-cyan-500 h-full transition-all"
+                    style={{ width: `${Math.min((wastesInfo.chasm_astrite / 600) * 100, 100)}%` }}
                   />
                 </div>
-                <p className="text-xs text-slate-500 text-right">
-                  {((wastesInfo.chasm_astrite / 625) * 100).toFixed(1)}% Complete
-                </p>
               </div>
             </div>
 
-            {/* Torrents Card */}
+            {/* Respawning Waters: Torrents */}
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-blue-400 mb-3">Infinite Torrents</h4>
+              <h4 className="text-lg font-bold text-blue-400 mb-3">Respawning Waters: Torrents</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Total Points:</span>
+                  <span className="text-sm text-slate-400">Points:</span>
                   <span className="font-semibold">{wastesInfo.torrents_total_points.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400">{wastesInfo.torrents_astrite} / 175</span>
+                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
+                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
+                    {wastesInfo.torrents_astrite} / 200
+                  </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
                     className="bg-blue-500 h-full transition-all"
-                    style={{ width: `${Math.min((wastesInfo.torrents_astrite / 175) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((wastesInfo.torrents_astrite / 200) * 100, 100)}%` }}
                   />
                 </div>
-                <p className="text-xs text-slate-500 text-right">
-                  {((wastesInfo.torrents_astrite / 175) * 100).toFixed(1)}% Complete
-                </p>
               </div>
             </div>
 
@@ -317,210 +318,230 @@ export default function WhimperingWastesDetailsView({
         )}
       </div>
 
-      {/* Torrents Stages */}
+      {/* Respawning Waters: Torrents Teams */}
       <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-blue-400">Infinite Torrents - Teams Used</h3>
-          <button
-            onClick={startAddStage}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-sm"
+          <button 
+            onClick={() => setTorrentsCollapsed(!torrentsCollapsed)}
+            className="flex items-center gap-2 text-lg font-bold text-blue-400 hover:text-blue-300 transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            Add Team
+            <span>Respawning Waters: Torrents Teams</span>
+            <span className="text-sm">{torrentsCollapsed ? '▶' : '▼'}</span>
           </button>
+          {!torrentsCollapsed && canAddTeam && (
+            <button
+              onClick={startAddStage}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add Team
+            </button>
+          )}
         </div>
-        {(torrentsStages.length > 0 || addingStage) ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Add Stage Form */}
-            {addingStage && (
-              <div className="bg-slate-700/50 rounded-lg p-3 space-y-2 border-2 border-dashed border-blue-500/50">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-blue-400">New Team</p>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Side (1 or 2)</label>
-                  <input
-                    type="number"
-                    value={newStageNumber}
-                    onChange={(e) => setNewStageNumber(parseInt(e.target.value) || 1)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
-                    min="1"
-                    max="2"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Which side of the arena (1 = left, 2 = right)</p>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    value={editChar1}
-                    onChange={(e) => setEditChar1(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                    placeholder="Char 1"
-                  />
-                  <input
-                    type="text"
-                    value={editChar2}
-                    onChange={(e) => setEditChar2(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                    placeholder="Char 2"
-                  />
-                  <input
-                    type="text"
-                    value={editChar3}
-                    onChange={(e) => setEditChar3(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                    placeholder="Char 3"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Token</label>
-                    <input
-                      type="text"
-                      value={editToken}
-                      onChange={(e) => setEditToken(e.target.value)}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                    />
+
+        {!torrentsCollapsed && (
+          <>
+            {torrentsStages.length > 0 || addingStage ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {addingStage && (
+                  <div className="bg-slate-700/50 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-blue-400">New Team</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">Side (1 or 2)</label>
+                      <input
+                        type="number"
+                        value={newStageNumber}
+                        onChange={(e) => setNewStageNumber(parseInt(e.target.value) || 1)}
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        min="1"
+                        max="2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        value={editChar1}
+                        onChange={(e) => setEditChar1(e.target.value)}
+                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        placeholder="Char 1"
+                      />
+                      <input
+                        type="text"
+                        value={editChar2}
+                        onChange={(e) => setEditChar2(e.target.value)}
+                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        placeholder="Char 2"
+                      />
+                      <input
+                        type="text"
+                        value={editChar3}
+                        onChange={(e) => setEditChar3(e.target.value)}
+                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        placeholder="Char 3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1">Token</label>
+                        <input
+                          type="text"
+                          value={editToken}
+                          onChange={(e) => setEditToken(e.target.value)}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1">Points</label>
+                        <input
+                          type="number"
+                          value={editPoints}
+                          onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => setAddingStage(false)}
+                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel
+                      </button>
+                      <button
+                        onClick={addNewStage}
+                        disabled={saving}
+                        className="px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs flex items-center gap-1"
+                      >
+                        <Save className="w-3 h-3" />
+                        Add
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Points</label>
-                    <input
-                      type="number"
-                      value={editPoints}
-                      onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    onClick={() => setAddingStage(false)}
-                    className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                  >
-                    <X className="w-3 h-3" />
-                    Cancel
-                  </button>
-                  <button
-                    onClick={addNewStage}
-                    disabled={saving}
-                    className="px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs flex items-center gap-1"
-                  >
-                    <Save className="w-3 h-3" />
-                    Add
-                  </button>
-                </div>
+                )}
+                
+                {torrentsStages.map((stage) => {
+                  const isEditingThis = editingStage === stage.id;
+
+                  return (
+                    <div key={stage.id} className="bg-slate-700/50 rounded-lg p-3 space-y-2">
+                      {isEditingThis ? (
+                        <>
+                          <p className="text-sm font-semibold text-blue-400">Side {stage.stage_number}</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <input
+                              type="text"
+                              value={editChar1}
+                              onChange={(e) => setEditChar1(e.target.value)}
+                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              placeholder="Char 1"
+                            />
+                            <input
+                              type="text"
+                              value={editChar2}
+                              onChange={(e) => setEditChar2(e.target.value)}
+                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              placeholder="Char 2"
+                            />
+                            <input
+                              type="text"
+                              value={editChar3}
+                              onChange={(e) => setEditChar3(e.target.value)}
+                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              placeholder="Char 3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs text-slate-400 block mb-1">Token</label>
+                              <input
+                                type="text"
+                                value={editToken}
+                                onChange={(e) => setEditToken(e.target.value)}
+                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-slate-400 block mb-1">Points</label>
+                              <input
+                                type="number"
+                                value={editPoints}
+                                onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => setEditingStage(null)}
+                              className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
+                            >
+                              <X className="w-3 h-3" />
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => saveStage(stage.id)}
+                              disabled={saving}
+                              className="px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs flex items-center gap-1"
+                            >
+                              <Save className="w-3 h-3" />
+                              Save
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-blue-400">
+                              Side {stage.stage_number}
+                            </span>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => startEditStage(stage)}
+                                className="p-1 hover:bg-slate-600 rounded transition-colors"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => deleteStage(stage.id)}
+                                className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">{stage.token}</span>
+                            <span className="text-xs text-slate-400">{stage.points} pts</span>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/20 rounded">
+                              <CharacterPortrait characterName={stage.character1} size="md" />
+                              <span className="text-xs text-blue-400">{stage.character1}</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/20 rounded">
+                              <CharacterPortrait characterName={stage.character2} size="md" />
+                              <span className="text-xs text-blue-400">{stage.character2}</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/20 rounded">
+                              <CharacterPortrait characterName={stage.character3} size="md" />
+                              <span className="text-xs text-blue-400">{stage.character3}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <p>No teams recorded yet. Click "Add Team" to record which teams you used on each side.</p>
               </div>
             )}
-            
-            {torrentsStages.map((stage) => {
-              const isEditingThis = editingStage === stage.id;
-
-              return (
-                <div key={stage.id} className="bg-slate-700/50 rounded-lg p-3 space-y-2">
-                  {isEditingThis ? (
-                    <>
-                      <p className="text-sm font-semibold text-blue-400">Side {stage.stage_number}</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          type="text"
-                          value={editChar1}
-                          onChange={(e) => setEditChar1(e.target.value)}
-                          className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Char 1"
-                        />
-                        <input
-                          type="text"
-                          value={editChar2}
-                          onChange={(e) => setEditChar2(e.target.value)}
-                          className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Char 2"
-                        />
-                        <input
-                          type="text"
-                          value={editChar3}
-                          onChange={(e) => setEditChar3(e.target.value)}
-                          className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Char 3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs text-slate-400 block mb-1">Token</label>
-                          <input
-                            type="text"
-                            value={editToken}
-                            onChange={(e) => setEditToken(e.target.value)}
-                            className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400 block mb-1">Points</label>
-                          <input
-                            type="number"
-                            value={editPoints}
-                            onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                            className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => setEditingStage(null)}
-                          className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => saveStage(stage.id)}
-                          disabled={saving}
-                          className="px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs flex items-center gap-1"
-                        >
-                          <Save className="w-3 h-3" />
-                          Save
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-blue-400">
-                          Side {stage.stage_number}
-                        </span>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => startEditStage(stage)}
-                            className="p-1 hover:bg-slate-600 rounded transition-colors"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => deleteStage(stage.id)}
-                            className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">{stage.token}</span>
-                        <span className="text-xs text-slate-400">{stage.points} pts</span>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">{stage.character1}</span>
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">{stage.character2}</span>
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">{stage.character3}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-slate-500">
-            <p>No teams recorded yet. Click "Add Team" to record which teams you used on each side.</p>
-          </div>
+          </>
         )}
       </div>
     </div>

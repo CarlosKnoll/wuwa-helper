@@ -26,6 +26,18 @@ pub struct CharacterTalents {
     pub forte_level: Option<i64>,
     pub intro_level: Option<i64>,
     pub notes: Option<String>,
+    // Minor traces (2 per talent, except Forte which has major traces)
+    pub basic_minor_1: Option<i64>,
+    pub basic_minor_2: Option<i64>,
+    pub skill_minor_1: Option<i64>,
+    pub skill_minor_2: Option<i64>,
+    pub liberation_minor_1: Option<i64>,
+    pub liberation_minor_2: Option<i64>,
+    pub intro_minor_1: Option<i64>,
+    pub intro_minor_2: Option<i64>,
+    // Major traces (2 for Forte)
+    pub forte_major_1: Option<i64>,
+    pub forte_major_2: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,12 +51,15 @@ pub struct CharacterWeapon {
     pub notes: Option<String>,
 }
 
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EchoBuild {
     pub id: i64,
     pub character_id: i64,
-    pub set_bonus: Option<String>,
-    pub set_effect: Option<String>,
+    pub primary_set_key: Option<String>,      // Primary echo set ('set_1', 'set_18', etc.)
+    pub secondary_set_key: Option<String>,     // Secondary set for mixed builds (can be null)
+    pub primary_set_pieces: i64,               // Number of pieces for primary set (5, 3, or 2)
+    pub secondary_set_pieces: i64,             // Number of pieces for secondary set (0, 2, or 3)
     pub overall_quality: Option<String>,
     pub notes: Option<String>,
 }

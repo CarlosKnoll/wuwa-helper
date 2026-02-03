@@ -92,6 +92,18 @@ export interface CharacterTalents {
   forte_level: number;
   intro_level: number;
   notes: string | null;
+  // Minor traces (2 per talent, except Forte which has major traces)
+  basic_minor_1: number;
+  basic_minor_2: number;
+  skill_minor_1: number;
+  skill_minor_2: number;
+  liberation_minor_1: number;
+  liberation_minor_2: number;
+  intro_minor_1: number;
+  intro_minor_2: number;
+  // Major traces (2 for Forte)
+  forte_major_1: number;
+  forte_major_2: number;
 }
 
 export interface CharacterTalentsSectionProps {
@@ -157,6 +169,7 @@ export interface Echo {
   id: number;
   build_id: number;
   echo_name: string | null;
+  echo_set: string | null;  // Which echo set this echo belongs to
   cost: number;
   level: number;
   rarity: number;
@@ -165,11 +178,25 @@ export interface Echo {
   notes: string | null;
 }
 
+export interface EchoSetData {
+  key: string; // 'set_1', 'set_2', etc.
+  name: string;
+  filename: string;
+  two_piece_bonus: string;
+  five_piece_bonus: string;
+  has_2pc: boolean;  // True if set has a 2pc effect
+  has_3pc: boolean;  // True if set has a 3pc effect (3pc-only sets)
+  has_5pc: boolean;  // True if set has a 5pc effect
+  asset_type: string;
+}
+
 export interface EchoBuild {
   id: number;
   character_id: number;
-  set_bonus: string | null;
-  set_effect: string | null;
+  primary_set_key: string | null;      // Primary echo set ('set_1', 'set_18', etc.)
+  secondary_set_key: string | null;     // Secondary set for mixed builds (null if using 5pc)
+  primary_set_pieces: number;           // Number of pieces for primary set (5, 3, or 2)
+  secondary_set_pieces: number;         // Number of pieces for secondary set (0, 2, or 3)
   overall_quality: string | null;
   notes: string | null;
 }
@@ -185,6 +212,13 @@ export interface EchoItemProps {
   echo: Echo;
   substats: EchoSubstat[];
   onUpdate: () => void;
+  echoImage?: string; // Optional base64 image data for the echo
+  echoSetImage?: string; // Optional base64 image data for the echo's set
+  echoMetadata?: {
+    passive1: string;
+    passive2: string;
+    cooldown: number;
+  };
 }
 
 /* =======================
@@ -220,6 +254,7 @@ export interface PullHistory {
   is_guaranteed: boolean;
   pull_date: string;
   notes: string | null;
+  group_order: number | null;
 }
 
 // WuwaTracker export/import format

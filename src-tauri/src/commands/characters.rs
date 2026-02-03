@@ -38,7 +38,11 @@ pub fn get_character_talents(app: tauri::AppHandle, character_id: i64) -> Result
     let conn = init_db(&app)?;
     
     let mut stmt = conn
-        .prepare("SELECT id, character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes FROM character_talents WHERE character_id = ?")
+        .prepare("SELECT id, character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes,
+                  basic_minor_1, basic_minor_2, skill_minor_1, skill_minor_2,
+                  liberation_minor_1, liberation_minor_2, intro_minor_1, intro_minor_2,
+                  forte_major_1, forte_major_2
+                  FROM character_talents WHERE character_id = ?")
         .map_err(|e| e.to_string())?;
     
     let talent = stmt
@@ -52,6 +56,16 @@ pub fn get_character_talents(app: tauri::AppHandle, character_id: i64) -> Result
                 forte_level: row.get(5)?,
                 intro_level: row.get(6)?,
                 notes: row.get(7)?,
+                basic_minor_1: row.get(8)?,
+                basic_minor_2: row.get(9)?,
+                skill_minor_1: row.get(10)?,
+                skill_minor_2: row.get(11)?,
+                liberation_minor_1: row.get(12)?,
+                liberation_minor_2: row.get(13)?,
+                intro_minor_1: row.get(14)?,
+                intro_minor_2: row.get(15)?,
+                forte_major_1: row.get(16)?,
+                forte_major_2: row.get(17)?,
             })
         })
         .optional()
@@ -117,13 +131,33 @@ pub fn update_character_talents(
     forte_level: Option<i64>,
     intro_level: Option<i64>,
     notes: Option<String>,
+    basic_minor_1: Option<i64>,
+    basic_minor_2: Option<i64>,
+    skill_minor_1: Option<i64>,
+    skill_minor_2: Option<i64>,
+    liberation_minor_1: Option<i64>,
+    liberation_minor_2: Option<i64>,
+    intro_minor_1: Option<i64>,
+    intro_minor_2: Option<i64>,
+    forte_major_1: Option<i64>,
+    forte_major_2: Option<i64>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
     conn.execute(
-        "UPDATE character_talents SET basic_level = ?, skill_level = ?, liberation_level = ?, 
-         forte_level = ?, intro_level = ?, notes = ? WHERE character_id = ?",
-        (basic_level, skill_level, liberation_level, forte_level, intro_level, notes, character_id),
+        "UPDATE character_talents SET 
+         basic_level = ?1, skill_level = ?2, liberation_level = ?3, 
+         forte_level = ?4, intro_level = ?5, notes = ?6,
+         basic_minor_1 = ?7, basic_minor_2 = ?8, skill_minor_1 = ?9, skill_minor_2 = ?10,
+         liberation_minor_1 = ?11, liberation_minor_2 = ?12, intro_minor_1 = ?13, intro_minor_2 = ?14,
+         forte_major_1 = ?15, forte_major_2 = ?16
+         WHERE character_id = ?17",
+        rusqlite::params![
+            basic_level, skill_level, liberation_level, forte_level, intro_level, notes,
+            basic_minor_1, basic_minor_2, skill_minor_1, skill_minor_2,
+            liberation_minor_1, liberation_minor_2, intro_minor_1, intro_minor_2,
+            forte_major_1, forte_major_2, character_id
+        ],
     )
     .map_err(|e| e.to_string())?;
     
@@ -243,10 +277,10 @@ pub fn add_character(
     // Get the newly inserted character's ID
     let character_id = conn.last_insert_rowid();
     
-    // Initialize character_talents with default values
+    // Initialize character_talents with level 1 instead of NULL
     conn.execute(
         "INSERT INTO character_talents (character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes) 
-         VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)",
+         VALUES (?, 1, 1, 1, 1, 1, NULL)",
         [character_id],
     )
     .map_err(|e| e.to_string())?;
