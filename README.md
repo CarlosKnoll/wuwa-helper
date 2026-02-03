@@ -63,6 +63,8 @@ Since this branch is focused on slowly and granullarly implement assets loading 
 - Stardardize echoes data (stats/substats edit/add through selection from dropdown menus with preset possibilites)
 - Backend mapping of echoes assets.
 - Fix assets loading noticeable slowly.
+- Remove title label of the echoes passives and make the area scrollable (so the middle column does not grows to a bigger height than the echo set (right) column).
+- Add top right icon of the echo set for each echo in the echoes list. Also add the same icon in the middle column, right side of the echo name.
 
 ---
 
