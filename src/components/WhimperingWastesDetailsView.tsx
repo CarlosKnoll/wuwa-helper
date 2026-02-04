@@ -93,6 +93,25 @@ export default function WhimperingWastesDetailsView({
         token: editToken,
         points: editPoints
       });
+      
+      // Recalculate total torrents points and astrite after updating stage
+      // Get all stages and recalculate
+      const allStages = await safeInvoke('get_torrents_stages') as TorrentsStage[];
+      const totalTorrentsPoints = allStages.reduce((sum, stage) => sum + stage.points, 0);
+      const calculatedTorrentsAstrite = calculateTorrentsAstrite(totalTorrentsPoints);
+      
+      // Update wastes info with new totals (keep chasm values unchanged)
+      if (wastesInfo) {
+        await safeInvoke('update_whimpering_wastes', {
+          chasmHighestStage: wastesInfo.chasm_highest_stage,
+          chasmTotalPoints: wastesInfo.chasm_total_points,
+          chasmAstrite: wastesInfo.chasm_astrite,
+          torrentsTotalPoints: totalTorrentsPoints,
+          torrentsAstrite: calculatedTorrentsAstrite,
+          notes: wastesInfo.notes || null
+        });
+      }
+      
       setEditingStage(null);
       onUpdate();
     } catch (error) {
@@ -114,6 +133,24 @@ export default function WhimperingWastesDetailsView({
         token: editToken || 'None',
         points: editPoints
       });
+      
+      // Recalculate total torrents points and astrite after adding stage
+      const allStages = await safeInvoke('get_torrents_stages') as TorrentsStage[];
+      const totalTorrentsPoints = allStages.reduce((sum, stage) => sum + stage.points, 0);
+      const calculatedTorrentsAstrite = calculateTorrentsAstrite(totalTorrentsPoints);
+      
+      // Update wastes info with new totals
+      if (wastesInfo) {
+        await safeInvoke('update_whimpering_wastes', {
+          chasmHighestStage: wastesInfo.chasm_highest_stage,
+          chasmTotalPoints: wastesInfo.chasm_total_points,
+          chasmAstrite: wastesInfo.chasm_astrite,
+          torrentsTotalPoints: totalTorrentsPoints,
+          torrentsAstrite: calculatedTorrentsAstrite,
+          notes: wastesInfo.notes || null
+        });
+      }
+      
       setAddingStage(false);
       setEditChar1('');
       setEditChar2('');
@@ -146,6 +183,24 @@ export default function WhimperingWastesDetailsView({
     
     try {
       await safeInvoke('delete_torrents_stage', { id });
+      
+      // Recalculate total torrents points and astrite after deleting stage
+      const allStages = await safeInvoke('get_torrents_stages') as TorrentsStage[];
+      const totalTorrentsPoints = allStages.reduce((sum, stage) => sum + stage.points, 0);
+      const calculatedTorrentsAstrite = calculateTorrentsAstrite(totalTorrentsPoints);
+      
+      // Update wastes info with new totals
+      if (wastesInfo) {
+        await safeInvoke('update_whimpering_wastes', {
+          chasmHighestStage: wastesInfo.chasm_highest_stage,
+          chasmTotalPoints: wastesInfo.chasm_total_points,
+          chasmAstrite: wastesInfo.chasm_astrite,
+          torrentsTotalPoints: totalTorrentsPoints,
+          torrentsAstrite: calculatedTorrentsAstrite,
+          notes: wastesInfo.notes || null
+        });
+      }
+      
       onUpdate();
     } catch (error) {
       console.error('Failed to delete stage:', error);
@@ -272,13 +327,13 @@ export default function WhimperingWastesDetailsView({
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
                   <span className="font-semibold text-yellow-400 flex items-center gap-1">
                     <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
-                    {wastesInfo.chasm_astrite} / 600
+                    {wastesInfo.chasm_astrite} / 625
                   </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
                     className="bg-cyan-500 h-full transition-all"
-                    style={{ width: `${Math.min((wastesInfo.chasm_astrite / 600) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((wastesInfo.chasm_astrite / 625) * 100, 100)}%` }}
                   />
                 </div>
               </div>
@@ -296,13 +351,13 @@ export default function WhimperingWastesDetailsView({
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
                   <span className="font-semibold text-yellow-400 flex items-center gap-1">
                     <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
-                    {wastesInfo.torrents_astrite} / 200
+                    {wastesInfo.torrents_astrite} / 175
                   </span>
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
                     className="bg-blue-500 h-full transition-all"
-                    style={{ width: `${Math.min((wastesInfo.torrents_astrite / 200) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((wastesInfo.torrents_astrite / 175) * 100, 100)}%` }}
                   />
                 </div>
               </div>

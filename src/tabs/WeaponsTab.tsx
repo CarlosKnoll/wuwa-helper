@@ -158,6 +158,9 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       // Then sort by rarity (descending - higher rarity first)
       if (a.rarity !== b.rarity) return b.rarity - a.rarity;
       
+      // Then sort by level (descending - higher level first)
+      if (a.level !== b.level) return b.level - a.level;
+      
       // Finally sort by name alphabetically
       return a.weapon_name.localeCompare(b.weapon_name);
     });
@@ -438,13 +441,32 @@ function WeaponCard({
     }
   };
 
+  // Get brighter hover border color based on rarity
+  const getRarityHoverColor = (rarity: number): string => {
+    switch (rarity) {
+      case 5:
+        return 'hover:border-yellow-400';
+      case 4:
+        return 'hover:border-purple-400';
+      case 3:
+        return 'hover:border-blue-400';
+      case 2:
+        return 'hover:border-green-400';
+      case 1:
+        return 'hover:border-slate-400';
+      default:
+        return 'hover:border-slate-600';
+    }
+  };
+
   const rarityBorderClass = getRarityBorderColor(weapon.rarity);
+  const rarityHoverClass = getRarityHoverColor(weapon.rarity);
 
   return (
     <div
       onClick={isEditing ? undefined : onEdit}
       className={`bg-slate-900/50 rounded-xl border-2 transition cursor-pointer overflow-hidden ${
-        !isEditing ? `hover:border-cyan-500 ${rarityBorderClass}` : rarityBorderClass
+        !isEditing ? `${rarityHoverClass} ${rarityBorderClass}` : rarityBorderClass
       }`}
     >
       {/* Top Row: Image + Header Info */}

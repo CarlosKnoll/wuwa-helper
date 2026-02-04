@@ -101,6 +101,34 @@ export default function TroopMatrixDetailsView({
         points: editPoints,
         roundNumber: editRound
       });
+      
+      // Recalculate total points and astrite after updating team
+      if (troopMatrix) {
+        const allTeams = await safeInvoke('get_matrix_teams') as MatrixTeam[];
+        const stabilityTeams = allTeams.filter(t => t.mode === 'Stability Accords');
+        const singularityTeams = allTeams.filter(t => t.mode === 'Singularity Expansion');
+        
+        const stabilityPoints = stabilityTeams.reduce((sum, team) => sum + team.points, 0);
+        const singularityPoints = singularityTeams.reduce((sum, team) => sum + team.points, 0);
+        
+        const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(stabilityPoints);
+        const singularityTeamScores = singularityTeams.map(t => t.points);
+        const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
+          singularityPoints,
+          singularityTeamScores
+        );
+        
+        await safeInvoke('update_troop_matrix', {
+          unlocked: troopMatrix.unlocked,
+          stabilityAccordsPoints: stabilityPoints,
+          stabilityAccordsAstrite: calculatedStabilityAstrite,
+          singularityExpansionPoints: singularityPoints,
+          singularityExpansionAstrite: calculatedSingularityAstrite,
+          singularityExpansionHighestRound: troopMatrix.singularity_expansion_highest_round,
+          notes: troopMatrix.notes || null
+        });
+      }
+      
       setEditingTeam(null);
       onUpdate();
     } catch (error) {
@@ -116,6 +144,34 @@ export default function TroopMatrixDetailsView({
     
     try {
       await safeInvoke('delete_matrix_team', { id });
+      
+      // Recalculate total points and astrite after deleting team
+      if (troopMatrix) {
+        const allTeams = await safeInvoke('get_matrix_teams') as MatrixTeam[];
+        const stabilityTeams = allTeams.filter(t => t.mode === 'Stability Accords');
+        const singularityTeams = allTeams.filter(t => t.mode === 'Singularity Expansion');
+        
+        const stabilityPoints = stabilityTeams.reduce((sum, team) => sum + team.points, 0);
+        const singularityPoints = singularityTeams.reduce((sum, team) => sum + team.points, 0);
+        
+        const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(stabilityPoints);
+        const singularityTeamScores = singularityTeams.map(t => t.points);
+        const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
+          singularityPoints,
+          singularityTeamScores
+        );
+        
+        await safeInvoke('update_troop_matrix', {
+          unlocked: troopMatrix.unlocked,
+          stabilityAccordsPoints: stabilityPoints,
+          stabilityAccordsAstrite: calculatedStabilityAstrite,
+          singularityExpansionPoints: singularityPoints,
+          singularityExpansionAstrite: calculatedSingularityAstrite,
+          singularityExpansionHighestRound: troopMatrix.singularity_expansion_highest_round,
+          notes: troopMatrix.notes || null
+        });
+      }
+      
       onUpdate();
     } catch (error) {
       console.error('Failed to delete team:', error);
@@ -136,6 +192,34 @@ export default function TroopMatrixDetailsView({
         points: 0,
         roundNumber: mode === 'Singularity Expansion' ? 1 : null
       });
+      
+      // Recalculate total points and astrite after adding team
+      if (troopMatrix) {
+        const allTeams = await safeInvoke('get_matrix_teams') as MatrixTeam[];
+        const stabilityTeams = allTeams.filter(t => t.mode === 'Stability Accords');
+        const singularityTeams = allTeams.filter(t => t.mode === 'Singularity Expansion');
+        
+        const stabilityPoints = stabilityTeams.reduce((sum, team) => sum + team.points, 0);
+        const singularityPoints = singularityTeams.reduce((sum, team) => sum + team.points, 0);
+        
+        const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(stabilityPoints);
+        const singularityTeamScores = singularityTeams.map(t => t.points);
+        const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
+          singularityPoints,
+          singularityTeamScores
+        );
+        
+        await safeInvoke('update_troop_matrix', {
+          unlocked: troopMatrix.unlocked,
+          stabilityAccordsPoints: stabilityPoints,
+          stabilityAccordsAstrite: calculatedStabilityAstrite,
+          singularityExpansionPoints: singularityPoints,
+          singularityExpansionAstrite: calculatedSingularityAstrite,
+          singularityExpansionHighestRound: troopMatrix.singularity_expansion_highest_round,
+          notes: troopMatrix.notes || null
+        });
+      }
+      
       onUpdate();
     } catch (error) {
       console.error('Failed to add team:', error);

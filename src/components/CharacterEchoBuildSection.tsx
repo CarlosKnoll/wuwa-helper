@@ -356,7 +356,7 @@ export default function CharacterEchoBuildSection({
   return (
     <div className="relative h-full flex flex-col">
       {/* Atmospheric Background similar to Forte tab */}
-      <div className="relative bg-gradient-to-b from-slate-900 via-blue-950 to-slate-950 overflow-hidden shadow-2xl flex-1">
+      <div className="relative bg-gradient-to-b from-slate-900 via-blue-950 to-slate-950 shadow-2xl flex-1 flex flex-col overflow-hidden">
         {/* Central atmospheric glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-slate-300/5 rounded-full blur-2xl"></div>
@@ -372,7 +372,7 @@ export default function CharacterEchoBuildSection({
         </div>
 
         {/* Original Content */}
-        <div className="relative z-10 flex gap-6 p-6">
+        <div className="relative z-10 flex gap-6 p-6 h-full">
       {/* Left Side - Echo Icons */}
       <div className="w-48 flex-shrink-0 space-y-4">
         {/* Cost Warning */}
@@ -397,11 +397,14 @@ export default function CharacterEchoBuildSection({
             >
               {/* Circular Echo Icon - Centered */}
               <div className="relative flex-shrink-0">
+                {/* Underglow effect */}
+                <div className="absolute inset-[-4px] bg-slate-200/15 rounded-full blur-lg -z-10"></div>
+                
                 {/* Main Circle - Increased size from w-14 h-14 to w-20 h-20 */}
-                <div className={`w-20 h-20 rounded-full bg-slate-900 border-3 overflow-hidden relative flex items-center justify-center transition-all ${
+                <div className={`w-20 h-20 rounded-full bg-slate-900 border-2 overflow-hidden relative flex items-center justify-center transition-all ${
                   selectedEchoId === echo.id
-                    ? 'border-cyan-400 shadow-lg shadow-cyan-500/50'
-                    : 'border-cyan-500/50'
+                    ? 'border-slate-100 shadow-[0_0_20px_rgba(226,232,240,0.4)]'
+                    : 'border-slate-200/30 shadow-[0_0_12px_rgba(226,232,240,0.2)]'
                 }`}>
                   {echoImages[echo.id] ? (
                     <img
@@ -453,7 +456,7 @@ export default function CharacterEchoBuildSection({
       </div>
 
       {/* Middle - Selected Echo Details */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 h-full overflow-y-auto">
         {selectedEchoId && echoes.find(e => e.id === selectedEchoId) ? (
           <EchoItem
             echo={echoes.find(e => e.id === selectedEchoId)!}
@@ -476,24 +479,44 @@ export default function CharacterEchoBuildSection({
       </div>
 
       {/* Right Side - Echo Set Info */}
-      <div className="w-80 flex-shrink-0 bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
-        <div className="flex items-center justify-between mb-4">
+      <div className="relative w-80 flex-shrink-0 bg-slate-800/30 backdrop-blur-sm rounded-lg border-2 border-slate-200/30 shadow-[0_0_20px_rgba(226,232,240,0.15)] flex flex-col h-full overflow-hidden">
+        {/* Underglow effect */}
+        <div className="absolute inset-0 -z-10 bg-slate-200/10 rounded-lg blur-xl"></div>
+        
+        {/* Header - Fixed at top */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-700/50 flex-shrink-0">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Shield size={20} className="text-cyan-400" />
             Echo Set
           </h3>
-          {/* Edit Button - MOVED HERE TO RIGHT COLUMN */}
-          {!editing && (
+          {/* Edit/Save/Cancel Buttons */}
+          {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-sm"
+              className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors"
             >
-              <Edit2 size={14} />
-              Edit
+              <Edit2 size={16} className="text-cyan-400" />
             </button>
+          ) : (
+            <div className="flex gap-1.5">
+              <button
+                onClick={handleSave}
+                className="p-1.5 bg-green-500/20 hover:bg-green-500/30 rounded transition-colors"
+              >
+                <Save size={16} className="text-green-400" />
+              </button>
+              <button
+                onClick={handleCancel}
+                className="p-1.5 bg-slate-600/20 hover:bg-slate-600/30 rounded transition-colors"
+              >
+                <X size={16} className="text-slate-400" />
+              </button>
+            </div>
           )}
         </div>
 
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto p-4">
         {editing ? (
           <div className="space-y-4">
             {/* Configuration Selection */}
@@ -525,14 +548,19 @@ export default function CharacterEchoBuildSection({
 
             {/* Primary Set Selection - GRID OF CLICKABLE ICONS */}
             <div>
-              <label className="text-sm text-slate-400 mb-2 block">
-                Primary Set ({form.primary_set_pieces} pieces)
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm text-slate-400">
+                  Primary Set ({form.primary_set_pieces} pieces)
+                </label>
+              </div>
               <div className="grid grid-cols-8 gap-2 max-h-[300px] overflow-y-auto p-1">
                 {getAvailablePrimarySets().map(set => (
                   <button
                     key={set.key}
-                    onClick={() => setForm({ ...form, primary_set_key: set.key })}
+                    onClick={() => setForm({ 
+                      ...form, 
+                      primary_set_key: form.primary_set_key === set.key ? null : set.key 
+                    })}
                     className={`relative aspect-square rounded-lg border-2 transition-all ${
                       form.primary_set_key === set.key
                         ? 'border-cyan-500 bg-cyan-500/20 opacity-100'
@@ -593,14 +621,19 @@ export default function CharacterEchoBuildSection({
             {/* Secondary Set Selection (only shown for mixed builds) - GRID OF CLICKABLE ICONS */}
             {isMixedBuild && (
               <div>
-                <label className="text-sm text-slate-400 mb-2 block">
-                  Secondary Set ({form.secondary_set_pieces} pieces)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm text-slate-400">
+                    Secondary Set ({form.secondary_set_pieces} pieces)
+                  </label>
+                </div>
                 <div className="grid grid-cols-8 gap-2 max-h-[200px] overflow-y-auto p-1">
                   {getAvailableSecondarySets().map(set => (
                     <button
                       key={set.key}
-                      onClick={() => setForm({ ...form, secondary_set_key: set.key })}
+                      onClick={() => setForm({ 
+                        ...form, 
+                        secondary_set_key: form.secondary_set_key === set.key ? null : set.key 
+                      })}
                       className={`relative aspect-square rounded-lg border-2 transition-all ${
                         form.secondary_set_key === set.key
                           ? 'border-cyan-500 bg-cyan-500/20 opacity-100'
@@ -664,24 +697,6 @@ export default function CharacterEchoBuildSection({
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 min-h-[60px]"
                 placeholder="Additional build notes..."
               />
-            </div>
-
-            {/* Save/Cancel Buttons in Edit Mode */}
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={handleSave}
-                className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
-              >
-                <Save size={14} />
-                Save
-              </button>
-              <button
-                onClick={handleCancel}
-                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-sm"
-              >
-                <X size={14} />
-                Cancel
-              </button>
             </div>
           </div>
         ) : (
@@ -797,6 +812,7 @@ export default function CharacterEchoBuildSection({
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
         </div>

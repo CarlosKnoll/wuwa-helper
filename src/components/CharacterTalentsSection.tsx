@@ -430,7 +430,7 @@ function MinorTrace({
       className={`relative w-11 h-11 rounded-full border-[3px] transition-all hover:scale-110 cursor-pointer ${
         isUnlocked
           ? 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-300 border-slate-400/50 shadow-[0_0_12px_rgba(203,213,225,0.3)] opacity-100'
-          : 'bg-slate-800/50 border-slate-700/40 opacity-30 hover:opacity-40'
+          : 'bg-slate-800/50 border-slate-600 opacity-50 hover:opacity-65'
       }`}
     >
       {isUnlocked && (
@@ -469,7 +469,7 @@ function MajorTrace({
       <div className={`relative w-full h-full rounded-lg transform rotate-45 border-[3px] transition-all ${
         isUnlocked
           ? 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-300 border-slate-400/60 shadow-[0_0_15px_rgba(203,213,225,0.35)] opacity-100'
-          : 'bg-slate-800/50 border-slate-700/40 opacity-30 hover:opacity-40'
+          : 'bg-slate-800/50 border-slate-600 opacity-50 hover:opacity-65'
       }`}>
         {isUnlocked && (
           <>

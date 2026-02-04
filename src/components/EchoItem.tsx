@@ -228,15 +228,17 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
   const totalSubstats = visibleSubstats.length + newSubstats.length;
 
   return (
-    <div className={`bg-slate-900/50 rounded-lg border-2 ${
+    <div className={`relative bg-slate-900/50 backdrop-blur-sm rounded-lg border-2 border-slate-200/30 shadow-[0_0_20px_rgba(226,232,240,0.15)] ${
       form.rarity === 5 
-        ? 'border-yellow-500/50' 
+        ? '' 
         : form.rarity === 4 
-        ? 'border-purple-500/50'
+        ? ''
         : form.rarity === 3
-        ? 'border-blue-500/50'
-        : 'border-green-500/50'
+        ? ''
+        : ''
     }`}>
+      {/* Underglow effect */}
+      <div className="absolute inset-0 -z-10 bg-slate-200/10 rounded-lg blur-xl"></div>
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={deleteConfirm}
@@ -300,30 +302,30 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
               <>
                 <button
                   onClick={() => setEditing(true)}
-                  className="p-1 bg-cyan-500 hover:bg-cyan-600 rounded text-xs transition-colors"
+                  className="p-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded text-xs transition-colors"
                 >
-                  <Edit2 className="w-3 h-3" />
+                  <Edit2 className="w-3 h-3 text-cyan-400" />
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(true)}
-                  className="p-1 bg-red-500 hover:bg-red-600 rounded text-xs transition-colors"
+                  className="p-1 bg-red-500/20 hover:bg-red-500/30 rounded text-xs transition-colors"
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-3 h-3 text-red-400" />
                 </button>
               </>
             ) : (
               <div className="flex gap-1">
                 <button
                   onClick={handleSave}
-                  className="p-1 bg-green-500 hover:bg-green-600 rounded text-xs transition-colors"
+                  className="p-1 bg-green-500/20 hover:bg-green-500/30 rounded text-xs transition-colors"
                 >
-                  <Save className="w-3 h-3" />
+                  <Save className="w-3 h-3 text-green-400" />
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="p-1 bg-slate-500 hover:bg-slate-600 rounded text-xs transition-colors"
+                  className="p-1 bg-slate-600/20 hover:bg-slate-600/30 rounded text-xs transition-colors"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3 h-3 text-slate-400" />
                 </button>
               </div>
             )}

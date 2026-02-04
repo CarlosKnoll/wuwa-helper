@@ -81,16 +81,16 @@ export default function WuwaHelper() {
   ];
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex overflow-hidden">
+    <div className="h-screen bg-black text-white flex overflow-hidden">
       <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 transition-all duration-300 flex flex-col`}>
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          {sidebarOpen && <div><h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">WuWa Assistant</h1><p className="text-xs text-slate-400 mt-1">Wuthering Waves</p></div>}
+          {sidebarOpen && <div><h1 className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent">WuWa Assistant</h1><p className="text-xs text-slate-400 mt-1">Wuthering Waves</p></div>}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors"><Menu className="w-5 h-5" /></button>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
-            return <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${activeTab === item.id ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-slate-800 text-slate-400'}`}><Icon className="w-5 h-5" />{sidebarOpen && <span className="text-sm font-medium">{item.name}</span>}</button>;
+            return <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${activeTab === item.id ? 'bg-slate-100/10 text-slate-100 border border-slate-200/40 shadow-[0_0_15px_rgba(226,232,240,0.2)]' : 'hover:bg-slate-800 text-slate-400'}`}><Icon className="w-5 h-5" />{sidebarOpen && <span className="text-sm font-medium">{item.name}</span>}</button>;
           })}
         </nav>
       </div>
@@ -99,7 +99,7 @@ export default function WuwaHelper() {
         <header className="bg-slate-900/30 backdrop-blur-xl border-b border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
             <div><h2 className="text-2xl font-bold">{navigation.find(n => n.id === activeTab)?.name}</h2></div>
-            <button onClick={handleRefresh} disabled={loading} className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
+            <button onClick={handleRefresh} disabled={loading} className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
           </div>
         </header>
 

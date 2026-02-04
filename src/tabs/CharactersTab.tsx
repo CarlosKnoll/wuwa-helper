@@ -165,10 +165,49 @@ function CharacterCard({
     });
   }, [character.character_name, isInitialized, getAsset]);
 
+  // Get border color based on rarity
+  const getRarityBorderColor = (rarity: number): string => {
+    switch (rarity) {
+      case 5:
+        return 'border-yellow-500/60';
+      case 4:
+        return 'border-purple-500/60';
+      case 3:
+        return 'border-blue-500/60';
+      case 2:
+        return 'border-green-500/60';
+      case 1:
+        return 'border-slate-500/60';
+      default:
+        return 'border-slate-800';
+    }
+  };
+
+  // Get brighter hover border color based on rarity
+  const getRarityHoverColor = (rarity: number): string => {
+    switch (rarity) {
+      case 5:
+        return 'hover:border-yellow-400';
+      case 4:
+        return 'hover:border-purple-400';
+      case 3:
+        return 'hover:border-blue-400';
+      case 2:
+        return 'hover:border-green-400';
+      case 1:
+        return 'hover:border-slate-400';
+      default:
+        return 'hover:border-slate-600';
+    }
+  };
+
+  const rarityBorderClass = getRarityBorderColor(character.rarity);
+  const rarityHoverClass = getRarityHoverColor(character.rarity);
+
   return (
     <div
       onClick={onSelect}
-      className="bg-slate-900/50 rounded-xl border border-slate-800 hover:border-cyan-500 transition cursor-pointer overflow-hidden"
+      className={`bg-slate-900/50 rounded-xl border transition cursor-pointer overflow-hidden ${rarityBorderClass} ${rarityHoverClass}`}
     >
       <div className="flex min-h-[12rem]">
         <div className="w-32 bg-slate-800/50 flex-shrink-0">

@@ -228,12 +228,13 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
       await loadPullHistory();
       if (onUpdate) onUpdate();
-      event.target.value = '';
       setCleanImport(false); // Reset checkbox after import
     } catch (err) {
       console.error('Import error:', err);
       alert('Failed to import JSON: ' + err);
     } finally {
+      // Always reset the file input so the same file can be selected again
+      event.target.value = '';
       setIsImportingJson(false);
       setImportProgress('');
     }

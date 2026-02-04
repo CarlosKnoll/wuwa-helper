@@ -132,9 +132,9 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden flex">
+      <div className="bg-black rounded-xl border border-slate-200/20 max-w-6xl w-full h-[90vh] overflow-hidden flex">
         {/* Left Sidebar Navigation */}
-        <div className="w-20 bg-slate-950/50 border-r border-slate-700 flex flex-col py-6">
+        <div className="w-20 bg-black border-r border-slate-200/20 flex flex-col py-6">
           <div className="flex flex-col gap-4 px-3">
             {subMenuItems.map((item) => {
               const Icon = item.icon;
@@ -145,7 +145,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
                   onClick={() => setActiveSubMenu(item.id)}
                   className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all ${
                     isActive
-                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                      ? 'bg-slate-100/10 text-slate-100 border border-slate-200/40 shadow-[0_0_15px_rgba(226,232,240,0.2)]'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                   }`}
                   title={item.label}
@@ -161,7 +161,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-slate-900 border-b border-slate-700 p-6 flex justify-between items-center">
+          <div className="bg-black border-b border-slate-200/20 p-6 flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-white">{character.character_name}</h2>
               <p className={`text-${getElementColor(character.element)}`}>
@@ -180,7 +180,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
           </div>
 
           {/* Content */}
-          <div className={`flex-1 overflow-y-auto ${activeSubMenu === 'talents' || activeSubMenu === 'echoes' ? 'p-0' : 'p-6'}`}>
+          <div className="flex-1 overflow-y-auto p-0">
             {activeSubMenu === 'overview' && (
               <CharacterInfo
                 character={character}

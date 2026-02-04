@@ -281,10 +281,14 @@ pub fn add_character(
     // Get the newly inserted character's ID
     let character_id = tx.last_insert_rowid();
     
-    // Initialize character_talents with level 1 instead of NULL
+    // Initialize character_talents with level 1 and all traces set to 0
     tx.execute(
-        "INSERT INTO character_talents (character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes) 
-         VALUES (?, 1, 1, 1, 1, 1, NULL)",
+        "INSERT INTO character_talents (
+            character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes,
+            basic_minor_1, basic_minor_2, skill_minor_1, skill_minor_2,
+            liberation_minor_1, liberation_minor_2, intro_minor_1, intro_minor_2,
+            forte_major_1, forte_major_2
+         ) VALUES (?, 1, 1, 1, 1, 1, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)",
         [character_id],
     )
     .map_err(|e| e.to_string())?;
@@ -297,10 +301,10 @@ pub fn add_character(
     )
     .map_err(|e| e.to_string())?;
     
-    // Initialize echo_builds with default values
+    // Initialize echo_builds with default values (5pc configuration by default)
     tx.execute(
         "INSERT INTO echo_builds (character_id, primary_set_key, secondary_set_key, primary_set_pieces, secondary_set_pieces, overall_quality, notes) 
-         VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)",
+         VALUES (?, NULL, NULL, 5, 0, NULL, NULL)",
         [character_id],
     )
     .map_err(|e| e.to_string())?;

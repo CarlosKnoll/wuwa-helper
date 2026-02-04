@@ -124,6 +124,19 @@ export default function TowerDetailsView({
         starsAchieved: editStarsAchieved,
         notes: editTowerNotes || null
       });
+      
+      // Recalculate total stars and astrite from all tower details
+      const allDetails = await safeInvoke('get_tower_details') as TowerDetails[];
+      const totalStars = allDetails.reduce((sum, td) => sum + (td.stars_achieved || 0), 0);
+      const calculatedAstrite = calculateTowerAstrite(totalStars);
+      
+      // Update the tower overview with new totals
+      await safeInvoke('update_tower_of_adversity', {
+        totalStars: totalStars,
+        astriteEarned: calculatedAstrite,
+        notes: towerInfo?.notes || null
+      });
+      
       setEditingTower(false);
       onUpdate();
     } catch (error) {
@@ -140,6 +153,19 @@ export default function TowerDetailsView({
         id: floorId,
         stars: stars
       });
+      
+      // Recalculate total stars and astrite after updating floor
+      const allFloors = Object.values(towerFloors).flat();
+      const totalStars = allFloors.reduce((sum, floor) => sum + (floor.stars || 0), 0);
+      const calculatedAstrite = calculateTowerAstrite(totalStars);
+      
+      // Update the tower overview with new totals
+      await safeInvoke('update_tower_of_adversity', {
+        totalStars: totalStars,
+        astriteEarned: calculatedAstrite,
+        notes: towerInfo?.notes || null
+      });
+      
       await onUpdate();
     } catch (error) {
       console.error('Failed to update floor stars:', error);

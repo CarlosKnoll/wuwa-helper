@@ -46,51 +46,34 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 ---
 
 ### Remaining To-Dos:
-
-#### General:
-- Black background instead of dark blue.
-- Expand talents background visuals to other areas:
-    - [ ] Dashboard
-    - [ ] Characters
-        - [ ] Overview 
-        - [x] Forte
-        - [x] Echoes
-    - [ ] Weapons
-    - [ ] Pity Counter
-    - [ ] Exploration
-    - [ ] Endgame
-    - [ ] Settings
-
-- Modify edit fields to have immediate persistance instead of save button
+#### UI:
+- Standardize edit/add/import buttons to the same amber/golden as the refresh
+- Standardize countours and selections to be white.
 - Rename any "pull" mention to Convene.
+- **Endgame:** Add subtle alerts for all gamemodes missing rewards.
+
+---
+
+#### Functionalities:
+- Research auto-update implementation.
+- Modify edit fields to have immediate persistance instead of save button
 - Add support for the upcoming echo sets (v3.1):
     - [ ] Trailblazing Star
     - [ ] Chromatic Foam
     - [ ] Sound of True Name
+---
 
-#### Add Characters:
-- Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (still allow to add custom characters that are not matching with any of the list)
+#### Minor changes and bugs:
+- **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
+- **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
+- **Pity/Tracker:** Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
+- **Endgame:** Remove the ability to edit the total stars achieved manually in Toa, and in Whimpering Wastes and Troop Matrix, Remove the ability to edit the points. (not the points achieved in each stage/teams, but the total sum)
+- **Endgame:** Fix stars counting under ToA gamemode.
+- **Endgame:** Allow editing of last reset date.
+- **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
 
-#### Add Weapons:
-- Add dropdown menu with hardcoded weapons, allow refining dropdown list as user is typing. (still allow to add custom weapons that are not matching with any of the list)
+---
 
-#### Weapons:
-- Remove outline on hover.
-- Add level to the mix with the sorted display. (So it still should sort by building/leveld, but on top of that it should also sort by rarity, and then by level)
-
-#### Pity/Tracker:
-- Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
-- If JSON import fails, subsequent attempts are ignored.
-
-#### Endgame:
-- Add functionailty to automatically calculate endgame progress based on individual user input of progress (and, in turn, remove ability to directly edit those fields), so:
-    - In Tower of Adversity, remove the ability to edit the total stars achieved manually.
-    - In Whimpering Wastes and Troop Matrix, calculate the points.
-- Fix astrite auto-calc not recalculating if changing the stars achieved in the subcards under ToA gamemode.
-- Add subtle alerts for troop matrix missing rewards that do not reward astrite: The breakpoints are in Total Singularity Expansion Score (sum of all teams scores): 29000, 37000, 45000 and 58000, and reaching 5000 points with 6 teams.
-- Allow editing of last reset date.
-- Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
-
-### Cleanup:
+#### Cleanup:
 - Sanity check for loose ends.
 - Remove debug statments.
