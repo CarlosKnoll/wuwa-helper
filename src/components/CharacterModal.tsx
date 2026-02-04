@@ -18,6 +18,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
     level: character.level,
     ascension: character.ascension,
     waveband: character.waveband,
+    rarity: character.rarity,
     build_status: character.build_status,
     notes: character.notes || ''
   });
@@ -43,6 +44,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
       level: character.level,
       ascension: character.ascension,
       waveband: character.waveband,
+      rarity: character.rarity,
       build_status: character.build_status,
       notes: character.notes || ''
     });
@@ -85,9 +87,10 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
     const level = Math.max(1, Math.min(90, form.level));
     const ascension = Math.max(0, Math.min(6, form.ascension));
     const waveband = Math.max(0, Math.min(6, form.waveband));
+    const rarity = form.rarity === 5 || form.rarity === 4 ? form.rarity : 5;
     
-    if (form.level !== level || form.ascension !== ascension || form.waveband !== waveband) {
-      alert('Values adjusted: Level (1-90), Ascension (0-6), Waveband (0-6)');
+    if (form.level !== level || form.ascension !== ascension || form.waveband !== waveband || form.rarity !== rarity) {
+      alert('Values adjusted: Level (1-90), Ascension (0-6), Waveband (0-6), Rarity (4 or 5)');
     }
     
     try {
@@ -96,6 +99,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
         level: level,
         ascension: ascension,
         waveband: waveband,
+        rarity: rarity,
         buildStatus: form.build_status,
         notes: form.notes || null
       });
@@ -105,6 +109,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
         level: level,
         ascension: ascension,
         waveband: waveband,
+        rarity: rarity,
         build_status: form.build_status,
         notes: form.notes
       });
@@ -175,7 +180,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
           </div>
 
           {/* Content */}
-          <div className={`flex-1 overflow-y-auto ${activeSubMenu === 'talents' ? 'p-0' : 'p-6'}`}>
+          <div className={`flex-1 overflow-y-auto ${activeSubMenu === 'talents' || activeSubMenu === 'echoes' ? 'p-0' : 'p-6'}`}>
             {activeSubMenu === 'overview' && (
               <CharacterInfo
                 character={character}
@@ -189,6 +194,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
                     level: character.level,
                     ascension: character.ascension,
                     waveband: character.waveband,
+                    rarity: character.rarity,
                     build_status: character.build_status,
                     notes: character.notes || ''
                   });

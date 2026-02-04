@@ -354,7 +354,25 @@ export default function CharacterEchoBuildSection({
   const costOverLimit = totalCost > 12;
 
   return (
-    <div className="relative flex gap-6 p-6">
+    <div className="relative h-full flex flex-col">
+      {/* Atmospheric Background similar to Forte tab */}
+      <div className="relative bg-gradient-to-b from-slate-900 via-blue-950 to-slate-950 overflow-hidden shadow-2xl flex-1">
+        {/* Central atmospheric glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-slate-300/5 rounded-full blur-2xl"></div>
+        
+        {/* Stars/sparkles effect */}
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute top-[20%] left-[15%] w-1 h-1 bg-white rounded-full shadow-[0_0_4px_rgba(255,255,255,0.8)]"></div>
+          <div className="absolute top-[30%] right-[20%] w-1 h-1 bg-white rounded-full shadow-[0_0_4px_rgba(255,255,255,0.8)]"></div>
+          <div className="absolute top-[60%] left-[25%] w-0.5 h-0.5 bg-blue-200 rounded-full shadow-[0_0_3px_rgba(191,219,254,0.8)]"></div>
+          <div className="absolute bottom-[25%] right-[30%] w-0.5 h-0.5 bg-white rounded-full shadow-[0_0_3px_rgba(255,255,255,0.8)]"></div>
+          <div className="absolute top-[45%] right-[15%] w-0.5 h-0.5 bg-blue-100 rounded-full shadow-[0_0_3px_rgba(219,234,254,0.8)]"></div>
+          <div className="absolute bottom-[40%] left-[35%] w-1 h-1 bg-white rounded-full shadow-[0_0_4px_rgba(255,255,255,0.8)]"></div>
+        </div>
+
+        {/* Original Content */}
+        <div className="relative z-10 flex gap-6 p-6">
       {/* Left Side - Echo Icons */}
       <div className="w-48 flex-shrink-0 space-y-4">
         {/* Cost Warning */}
@@ -781,5 +799,7 @@ export default function CharacterEchoBuildSection({
         )}
       </div>
     </div>
+        </div>
+      </div>
   );
 }

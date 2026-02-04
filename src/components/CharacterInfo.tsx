@@ -197,20 +197,37 @@ export default function CharacterInfo({
                 <h3 className="text-xl font-bold text-white">{character.character_name}</h3>
               </div>
             </div>
-            {!editing ? (
-              <button onClick={onEdit} className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
-                <Edit2 size={16} className="text-cyan-400" />
-              </button>
-            ) : (
-              <div className="flex gap-1.5">
-                <button onClick={handleSave} className="p-1.5 bg-green-500/20 hover:bg-green-500/30 rounded transition-colors">
-                  <Save size={16} className="text-green-400" />
+            <div className="flex items-center gap-3">
+              {/* Rarity Display/Edit */}
+              {editing ? (
+                <select
+                  value={form.rarity}
+                  onChange={e => onChange({ ...form, rarity: parseInt(e.target.value) })}
+                  className="bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                >
+                  <option value={5}>5 Star</option>
+                  <option value={4}>4 Star</option>
+                </select>
+              ) : (
+                <div className="text-yellow-400 font-semibold text-lg">{getRarityStars(character.rarity)}</div>
+              )}
+              
+              {/* Edit/Save Buttons */}
+              {!editing ? (
+                <button onClick={onEdit} className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
+                  <Edit2 size={16} className="text-cyan-400" />
                 </button>
-                <button onClick={onCancel} className="p-1.5 bg-slate-600/20 hover:bg-slate-600/30 rounded transition-colors">
-                  <X size={16} className="text-slate-400" />
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex gap-1.5">
+                  <button onClick={handleSave} className="p-1.5 bg-green-500/20 hover:bg-green-500/30 rounded transition-colors">
+                    <Save size={16} className="text-green-400" />
+                  </button>
+                  <button onClick={onCancel} className="p-1.5 bg-slate-600/20 hover:bg-slate-600/30 rounded transition-colors">
+                    <X size={16} className="text-slate-400" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="border-t border-slate-700/50 my-3" />
@@ -253,7 +270,7 @@ export default function CharacterInfo({
 
             {/* Waveband */}
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Seq</label>
+              <label className="text-xs text-slate-400 mb-1 block">Resonance Chain</label>
               {editing ? (
                 <input 
                   type="number" 

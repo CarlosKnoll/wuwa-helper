@@ -45,39 +45,42 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 ---
 
-### Remaining To-Dos (Not the focus of the branch):
+### Remaining To-Dos:
 
 #### General:
-- Expand talents background visuals to other areas.
+- Black background instead of dark blue.
+- Expand talents background visuals to other areas:
+    - [ ] Dashboard
+    - [ ] Characters
+        - [ ] Overview 
+        - [x] Forte
+        - [x] Echoes
+    - [ ] Weapons
+    - [ ] Pity Counter
+    - [ ] Exploration
+    - [ ] Endgame
+    - [ ] Settings
+
 - Modify edit fields to have immediate persistance instead of save button
-
-#### Dashboard:
-- Editing notes not showing time category (longterm, immediate, so on). 
-
-#### Characters:
-- Clicking delete icon also opens build modal (functionality works, if I close the build modal I can see the delete confimation modal)
-- Allow editing of rarity (for user error cases)
-- Make it so Rover display concatenates with its element before (so instead of three rover entries differentiated by their element icons we have actually display names of Aero Rover, Spectro Rover and Havoc Rover)
-- Display character notes in the card.
-- Change "Seq" string to Resonance Chain
+- Rename any "pull" mention to Convene.
+- Add support for the upcoming echo sets (v3.1):
+    - [ ] Trailblazing Star
+    - [ ] Chromatic Foam
+    - [ ] Sound of True Name
 
 #### Add Characters:
 - Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (still allow to add custom characters that are not matching with any of the list)
 
-#### Weapons:
-- Allow editing of rarity (for user error cases)
-- Colored outline according to rarity.
-
 #### Add Weapons:
 - Add dropdown menu with hardcoded weapons, allow refining dropdown list as user is typing. (still allow to add custom weapons that are not matching with any of the list)
+
+#### Weapons:
+- Remove outline on hover.
+- Add level to the mix with the sorted display. (So it still should sort by building/leveld, but on top of that it should also sort by rarity, and then by level)
 
 #### Pity/Tracker:
 - Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
 - If JSON import fails, subsequent attempts are ignored.
-- Rename any "pull" mention to Convene.
-
-#### Pity/Tracker & Dashboard:
-- Remove the 50/50 or guarantee tag for the featured weapon (In wuwa, featured weapons are guaranted always)
 
 #### Endgame:
 - Add functionailty to automatically calculate endgame progress based on individual user input of progress (and, in turn, remove ability to directly edit those fields), so:
@@ -88,9 +91,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - Allow editing of last reset date.
 - Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
 
-#### Exploration:
-- Add collpasing for the region cards.
-
 ### Cleanup:
 - Sanity check for loose ends.
-- Remove any remainder debug statments.
+- Remove debug statments.

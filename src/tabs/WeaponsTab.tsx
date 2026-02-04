@@ -15,6 +15,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
   const [weaponForms, setWeaponForms] = useState<Record<number, {
     level: number;
     rank: number;
+    rarity: number;
     equipped_on: string;
     category: string;
     notes: string;
@@ -32,6 +33,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       forms[weapon.id] = {
         level: weapon.level,
         rank: weapon.rank,
+        rarity: weapon.rarity,
         equipped_on: weapon.equipped_on,
         category: weapon.category,
         notes: weapon.notes || '',
@@ -75,6 +77,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       const form = weaponForms[weapon.id];
       const level = Math.max(1, Math.min(90, form.level));
       const rank = Math.max(1, Math.min(5, form.rank));
+      const rarity = [1, 2, 3, 4, 5].includes(form.rarity) ? form.rarity : 5;
       
       if (form.level !== level) {
         alert('Level must be between 1 and 90. Value has been adjusted.');
@@ -82,11 +85,15 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       if (form.rank !== rank) {
         alert('Rank must be between 1 and 5. Value has been adjusted.');
       }
+      if (form.rarity !== rarity) {
+        alert('Rarity must be 1-5 stars. Value has been adjusted.');
+      }
       
       await safeInvoke('update_weapon', {
         id: weapon.id,
         level: level,
         rank: rank,
+        rarity: rarity,
         equippedOn: form.equipped_on,
         category: form.category,
         notes: form.notes || null,
@@ -145,8 +152,14 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       const categoryA = categoryOrder[a.category] ?? 3;
       const categoryB = categoryOrder[b.category] ?? 3;
       
+      // First sort by category
       if (categoryA !== categoryB) return categoryA - categoryB;
-      return b.rarity - a.rarity;
+      
+      // Then sort by rarity (descending - higher rarity first)
+      if (a.rarity !== b.rarity) return b.rarity - a.rarity;
+      
+      // Finally sort by name alphabetically
+      return a.weapon_name.localeCompare(b.weapon_name);
     });
   }, [weapons, searchQuery, filterWeaponType, filterRarity, filterCategory]);
 
@@ -354,6 +367,7 @@ function WeaponCard({
   const safeForm = form || {
     level: weapon.level,
     rank: weapon.rank,
+    rarity: weapon.rarity,
     equipped_on: weapon.equipped_on,
     category: weapon.category,
     notes: weapon.notes || '',
@@ -406,11 +420,31 @@ function WeaponCard({
     }
   }, [weapon.weapon_name, weapon.weapon_type, isInitialized, getAsset]);
 
+  // Get border color based on rarity
+  const getRarityBorderColor = (rarity: number): string => {
+    switch (rarity) {
+      case 5:
+        return 'border-yellow-500/60';
+      case 4:
+        return 'border-purple-500/60';
+      case 3:
+        return 'border-blue-500/60';
+      case 2:
+        return 'border-green-500/60';
+      case 1:
+        return 'border-slate-500/60';
+      default:
+        return 'border-slate-800';
+    }
+  };
+
+  const rarityBorderClass = getRarityBorderColor(weapon.rarity);
+
   return (
     <div
       onClick={isEditing ? undefined : onEdit}
-      className={`bg-slate-900/50 rounded-xl border border-slate-800 transition cursor-pointer overflow-hidden ${
-        !isEditing ? 'hover:border-cyan-500' : ''
+      className={`bg-slate-900/50 rounded-xl border-2 transition cursor-pointer overflow-hidden ${
+        !isEditing ? `hover:border-cyan-500 ${rarityBorderClass}` : rarityBorderClass
       }`}
     >
       {/* Top Row: Image + Header Info */}
@@ -491,6 +525,20 @@ function WeaponCard({
                 min="1"
                 max="5"
               />
+            </div>
+            <div className="col-span-2">
+              <label className="text-slate-400 block mb-1">Rarity</label>
+              <select
+                value={safeForm.rarity}
+                onChange={(e) => onFormChange({ rarity: parseInt(e.target.value) })}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+              >
+                <option value={5}>5 Star</option>
+                <option value={4}>4 Star</option>
+                <option value={3}>3 Star</option>
+                <option value={2}>2 Star</option>
+                <option value={1}>1 Star</option>
+              </select>
             </div>
             <div className="col-span-2">
               <label className="text-slate-400 block mb-1">Equipped On</label>

@@ -27,6 +27,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
     lustrous_tide: 0,
     radiant_tide: 0,
     forged_tide: 0,
+    afterglow_coral: 0,
+    oscillated_coral: 0,
   });
 
   // Endgame data
@@ -79,6 +81,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         lustrous_tide: resources.lustrous_tide || 0,
         radiant_tide: resources.radiant_tide || 0,
         forged_tide: resources.forged_tide || 0,
+        afterglow_coral: resources.afterglow_coral || 0,
+        oscillated_coral: resources.oscillated_coral || 0,
       });
     }
   }, [resources]);
@@ -123,8 +127,8 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         lustrousTide: resourcesForm.lustrous_tide,
         radiantTide: resourcesForm.radiant_tide,
         forgedTide: resourcesForm.forged_tide,
-        afterglowCoral: resources?.afterglow_coral || 0,
-        oscillatedCoral: resources?.oscillated_coral || 0,
+        afterglowCoral: resourcesForm.afterglow_coral,
+        oscillatedCoral: resourcesForm.oscillated_coral,
         shellCredits: resources?.shell_credits || 0,
         notes: resources?.notes || null
       });
@@ -207,6 +211,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
   const radiantTide = resources?.radiant_tide || 0;
   const forgedTide = resources?.forged_tide || 0;
   const afterglowCoral = resources?.afterglow_coral || 0;
+  const oscillatedCoral = resources?.oscillated_coral || 0;
 
   const pullsFromAstrite = Math.floor(astrite / 160);
   const pullsFromTides = radiantTide;
@@ -279,7 +284,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
         </div>
 
         {editingResources ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
                 <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
@@ -328,9 +333,33 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-orange-400"
               />
             </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
+                <CurrencyIcon currencyName="afterglow_coral" className="w-5 h-5" />
+                Afterglow Coral
+              </label>
+              <input
+                type="number"
+                value={resourcesForm.afterglow_coral}
+                onChange={e => setResourcesForm({...resourcesForm, afterglow_coral: parseInt(e.target.value) || 0})}
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-pink-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1">
+                <CurrencyIcon currencyName="oscillated_coral" className="w-5 h-5" />
+                Oscillated Coral
+              </label>
+              <input
+                type="number"
+                value={resourcesForm.oscillated_coral}
+                onChange={e => setResourcesForm({...resourcesForm, oscillated_coral: parseInt(e.target.value) || 0})}
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-teal-400"
+              />
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="bg-slate-800/50 rounded-lg p-2">
               <div className="text-xs text-slate-400 flex items-center gap-1">
                 <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
@@ -358,6 +387,20 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 Forged
               </div>
               <div className="text-lg font-bold text-orange-400">{forgedTide}</div>
+            </div>
+            <div className="bg-slate-800/50 rounded-lg p-2">
+              <div className="text-xs text-slate-400 flex items-center gap-1">
+                <CurrencyIcon currencyName="afterglow_coral" className="w-5 h-5" />
+                Afterglow
+              </div>
+              <div className="text-lg font-bold text-pink-400">{afterglowCoral.toLocaleString()}</div>
+            </div>
+            <div className="bg-slate-800/50 rounded-lg p-2">
+              <div className="text-xs text-slate-400 flex items-center gap-1">
+                <CurrencyIcon currencyName="oscillated_coral" className="w-5 h-5" />
+                Oscillated
+              </div>
+              <div className="text-lg font-bold text-teal-400">{oscillatedCoral.toLocaleString()}</div>
             </div>
           </div>
         )}
@@ -465,7 +508,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                   <div className="text-[9px] text-slate-500">4★ Pity</div>
                 </div>
 
-                {isFeatured && (
+                {pity.banner_type === 'featuredCharacter' && (
                   <div className={`text-[10px] text-center py-0.5 rounded ${
                     pity.guaranteed_next_fivestar 
                       ? 'bg-green-500/20 text-green-400' 
@@ -674,6 +717,15 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
 
                   {isEditing ? (
                     <div className="space-y-2">
+                      <select
+                        value={form.category || ''}
+                        onChange={e => setGoalForms({ ...goalForms, [goal.id]: { ...form, category: e.target.value } })}
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs"
+                      >
+                        <option value="immediate">Immediate</option>
+                        <option value="short-term">Short-term</option>
+                        <option value="long-term">Long-term</option>
+                      </select>
                       <select
                         value={form.priority || ''}
                         onChange={e => setGoalForms({ ...goalForms, [goal.id]: { ...form, priority: e.target.value } })}

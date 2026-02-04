@@ -107,14 +107,15 @@ pub fn update_character(
     level: i64,
     ascension: i64,
     waveband: i64,
+    rarity: i64,
     build_status: String,
     notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
     conn.execute(
-        "UPDATE characters SET level = ?, ascension = ?, waveband = ?, build_status = ?, notes = ? WHERE id = ?",
-        (level, ascension, waveband, build_status, notes, id),
+        "UPDATE characters SET level = ?, ascension = ?, waveband = ?, rarity = ?, build_status = ?, notes = ? WHERE id = ?",
+        (level, ascension, waveband, rarity, build_status, notes, id),
     )
     .map_err(|e| e.to_string())?;
     
@@ -264,10 +265,13 @@ pub fn add_character(
     build_status: String,
     notes: Option<String>,
 ) -> Result<String, String> {
-    let conn = init_db(&app)?;
+    let mut conn = init_db(&app)?;
+    
+    // Start a transaction
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
     
     // Insert the character
-    conn.execute(
+    tx.execute(
         "INSERT INTO characters (character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (&character_name, variant, resonance_date, rarity, element, weapon_type, waveband, level, ascension, build_status, notes),
@@ -275,10 +279,10 @@ pub fn add_character(
     .map_err(|e| e.to_string())?;
     
     // Get the newly inserted character's ID
-    let character_id = conn.last_insert_rowid();
+    let character_id = tx.last_insert_rowid();
     
     // Initialize character_talents with level 1 instead of NULL
-    conn.execute(
+    tx.execute(
         "INSERT INTO character_talents (character_id, basic_level, skill_level, liberation_level, forte_level, intro_level, notes) 
          VALUES (?, 1, 1, 1, 1, 1, NULL)",
         [character_id],
@@ -286,7 +290,7 @@ pub fn add_character(
     .map_err(|e| e.to_string())?;
     
     // Initialize character_weapons with default values
-    conn.execute(
+    tx.execute(
         "INSERT INTO character_weapons (character_id, weapon_name, rarity, level, rank, notes) 
          VALUES (?, 'None', NULL, NULL, NULL, NULL)",
         [character_id],
@@ -294,12 +298,15 @@ pub fn add_character(
     .map_err(|e| e.to_string())?;
     
     // Initialize echo_builds with default values
-    conn.execute(
-        "INSERT INTO echo_builds (character_id, set_bonus, set_effect, overall_quality, notes) 
-         VALUES (?, NULL, NULL, NULL, NULL)",
+    tx.execute(
+        "INSERT INTO echo_builds (character_id, primary_set_key, secondary_set_key, primary_set_pieces, secondary_set_pieces, overall_quality, notes) 
+         VALUES (?, NULL, NULL, NULL, NULL, NULL, NULL)",
         [character_id],
     )
     .map_err(|e| e.to_string())?;
+    
+    // Commit the transaction - if this fails or any above step failed, everything will be rolled back
+    tx.commit().map_err(|e| e.to_string())?;
     
     Ok("Character added successfully".to_string())
 }

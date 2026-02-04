@@ -45,6 +45,14 @@ export default function CharactersTab({
     }
   };
 
+  const getDisplayName = (c: Character) => {
+    if (c.character_name.toLowerCase() === 'rover') {
+      const elementName = c.element.charAt(0).toUpperCase() + c.element.slice(1);
+      return `${elementName} Rover`;
+    }
+    return c.character_name;
+  };
+
   const filteredCharacters = [...characters]
     .sort((a, b) => {
       const pa = getBuildStatusPriority(a.build_status);
@@ -52,12 +60,20 @@ export default function CharactersTab({
       if (pa !== pb) return pa - pb;
       return a.character_name.localeCompare(b.character_name);
     })
-    .filter((c) =>
-      c.character_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    .filter((c) => {
+      const search = searchTerm.toLowerCase();
+      const charName = c.character_name.toLowerCase();
+      const displayName = getDisplayName(c).toLowerCase();
+      const element = c.element.toLowerCase();
+      
+      return charName.includes(search) || 
+             displayName.includes(search) || 
+             element.includes(search);
+    });
 
   const isRoverVariant = (c: Character) =>
     c.character_name.toLowerCase() === 'rover';
+
 
   const getMaxLevel = (a: number) => [20, 40, 50, 60, 70, 80, 90][a] ?? 20;
 
@@ -106,6 +122,7 @@ export default function CharactersTab({
             }
             isDeleting={deletingCharId === char.id}
             isRoverVariant={isRoverVariant(char)}
+            displayName={getDisplayName(char)}
             maxLevel={getMaxLevel(char.ascension)}
           />
         ))}
@@ -135,6 +152,7 @@ function CharacterCard({
   onDelete,
   isDeleting,
   isRoverVariant,
+  displayName,
   maxLevel,
 }: any) {
   const { getAsset, isInitialized } = useAssets();
@@ -168,14 +186,17 @@ function CharacterCard({
           <div className="flex items-start gap-2 min-w-0">
             {/* Name */}
             <h3 className="font-bold text-sm leading-tight flex-1 min-w-0">
-              {character.character_name}
+              {displayName}
             </h3>
 
             {/* Element + delete */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <ElementIcon element={character.element} size="sm" showLabel={false} />
               <button
-                onClick={onDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
                 disabled={isDeleting}
                 className="p-1 bg-red-500 hover:bg-red-600 rounded transition-colors disabled:opacity-50"
               >
@@ -188,6 +209,13 @@ function CharacterCard({
           <div className="text-yellow-400 text-xs leading-none">
             {getRarityStars(character.rarity)}
           </div>
+
+          {/* Notes */}
+          {character.notes && (
+            <p className="text-xs text-slate-400 italic line-clamp-2 mt-1">
+              {character.notes}
+            </p>
+          )}
         </div>
 
 

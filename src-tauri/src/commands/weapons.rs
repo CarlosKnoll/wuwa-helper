@@ -36,18 +36,22 @@ pub fn update_weapon(
     id: i64,
     level: i64,
     rank: i64,
+    rarity: i64,
     equipped_on: String,
     category: String,
     notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
+    // Validate rarity
+    let rarity = if (1..=5).contains(&rarity) { rarity } else { 5 };
+    
     // Get the old equipped_on value and weapon details
-    let (old_equipped_on, weapon_name, weapon_rarity): (String, String, i64) = conn
+    let (old_equipped_on, weapon_name): (String, String) = conn
         .query_row(
-            "SELECT equipped_on, weapon_name, rarity FROM weapons_inventory WHERE id = ?", 
+            "SELECT equipped_on, weapon_name FROM weapons_inventory WHERE id = ?", 
             [id], 
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            |row| Ok((row.get(0)?, row.get(1)?))
         )
         .map_err(|e| e.to_string())?;
     
@@ -82,8 +86,8 @@ pub fn update_weapon(
     
     // Update the weapon
     conn.execute(
-        "UPDATE weapons_inventory SET level = ?, rank = ?, equipped_on = ?, category = ?, notes = ? WHERE id = ?",
-        (level, rank, &equipped_on, category, notes, id),
+        "UPDATE weapons_inventory SET level = ?, rank = ?, rarity = ?, equipped_on = ?, category = ?, notes = ? WHERE id = ?",
+        (level, rank, rarity, &equipped_on, category, notes, id),
     )
     .map_err(|e| e.to_string())?;
     
@@ -117,7 +121,7 @@ pub fn update_weapon(
             if let Ok(new_char_id) = character_id_result {
                 conn.execute(
                     "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
-                    (&weapon_name, weapon_rarity, level, rank, new_char_id)
+                    (&weapon_name, rarity, level, rank, new_char_id)
                 ).map_err(|e| e.to_string())?;
             }
         }
@@ -132,7 +136,7 @@ pub fn update_weapon(
         if let Ok(char_id) = character_id_result {
             conn.execute(
                 "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
-                (weapon_name, weapon_rarity, level, rank, char_id)
+                (weapon_name, rarity, level, rank, char_id)
             ).map_err(|e| e.to_string())?;
         }
     }

@@ -578,7 +578,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
                   <div className="text-sm text-slate-400 uppercase tracking-wide mb-3 flex items-center justify-between">
                     <span>Current Pity</span>
-                    {isFeatured && (
+                    {selectedBanner === 'featuredCharacter' && (
                       <div className={`px-2 py-1 rounded text-xs font-medium ${nextIsGuaranteed ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
                         {nextIsGuaranteed ? '✓ Guaranteed' : '50/50'}
                       </div>

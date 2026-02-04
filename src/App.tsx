@@ -5,7 +5,6 @@ import { safeInvoke } from './utils';
 import DashboardTab from './tabs/DashboardTab';
 import CharactersTab from './tabs/CharactersTab';
 import WeaponsTab from './tabs/WeaponsTab';
-import ResourcesTab from './tabs/ResourcesTab';
 import PityTab from './tabs/PityTab';
 import ExplorationTab from './tabs/ExplorationTab';
 import EndgameTab, { EndgameTabRef } from './tabs/EndgameTab';
@@ -75,8 +74,7 @@ export default function WuwaHelper() {
     { id: 'dashboard', name: 'Dashboard', icon: TrendingUp },
     { id: 'characters', name: 'Characters', icon: Users },
     { id: 'weapons', name: 'Weapons', icon: Sword },
-    { id: 'resources', name: 'Resources', icon: Package },
-    { id: 'pity', name: 'Pity Counter', icon: Target },
+    { id: 'pity', name: 'Convene History', icon: Target },
     { id: 'exploration', name: 'Exploration', icon: Map },
     { id: 'endgame', name: 'Endgame', icon: Trophy },
     { id: 'settings', name: 'Settings', icon: Settings },
@@ -117,7 +115,6 @@ export default function WuwaHelper() {
               {activeTab === 'dashboard' && <DashboardTab characters={characters} resources={resources} pityStatus={pityStatus} onUpdate={loadAllData} />}
               {activeTab === 'characters' && <CharactersTab characters={characters} onUpdate={loadAllData} />}
               {activeTab === 'weapons' && <WeaponsTab weapons={weapons} onUpdate={loadAllData} />}
-              {activeTab === 'resources' && <ResourcesTab resources={resources} onUpdate={loadAllData} />}
               {activeTab === 'pity' && <PityTab pityStatus={pityStatus} onUpdate={loadAllData} />}
               {activeTab === 'exploration' && <ExplorationTab regions={explorationRegions} onUpdate={loadAllData} />}
               {activeTab === 'endgame' && <EndgameTab ref={endgameTabRef} />}

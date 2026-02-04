@@ -10,7 +10,10 @@ export default function ExplorationTab({ regions, onUpdate }: { regions: Explora
   const [mapForms, setMapForms] = useState<Record<number, { exploration_percent: number; notes: string }>>({});
 
   useEffect(() => {
-    if (selectedRegion) loadMaps(selectedRegion.id);
+    setMaps([]);
+    if (selectedRegion) {
+      loadMaps(selectedRegion.id);
+    }
   }, [selectedRegion]);
 
   const loadMaps = async (regionId: number) => {
@@ -52,7 +55,7 @@ export default function ExplorationTab({ regions, onUpdate }: { regions: Explora
         {regions.map((region) => (
           <button
             key={region.id}
-            onClick={() => setSelectedRegion(region)}
+            onClick={() => setSelectedRegion(selectedRegion?.id === region.id ? null : region)}
             className={`bg-slate-900/50 rounded-xl p-6 border transition-all text-left ${selectedRegion?.id === region.id ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-slate-800 hover:border-cyan-500/50'}`}
           >
             <Map className="w-8 h-8 text-cyan-400 mb-3" />
