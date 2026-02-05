@@ -60,6 +60,7 @@ fn get_swords() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'stat
         ("21020046.webp", "Bloodpact's Pledge", 5, "Sword", vec!["5stars"]),
         ("21020056.webp", "Defier's Thorn", 5, "Sword", vec!["5stars"]),
         ("21020066.webp", "Emerald Sentence", 5, "Sword", vec!["5stars"]),
+        ("T_IconWeapon21020076_UI.webp", "Everbright Polestar", 5, "Sword", vec!["5stars"]),
 
         //5-STARS STANDARD WEAPONS
         ("21020015.webp", "Lustrous Razor", 5, "Sword", vec!["5stars"]),
@@ -133,6 +134,7 @@ fn get_gauntlets() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'s
         ("21040026.webp", "Tragicomedy", 5, "Gauntlet", vec!["5stars"]),
         ("21040036.webp", "Blazing Justice", 5, "Gauntlet", vec!["5stars"]),
         ("21040046.webp", "Moongazer's Sigil", 5, "Gauntlet", vec!["5stars"]),
+        ("T_IconWeapon_21040056_UI.webp", "Daybreakers's Spine", 5, "Gauntlet", vec!["5stars"]),
 
         //5-STARS STANDARD WEAPONS
         ("21040015.webp", "Abyss Surges", 5, "Gauntlet", vec!["5stars"]),
@@ -208,7 +210,7 @@ pub fn get_weapon_mappings() -> HashMap<String, AssetMetadata> {
 
     // Add weapon type icons
     for (filename, display_name, weapon_type) in get_weapon_type_icons() {
-        map.insert(filename.to_string(), AssetMetadata {
+        let metadata = AssetMetadata {
             id: format!("weapon_type_{}", weapon_type),
             filename: filename.to_string(),
             display_name: display_name.to_string(),
@@ -219,7 +221,12 @@ pub fn get_weapon_mappings() -> HashMap<String, AssetMetadata> {
             echo_class: None,
             cost: None,
             tags: vec!["icon".to_string()],
-        });
+        };
+        
+        // Index by filename
+        map.insert(filename.to_string(), metadata.clone());
+        // Also index by weapon_type for easy lookup
+        map.insert(weapon_type.to_string(), metadata);
     }
 
     // Combine all weapon types
@@ -231,11 +238,13 @@ pub fn get_weapon_mappings() -> HashMap<String, AssetMetadata> {
         get_rectifiers(),
     ];
 
-    // Convert to HashMap
+    // Convert to HashMap with DUAL INDEXING
     for weapon_list in all_weapons {
         for (filename, name, rarity, weapon_type, tags) in weapon_list {
-            map.insert(filename.to_string(), AssetMetadata {
-                id: name.to_lowercase().replace(" ", "_").replace("'", ""),
+            let id = name.to_lowercase().replace(" ", "_").replace("'", "");
+            
+            let metadata = AssetMetadata {
+                id: id.clone(),
                 filename: filename.to_string(),
                 display_name: name.to_string(),
                 asset_type: "weapon".to_string(),
@@ -245,7 +254,12 @@ pub fn get_weapon_mappings() -> HashMap<String, AssetMetadata> {
                 echo_class: None,
                 cost: None,
                 tags: tags.iter().map(|s| s.to_string()).collect(),
-            });
+            };
+            
+            // DUAL INDEXING: Insert by both filename AND display name
+            // This allows resolution by either identifier
+            map.insert(filename.to_string(), metadata.clone());
+            map.insert(name.to_string(), metadata);
         }
     }
 

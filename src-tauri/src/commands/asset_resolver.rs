@@ -1,9 +1,9 @@
 // src-tauri/src/commands/asset_resolver.rs
 //! Tauri commands for advanced asset resolution
 
-use tauri::{AppHandle, State, Manager}; // Add Manager trait
+use tauri::{AppHandle, State, Manager};
 use tokio::sync::Mutex;
-use serde::Deserialize; // Remove unused Serialize
+use serde::Deserialize;
 
 use crate::assets::{AssetResolver, AssetMetadata, AssetFilters};
 
@@ -68,6 +68,19 @@ pub async fn resolve_asset_by_name(
         .ok_or("Asset resolver not initialized")?;
     
     Ok(resolver.resolve_by_name(&name).cloned())
+}
+
+/// Resolve an asset by its filename
+#[tauri::command]
+pub async fn resolve_asset_by_filename(
+    filename: String,
+    state: State<'_, AssetResolverState>,
+) -> Result<Option<AssetMetadata>, String> {
+    let state_guard = state.lock().await;
+    let resolver = state_guard.as_ref()
+        .ok_or("Asset resolver not initialized")?;
+    
+    Ok(resolver.resolve_by_filename(&filename).cloned())
 }
 
 /// Get the filename for an asset (by name or filename)

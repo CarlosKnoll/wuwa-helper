@@ -124,13 +124,48 @@ impl AssetManager {
             }
         }
         
-        // For weapons, use resolver and search in weapon type subdirectories
+        
+        // For weapons, CHECK CACHE FIRST, then use resolver/filesystem fallbacks
         if matches!(asset_type, AssetType::Weapon) {
-            // Strategy 1: Try to resolve by name (handles display names like "Somnoire Anchor")
+            
+            // Strategy 1: CHECK CACHE FIRST (highest priority)
+            if let Some(cached_path) = self.cache.get_asset_path(asset_type, name) {
+                if cached_path.exists() {
+                    return Some(cached_path);
+                } else {
+                }
+            }
+            
+            // Strategy 2: Try to resolve by display name using hardcoded mappings
             if let Some(metadata) = self.resolver.resolve_by_name(name) {
                 
-                // If it's a weapon image (numeric ID), look in weapon type subdirectory
-                if metadata.filename.chars().next().unwrap_or('a').is_numeric() {
+                // Check if it's a weapon type icon (starts with "weapon_")
+                if metadata.filename.starts_with("weapon_") {
+                    let path = self.base_path
+                        .join("weapons")
+                        .join(&metadata.filename);
+                    
+                    if path.exists() {
+                        return Some(path);
+                    }
+                }
+                // Check if it's a numeric weapon ID (starts with digit)
+                else if metadata.filename.chars().next().unwrap_or('a').is_numeric() {
+                    if let Some(ref weapon_type) = metadata.weapon_type {
+                        let weapon_type_lower = weapon_type.to_lowercase();
+                        let path = self.base_path
+                            .join("weapons")
+                            .join(&weapon_type_lower)
+                            .join(&metadata.filename);
+                        
+                        if path.exists() {
+                            return Some(path);
+                        } else {
+                        }
+                    }
+                }
+                // Otherwise it's a special filename (like T_IconWeapon21020076_UI.webp)
+                else {
                     if let Some(ref weapon_type) = metadata.weapon_type {
                         let weapon_type_lower = weapon_type.to_lowercase();
                         let path = self.base_path
@@ -142,10 +177,26 @@ impl AssetManager {
                             return Some(path);
                         }
                     }
-                } else {
-                    // It's a weapon type icon (weapon_*.png), look in root weapons folder
+                }
+            } else {
+            }
+            
+            // Strategy 3: Try to resolve by filename (in case name is already a filename)
+            if let Some(metadata) = self.resolver.resolve_by_filename(name) {
+                
+                if metadata.filename.starts_with("weapon_") {
                     let path = self.base_path
                         .join("weapons")
+                        .join(&metadata.filename);
+                    
+                    if path.exists() {
+                        return Some(path);
+                    }
+                } else if let Some(ref weapon_type) = metadata.weapon_type {
+                    let weapon_type_lower = weapon_type.to_lowercase();
+                    let path = self.base_path
+                        .join("weapons")
+                        .join(&weapon_type_lower)
                         .join(&metadata.filename);
                     
                     if path.exists() {
@@ -154,7 +205,7 @@ impl AssetManager {
                 }
             }
             
-            // Strategy 2: If name looks like a weapon type icon, try directly
+            // Strategy 4: If name looks like a weapon type icon, try directly
             if name.starts_with("weapon_") {
                 let path = self.base_path
                     .join("weapons")
@@ -176,7 +227,7 @@ impl AssetManager {
                 }
             }
             
-            // Strategy 3: Try as filename directly in all weapon subdirectories
+            // Strategy 5: Brute force - try as filename directly in all weapon subdirectories
             for weapon_type in &["broadblade", "sword", "pistol", "gauntlet", "rectifier"] {
                 let path = self.base_path
                     .join("weapons")
@@ -199,6 +250,7 @@ impl AssetManager {
                     }
                 }
             }
+            
         }
         
         // For elements, try direct filesystem access
@@ -267,7 +319,7 @@ impl AssetManager {
             }
         }
         
-        // Cache lookup for other types or as fallback
+        // Cache lookup as final fallback for other types
         self.cache.get_asset_path(asset_type, name)
     }
 
@@ -296,7 +348,134 @@ impl AssetManager {
     pub fn get_stats(&self) -> CacheStats {
         self.cache.get_stats()
     }
+
+   /// Rebuild the asset cache by clearing it and rescanning all files
+    pub fn rebuild_cache(&mut self) -> Result<UpdateSummary, AssetError> {
+        eprintln!("DEBUG [rebuild_cache]: Starting cache rebuild");
+        
+        // Clear the existing cache
+        self.cache = AssetCache::new();
+        
+        // Scan all asset directories and rebuild the cache
+        let summary = self.scan_and_cache_assets()?;
+        
+        // Save the new cache to disk
+        self.cache.save(&self.base_path)?;
+        
+        eprintln!("DEBUG [rebuild_cache]: Cache rebuilt with {} assets", summary.total_assets);
+        
+        Ok(summary)
+    }
+
+    /// Scan all asset files in the base directory and add them to cache
+    fn scan_and_cache_assets(&mut self) -> Result<UpdateSummary, AssetError> {
+        use std::fs;
+        
+        let mut summary = UpdateSummary {
+            downloaded: 0,
+            cached: 0,
+            failed: 0,
+            total_assets: 0,
+        };
+
+        // Asset types to scan
+        let asset_types = vec![
+            ("characters", AssetType::Character),
+            ("weapons", AssetType::Weapon),
+            ("echoes", AssetType::Echo),
+            ("echo_sets", AssetType::EchoSet),
+            ("elements", AssetType::Element),
+            ("misc", AssetType::Misc),
+        ];
+
+        for (dir_name, asset_type) in asset_types {
+            let asset_dir = self.base_path.join(dir_name);
+            
+            if !asset_dir.exists() {
+                eprintln!("DEBUG [scan_and_cache]: Directory does not exist: {:?}", asset_dir);
+                continue;
+            }
+
+            // For weapons, we need to scan subdirectories
+            if matches!(asset_type, AssetType::Weapon) {
+                // Scan weapon type icons in root weapons folder
+                if let Ok(entries) = fs::read_dir(&asset_dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_file() {
+                            if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                                self.add_to_cache(&path, filename, asset_type, &mut summary)?;
+                            }
+                        }
+                    }
+                }
+
+                // Scan weapon subdirectories
+                for weapon_type in &["broadblade", "sword", "pistol", "gauntlet", "rectifier"] {
+                    let subdir = asset_dir.join(weapon_type);
+                    if subdir.exists() {
+                        if let Ok(entries) = fs::read_dir(&subdir) {
+                            for entry in entries.flatten() {
+                                let path = entry.path();
+                                if path.is_file() {
+                                    if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                                        self.add_to_cache(&path, filename, asset_type, &mut summary)?;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Regular directory scan for other asset types
+                if let Ok(entries) = fs::read_dir(&asset_dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_file() {
+                            if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                                self.add_to_cache(&path, filename, asset_type, &mut summary)?;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(summary)
+    }
+
+    /// Add a single file to the cache
+    fn add_to_cache(
+        &mut self,
+        path: &std::path::Path,
+        filename: &str,
+        asset_type: AssetType,
+        summary: &mut UpdateSummary,
+    ) -> Result<(), AssetError> {
+        use chrono::Utc;
+        
+        // Get file metadata
+        let metadata = std::fs::metadata(path)?;
+        let size_bytes = metadata.len();
+
+        // Create cache entry
+        let entry = AssetEntry {
+            url: format!("file://{}", path.display()), // Fake URL for local files
+            filename: filename.to_string(),
+            local_path: path.to_string_lossy().to_string(),
+            asset_type,
+            size_bytes,
+            downloaded_at: Utc::now(),
+        };
+
+        self.cache.add_asset(entry);
+        summary.cached += 1;
+        summary.total_assets += 1;
+
+        Ok(())
+    }
 }
+
 
 #[derive(Debug, thiserror::Error)]
 pub enum AssetError {

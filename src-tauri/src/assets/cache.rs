@@ -74,12 +74,33 @@ impl AssetCache {
         self.metadata.last_update = Some(Utc::now());
     }
 
-    /// Get path to an asset by type and name
+    /// Get path to an asset by type and name (exact filename or display name match)
     pub fn get_asset_path(&self, asset_type: AssetType, name: &str) -> Option<PathBuf> {
+        let name_lower = name.to_lowercase();
+        
         self.assets.values()
             .find(|entry| {
-                entry.asset_type == asset_type && 
-                entry.filename.to_lowercase().contains(&name.to_lowercase())
+                // Must match asset type
+                if entry.asset_type != asset_type {
+                    return false;
+                }
+                
+                let filename_lower = entry.filename.to_lowercase();
+                
+                // Exact filename match (highest priority)
+                if filename_lower == name_lower {
+                    return true;
+                }
+                
+                // Filename without extension match
+                if let Some(stem) = entry.filename.split('.').next() {
+                    if stem.to_lowercase() == name_lower {
+                        return true;
+                    }
+                }
+                
+                // Contains match as fallback (for partial matches)
+                filename_lower.contains(&name_lower)
             })
             .map(|entry| PathBuf::from(&entry.local_path))
     }

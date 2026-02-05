@@ -65,12 +65,14 @@ export function useAssets() {
 
   const getAsset = useCallback(async (
     assetType: AssetType,
-    name: string
+    name: string,
+    weaponType?: string
   ): Promise<string | null> => {
     try {
       const base64 = await invoke<string>('get_asset', {
         assetType,
         name,
+        weaponType: weaponType || null,
       });
       return base64;
     } catch (error) {
@@ -81,12 +83,14 @@ export function useAssets() {
 
   const getAssetPath = useCallback(async (
     assetType: AssetType,
-    name: string
+    name: string,
+    weaponType?: string
   ): Promise<string | null> => {
     try {
       const path = await invoke<string>('get_asset_path', {
         assetType,
         name,
+        weaponType: weaponType || null,
       });
       return path;
     } catch (error) {
@@ -179,7 +183,7 @@ export function useCharacterAsset(characterName: string) {
 /**
  * Hook for loading a specific weapon asset
  */
-export function useWeaponAsset(weaponName: string) {
+export function useWeaponAsset(weaponName: string, weaponType?: string) {
   const { getAssetPath } = useAssets();
   const [assetUrl, setAssetUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,7 +193,7 @@ export function useWeaponAsset(weaponName: string) {
 
     const loadAsset = async () => {
       setIsLoading(true);
-      const path = await getAssetPath('weapon', weaponName);
+      const path = await getAssetPath('weapon', weaponName, weaponType);
       
       if (!cancelled) {
         if (path) {
@@ -204,7 +208,7 @@ export function useWeaponAsset(weaponName: string) {
     return () => {
       cancelled = true;
     };
-  }, [weaponName, getAssetPath]);
+  }, [weaponName, weaponType, getAssetPath]);
 
   return { assetUrl, isLoading };
 }

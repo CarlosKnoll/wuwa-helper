@@ -38,6 +38,10 @@ pub fn get_echo_sets() -> Vec<(&'static str, &'static str, &'static str, &'stati
         ("set_23.webp", "Halo of Starry Radiance", "2 Set: Healing Bonus +10%.", "5 Set: When healing a Resonator in the team, every 1% of Off-Tune Buildup Rate grants a 0.2% ATK increase to all Resonators in the team for 4s, up to 25%. Effects of the same name cannot be stacked."),
         ("set_24.webp", "Pact of Neonlight Leap", "2 Set: Spectro DMG +10%.", "5 Set: Casting Outro Skill increases the ATK of the incoming Resonator by 15%, with each point of Tune Break Boost additionally increasing ATK by 0.3%, up to 15%. This effect lasts for 15s, or until the Resonator is switched out."),
         ("set_25.webp", "Rite of Gilded Revelation", "2 Set: Spectro DMG +10%.", "5 Set: Dealing Basic Attack DMG increases Spectro DMG by 10% for 5s, stacking up to 3 times. With 3 stacks, casting Resonance Liberation grants 40% Basic Attack DMG Bonus."),
+
+        ("set_26.webp", "Trailblazing Star", "2 Set: Fusion DMG +10%.", "5 Set: Inflicting Fusion Burst or Tune Rupture - Shifting increases the Resonator's Crit. Rate by 20% and grants 20% Fusion DMG Bonus for 8s."),
+        ("set_27.webp", "Chromatic Foam", "2 Set: Fusion DMG +10%.", "5 Set: When the Resonator inflicts Fusion Burst on the enemies, they gain the following effects: Gain 10% Fusion DMG Bonus for 15 s. While this effect is active, casting an Outro Skill grants the incoming Resonator 25% Fusion DMG Bonus for 15s."),
+        ("set_28.webp", "Sound of True Name", "2 Set: Aero DMG +10%.", "5 Set: Dealing Echo Skill DMG to enemies increases the Resonator's Echo Skill Crit. Rate by 20%, and grants 15% Aero DMG Bonus for 5s."),
     ]
 }
 

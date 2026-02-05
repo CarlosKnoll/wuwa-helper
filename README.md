@@ -50,6 +50,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - Standardize edit/add/import buttons to the same amber/golden as the refresh
 - Standardize countours and selections to be white.
 - Rename any "pull" mention to Convene.
+- Rename any "Echo set" mention to Sonata Effect.
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
 
 ---
@@ -57,14 +58,14 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 #### Functionalities:
 - Research auto-update implementation.
 - Modify edit fields to have immediate persistance instead of save button
-- Add support for the upcoming echo sets (v3.1):
-    - [ ] Trailblazing Star
-    - [ ] Chromatic Foam
-    - [ ] Sound of True Name
+
 ---
 
 #### Minor changes and bugs:
+- **Character Info:** Display and allow edit of Resonance Date.
+- **Echoes:** Add entries and assets for all Phantom echoes.
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
+- **Echoes:** Add dropdown menu when inserting name of echo, which allows user input for refining the dropdown entries
 - **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
 - **Pity/Tracker:** Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
 - **Endgame:** Remove the ability to edit the total stars achieved manually in Toa, and in Whimpering Wastes and Troop Matrix, Remove the ability to edit the points. (not the points achieved in each stage/teams, but the total sum)

@@ -402,7 +402,7 @@ function WeaponCard({
     
     // Try to load weapon portrait with correct filename
     const weaponFilename = getWeaponFilename(weapon.weapon_name, weapon.weapon_type);
-    getAsset('weapon', weaponFilename).then((r) => {
+    getAsset('weapon', weaponFilename, weapon.weapon_type).then((r) => {
       if (r) setWeaponSrc(`data:image/webp;base64,${r}`);
     });
 
@@ -417,7 +417,7 @@ function WeaponCard({
     
     const weaponTypeKey = weaponTypeMap[weapon.weapon_type];
     if (weaponTypeKey) {
-      getAsset('weapon', `weapon_${weaponTypeKey}`).then((r) => {
+      getAsset('weapon', `weapon_${weaponTypeKey}`, undefined).then((r) => {
         if (r) setWeaponTypeSrc(`data:image/png;base64,${r}`);
       });
     }

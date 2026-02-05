@@ -34,28 +34,29 @@ export function getRarityStars(rarity: number): string {
  * Tier 5 - Functional: Character is usable with decent investment
  * Tier 4 - Optimized: Well-invested, performs well
  * Tier 3 - Maxed: High/maximum investment
- * Tier 2 - Next ones in line to be built
+ * Tier 2 - Next ones in line to be built/Characters without a serviceable build but not the focus to max
  * Tier 1 - Building: Currently working on
  */
 
 export const BUILD_STATUS_TIERS = {
   // Tier 7: Unbuilt
-  'Not built': { tier: 7, priority: 8, color: 'bg-slate-700 text-slate-400' },
+  'Not built': { tier: 7, priority: 9, color: 'bg-slate-700 text-slate-400' },
   
   // Tier 6: Minimal Investment (Levels 1-70, basic talents and echoes)
-  'Low investment': { tier: 6, priority: 7, color: 'bg-red-500/20 text-red-400' },
+  'Low investment': { tier: 6, priority: 8, color: 'bg-red-500/20 text-red-400' },
   
   // Tier 5: Functional (Levels 40-80, decent talents and echoes)
-  'Medium investment': { tier: 5, priority: 6, color: 'bg-lime-500/20 text-lime-400' },
+  'Medium investment': { tier: 5, priority: 7, color: 'bg-lime-500/20 text-lime-400' },
   
   // Tier 4: Optimized (Levels 70-80, good talents, quality echoes)
-  'High investment': { tier: 4, priority: 5, color: 'bg-green-500/20 text-green-400' },
+  'High investment': { tier: 4, priority: 6, color: 'bg-green-500/20 text-green-400' },
   
   // Tier 3: Maxed (Level 90, maxed talents, optimized echoes)
-  'Hyperinvested': { tier: 3, priority: 4, color: 'bg-cyan-500/20 text-cyan-400' },
-  'Perfect': { tier: 3, priority: 3, color: 'bg-purple-500/20 text-purple-400' },
+  'Hyperinvested': { tier: 3, priority: 5, color: 'bg-cyan-500/20 text-cyan-400' },
+  'Perfect': { tier: 3, priority: 4, color: 'bg-purple-500/20 text-purple-400' },
 
-  // Tier 3: Next ones in line to be built
+  // Tier 2: Next ones in line to be built/Serviceable but not the focus to be maxed
+  'On hold': { tier: 2, priority: 3, color: 'bg-yellow-500/20 text-yellow-400' },
   'Plan to build': { tier: 2, priority: 2, color: 'bg-yellow-500/20 text-yellow-400' },
 
   // Tier 1: Building (Characters currently being worked on)

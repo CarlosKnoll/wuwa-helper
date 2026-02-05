@@ -218,7 +218,6 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
             }
         };
 
-        eprintln!("[DEBUG] Banner type: {}", banner);
         let mut page = 1;
 
         loop {
@@ -261,15 +260,10 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
 
             fetched += records.len();
 
-            eprintln!("[DEBUG] === PAGE {} | {} records ===", page, records.len());
 
             for r in records {
                 let normalized_date = normalize_date_format(&r.time);
 
-                eprintln!(
-                    "[DEBUG] INCOMING | name='{}' | rarity={} | raw_time='{}' | normalized='{}'",
-                    r.name, r.quality_level, r.time, normalized_date
-                );
 
                 let exists: bool = conn.query_row(
                     "SELECT EXISTS(
@@ -300,13 +294,8 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                         .collect()
                 };
 
-                eprintln!(
-                    "[DEBUG] DB    | exists={} | rows_any_date={} | stored_dates={:?}",
-                    exists, count_any_date, stored_dates
-                );
 
                 if exists {
-                    eprintln!("[DEBUG] -> SKIPPED");
                     continue;
                 }
 
@@ -328,7 +317,6 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     None, // group_order not available from game API
                 )?;
 
-                eprintln!("[DEBUG] -> INSERTED");
                 imported += 1;
             }
 

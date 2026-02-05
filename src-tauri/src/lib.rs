@@ -9,6 +9,11 @@ use tauri::Manager; // Add this import for .manage() method
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            // Initialize AssetManager
+            let asset_manager = crate::assets::AssetManager::new(app.handle().clone())
+                .expect("Failed to initialize AssetManager");
+            app.manage(std::sync::Mutex::new(asset_manager));
+            
             // Initialize asset resolver state
             app.manage(tokio::sync::Mutex::new(None::<crate::assets::AssetResolver>));
             Ok(())
@@ -97,9 +102,10 @@ pub fn run() {
             commands::assets::init_assets,
             commands::assets::get_asset,
             commands::assets::get_asset_path,
-            commands::assets::update_assets,
-            commands::assets::should_update_assets,
             commands::assets::get_asset_stats,
+            commands::assets::rebuild_asset_cache ,
+            commands::assets::should_update_assets,
+            commands::assets::update_assets,
             commands::asset_resolver::init_asset_resolver,
             commands::asset_resolver::resolve_asset_by_name,
             commands::asset_resolver::get_asset_filename,
