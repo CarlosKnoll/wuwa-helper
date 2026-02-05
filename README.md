@@ -80,11 +80,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Echoes:** Add dropdown menu when inserting name of echo, which allows user input for refining the dropdown entries
 - **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
 
-- **Pity/Tracker:** Add text visual feedback of import through URL process. (Importing from JSON has it)
-- **Pity/Tracker:** Instead of success alertbox show success message in the app window as text (same place as visual feedback)
-- **Pity/Tracker:** Make Clean Import checkbox work for both JSON and URL import methods.
-- **Pity/Tracker:** Investigate featured character pity counter being wrong.
-
 - **Endgame:** Remove the ability to edit the total stars achieved manually in Toa, and in Whimpering Wastes and Troop Matrix, Remove the ability to edit the points. (not the points achieved in each stage/teams, but the total sum)
 - **Endgame:** Fix stars counting under ToA gamemode.
 - **Endgame:** Allow editing of last reset date.

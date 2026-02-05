@@ -32,6 +32,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
   const [isImportingUrl, setIsImportingUrl] = useState(false);
   const [isImportingJson, setIsImportingJson] = useState(false);
   const [importProgress, setImportProgress] = useState('');
+  const [importSuccess, setImportSuccess] = useState(''); // NEW: Success message state
   
   // Clean import option
   const [cleanImport, setCleanImport] = useState(false);
@@ -66,6 +67,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
     setIsImportingUrl(true);
     setImportProgress('Validating URL...');
+    setImportSuccess(''); // Clear any previous success message
 
     try {
       const url = new URL(conveneUrl);
@@ -82,17 +84,40 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         return;
       }
 
+      // IMPROVED: Clean import for URL method
+      if (cleanImport) {
+        const existingPulls = await safeInvoke('get_pull_history') as PullHistory[];
+        const totalPulls = existingPulls.length;
+        
+        if (totalPulls > 0) {
+          setImportProgress(`Clearing existing pull history... (0/${totalPulls})`);
+          
+          for (let i = 0; i < existingPulls.length; i++) {
+            await safeInvoke('delete_pull', { id: existingPulls[i].id });
+            
+            // Update progress every 10 deletes or on the last one
+            if ((i + 1) % 10 === 0 || i === existingPulls.length - 1) {
+              setImportProgress(`Clearing existing pull history... (${i + 1}/${totalPulls})`);
+            }
+          }
+        }
+      }
+
       setImportProgress('Fetching pull history from game servers...');
 
       const result = await safeInvoke('import_pulls_from_url', {
         url: conveneUrl
       }) as string;
 
-      alert(result || 'Successfully imported pull history from game!');
+      // IMPROVED: Show success message instead of alert
+      setImportSuccess(result || 'Successfully imported pull history from game!');
       await loadPullHistory();
       if (onUpdate) onUpdate();
       setConveneUrl('');
-      setShowImportExport(false);
+      setCleanImport(false); // Reset clean import checkbox
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setImportSuccess(''), 5000);
     } catch (err) {
       console.error('Import error:', err);
       alert('Failed to import from URL: ' + err);
@@ -127,6 +152,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
     setIsImportingJson(true);
     setImportProgress('Reading JSON file...');
+    setImportSuccess(''); // Clear any previous success message
 
     try {
       const text = await file.text();
@@ -137,10 +163,20 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
       if (data.version && data.pulls && Array.isArray(data.pulls)) {
         // Clean import: delete all existing pulls first
         if (cleanImport) {
-          setImportProgress('Clearing existing pull history...');
           const existingPulls = await safeInvoke('get_pull_history') as PullHistory[];
-          for (const pull of existingPulls) {
-            await safeInvoke('delete_pull', { id: pull.id });
+          const totalPulls = existingPulls.length;
+          
+          if (totalPulls > 0) {
+            setImportProgress(`Clearing existing pull history... (0/${totalPulls})`);
+            
+            for (let i = 0; i < existingPulls.length; i++) {
+              await safeInvoke('delete_pull', { id: existingPulls[i].id });
+              
+              // Update progress every 10 deletes or on the last one
+              if ((i + 1) % 10 === 0 || i === existingPulls.length - 1) {
+                setImportProgress(`Clearing existing pull history... (${i + 1}/${totalPulls})`);
+              }
+            }
           }
         }
 
@@ -187,59 +223,48 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             processedCount++;
             
             if (processedCount % 10 === 0) {
-              setImportProgress(`Importing pulls: ${processedCount}/${totalPulls}...`);
+              setImportProgress(`Importing... ${processedCount}/${totalPulls} pulls processed`);
             }
 
-            if (!cleanImport) {
-              const key = `${pull.banner_type}|${pull.item_name}|${pull.pull_date}`;
-              const seen = (seenCount.get(key) ?? 0) + 1;
-              seenCount.set(key, seen);
-              const dbCount = dbCounts.get(key) ?? 0;
+            const key = `${bannerType}|${pull.item_name}|${pull.pull_date}`;
+            const existingCount = dbCounts.get(key) || 0;
+            const currentSeenCount = (seenCount.get(key) || 0) + 1;
+            seenCount.set(key, currentSeenCount);
 
-              // Skip as long as we haven't exceeded the number already in the DB
-              if (seen <= dbCount) {
-                continue;
-              }
-            }
-
-            try {
+            if (currentSeenCount > existingCount) {
               await safeInvoke('add_pull', {
-                bannerType: pull.banner_type,
+                bannerType,
                 itemName: pull.item_name,
                 rarity: pull.rarity,
                 itemType: pull.item_type,
                 isGuaranteed: pull.is_guaranteed,
                 pullDate: pull.pull_date,
-                notes: cleanImport ? 'Imported from WuwaTracker (Clean Import)' : 'Imported from WuwaTracker',
-                groupOrder: pull.group_order
+                notes: pull.notes,
+                groupOrder: pull.group_order,
               });
               totalImported++;
-            } catch (addErr) {
-              console.error('[DEBUG PityTab] add_pull FAILED for:', pull.item_name, addErr);
             }
           }
         }
 
-        const message = cleanImport 
-          ? `Successfully imported ${totalImported} pulls (clean import - all previous pulls were cleared)!`
-          : `Successfully imported ${totalImported} new pulls from WuwaTracker format!`;
-        alert(message);
+        // IMPROVED: Show success message instead of alert
+        setImportSuccess(`Successfully imported ${totalImported} new pulls (${processedCount} total in file)`);
+        await loadPullHistory();
+        if (onUpdate) onUpdate();
+        setCleanImport(false); // Reset clean import checkbox
+        
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => setImportSuccess(''), 5000);
       } else {
-        alert('Invalid JSON format. Please use WuwaTracker export format.');
-        return;
+        alert('Invalid JSON format. Please use a valid WuwaTracker export file.');
       }
-
-      await loadPullHistory();
-      if (onUpdate) onUpdate();
-      setCleanImport(false); // Reset checkbox after import
     } catch (err) {
-      console.error('Import error:', err);
       alert('Failed to import JSON: ' + err);
     } finally {
-      // Always reset the file input so the same file can be selected again
-      event.target.value = '';
       setIsImportingJson(false);
       setImportProgress('');
+      // Reset file input
+      event.target.value = '';
     }
   };
 
@@ -296,13 +321,13 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
     }
   };
 
-  // Helper function to determine if next pull is guaranteed
-  const isNextGuaranteed = (bannerType: string) => {
+  // IMPROVED: Helper function to determine if next pull is guaranteed
+    const isNextGuaranteed = (bannerType: string) => {
     if (bannerType !== 'featuredCharacter' && bannerType !== 'featuredWeapon') {
       return false; // Standard banners don't have guarantee system
     }
 
-    // Find the last 5-star pull for this banner
+    // Find the last 5-star pull for this banner using pull_number (correct chronological order)
     const fiveStarPulls = pullHistory
       .filter(p => p.banner_type === bannerType && p.rarity === 5)
       .sort((a, b) => new Date(b.pull_date).getTime() - new Date(a.pull_date).getTime());
@@ -329,9 +354,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
   // Calculate stats for selected banner
   const bannerPulls = pullHistory.filter(p => p.banner_type === selectedBanner);
-  const fiveStarCount = bannerPulls.filter(p => p.rarity === 5).length;
-  const fourStarCount = bannerPulls.filter(p => p.rarity === 4).length;
-  const threeStarCount = bannerPulls.filter(p => p.rarity === 3).length;
+
 
   // Calculate all-time stats across all banners
   const allTimeFiveStarCount = pullHistory.filter(p => p.rarity === 5).length;
@@ -378,7 +401,20 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         {/* Import/Export Panel */}
         {showImportExport && (
           <div className="bg-slate-800/50 rounded-lg p-4 mb-4 space-y-4">
-            {/* Loading Progress */}
+            {/* IMPROVED: Success Message */}
+            {importSuccess && (
+              <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <div className="text-green-400">✓</div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-green-400">Import Successful!</div>
+                    <div className="text-xs text-slate-300">{importSuccess}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* IMPROVED: Loading Progress - now shows for both URL and JSON */}
             {(isImportingUrl || isImportingJson) && (
               <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
                 <div className="flex items-center gap-3">
@@ -393,6 +429,20 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 </div>
               </div>
             )}
+
+            {/* IMPROVED: Clean Import Checkbox - moved to top so it applies to both methods */}
+            <label className="flex items-center gap-2 text-sm cursor-pointer bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+              <input
+                type="checkbox"
+                checked={cleanImport}
+                onChange={e => setCleanImport(e.target.checked)}
+                disabled={isImportingUrl || isImportingJson}
+                className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-500 focus:ring-red-500 focus:ring-offset-slate-900 disabled:opacity-50"
+              />
+              <span className={cleanImport ? 'text-red-400 font-medium' : 'text-slate-400'}>
+                Clean Import (⚠️ deletes all existing pulls first)
+              </span>
+            </label>
 
             <div>
               <h3 className="text-sm font-bold mb-2">Import from Game</h3>
@@ -448,20 +498,6 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
             <div className="border-t border-slate-700 pt-4">
               <h3 className="text-sm font-bold mb-2">Import/Export JSON</h3>
-              
-              {/* Clean Import Checkbox */}
-              <label className="flex items-center gap-2 mb-3 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={cleanImport}
-                  onChange={e => setCleanImport(e.target.checked)}
-                  disabled={isImportingUrl || isImportingJson}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-500 focus:ring-red-500 focus:ring-offset-slate-900 disabled:opacity-50"
-                />
-                <span className={cleanImport ? 'text-red-400 font-medium' : 'text-slate-400'}>
-                  Clean Import (⚠️ deletes all existing pulls first)
-                </span>
-              </label>
 
               <div className="flex gap-2">
                 <label className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm cursor-pointer text-center disabled:opacity-50">
@@ -496,7 +532,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
               <button
                 key={banner}
                 onClick={() => setSelectedBanner(banner)}
-                className={`px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
                   selectedBanner === banner
                     ? 'bg-cyan-500 text-white'
                     : 'bg-slate-800 text-slate-400 hover:bg-slate-700'

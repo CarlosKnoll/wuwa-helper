@@ -475,7 +475,7 @@ fn calculate_pity_for_banner(
             "SELECT rarity, item_name, item_type
              FROM pull_history
              WHERE banner_type = ?
-             ORDER BY pull_number DESC",
+             ORDER BY pull_date DESC",
         )
         .map_err(|e| e.to_string())?;
 
