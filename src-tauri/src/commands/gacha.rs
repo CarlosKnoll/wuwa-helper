@@ -279,51 +279,23 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
             }
 
             // Second pass: process each timestamp group
-            for (normalized_date, group_records) in timestamp_groups {
-                let is_multi_pull_on_page = group_records.len() > 1;
+            for (normalized_date, mut group_records) in timestamp_groups {
+                let is_multi_pull = group_records.len() > 1;
                 
-                // Check if there are already pulls at this timestamp in the database
-                let existing_max_group_order: i64 = conn.query_row(
-                    "SELECT COALESCE(MAX(group_order), 0) 
-                     FROM pull_history
-                     WHERE banner_type = ? 
-                     AND pull_date = ?",
-                    params![banner, normalized_date],
-                    |row| row.get(0),
-                ).unwrap_or(0);
-
-                // Determine starting group_order
-                // If existing_max is 0, this is new data - start fresh
-                // If existing_max > 0 AND we have multiple items, we're continuing a split 10-pull
-                // If existing_max > 0 AND we have 1 item, check if it's a duplicate first
-                let base_group_order = if existing_max_group_order == 0 {
-                    0  // Fresh start
-                } else if is_multi_pull_on_page {
-                    // Could be continuing a 10-pull OR reimporting old data
-                    // We'll check for duplicates to determine which
-                    existing_max_group_order
-                } else {
-                    // Single item with existing data - likely a duplicate, will be caught below
-                    0
-                };
-
-                let mut skip_entire_group = false;
-
+                // For multi-pulls: assign group_order from 10 down to 1 (newest to oldest)
+                // For single pulls: assign group_order = 1
                 for (index, r) in group_records.iter().enumerate() {
-                    if skip_entire_group {
-                        break;
-                    }
-
                     let item_type = if r.resource_type == "Resonator" {
                         "character"
                     } else {
                         "weapon"
                     };
 
-                    // Calculate group_order
-                    let group_order = if is_multi_pull_on_page {
-                        // Multi-pull on this page
-                        base_group_order + (group_records.len() as i64) - (index as i64)
+                    let group_order = if is_multi_pull {
+                        // Multi-pull: first item (index 0) gets 10, second gets 9, etc.
+                        // But we need to handle cases where there might be less than 10 items
+                        let total_in_group = group_records.len() as i64;
+                        total_in_group - (index as i64)
                     } else {
                         // Single pull: always 1
                         1
@@ -343,12 +315,9 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
                     ).unwrap_or(false);
 
                     if already_exists {
-                        eprintln!("[INFO] Found existing pull at {} (group_order {}), skipping entire timestamp group", 
-                                  normalized_date, group_order);
-                        // If we hit a duplicate, this means we're reimporting old data
-                        // Skip the entire timestamp group to avoid creating duplicates
-                        skip_entire_group = true;
-                        break;
+                        eprintln!("[INFO] Found existing pull, skipping: {} at {} (group_order {})", 
+                                  r.name, normalized_date, group_order);
+                        continue;
                     }
 
                     // Add the pull
