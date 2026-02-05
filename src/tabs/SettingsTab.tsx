@@ -71,22 +71,22 @@ export default function SettingsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Database className="w-6 h-6 text-cyan-400" />
+          <Database className="w-6 h-6 text-yellow-400" />
           Database Management
         </h3>
         <div className="space-y-3">
           <button
             onClick={handleExport}
-            className="w-full px-4 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             <Database className="w-5 h-5" />
             Export Database
           </button>
           <button
             onClick={handleImport}
-            className="w-full px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-gradient-to-r from-yellow-600 to-amber-700 hover:from-yellow-500 hover:to-amber-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             <Database className="w-5 h-5" />
             Import Database
@@ -94,9 +94,9 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <RefreshCw className="w-6 h-6 text-purple-400" />
+          <RefreshCw className="w-6 h-6 text-yellow-400" />
           Asset Cache Management
         </h3>
         <div className="space-y-3">
@@ -110,7 +110,7 @@ export default function SettingsTab() {
             className={`w-full px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
               isRebuilding 
                 ? 'bg-slate-600 cursor-not-allowed' 
-                : 'bg-purple-500 hover:bg-purple-600'
+                : 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500'
             }`}
           >
             <RefreshCw className={`w-5 h-5 ${isRebuilding ? 'animate-spin' : ''}`} />
@@ -119,7 +119,7 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h3 className="text-xl font-bold mb-2">About</h3>
         <p className="text-slate-400">Wuthering Waves Assistant v0.2.0</p>
         <p className="text-sm text-slate-500 mt-2">A comprehensive tool for managing your Wuthering Waves game data</p>

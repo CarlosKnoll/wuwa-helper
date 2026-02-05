@@ -338,7 +338,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
   return (
     <div className="space-y-6">
       {/* All-Time Pull Statistics - Now on Top */}
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h2 className="text-xl font-bold mb-4">All-Time Pull Statistics</h2>
         <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/30 rounded-lg">
           <div className="text-center">
@@ -360,7 +360,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
       </div>
 
       {/* Pull History Section */}
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Pull History</h2>
           <button

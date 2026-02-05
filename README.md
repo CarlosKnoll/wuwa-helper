@@ -47,8 +47,17 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 ### Remaining To-Dos:
 #### UI:
-- Standardize edit/add/import buttons to the same amber/golden as the refresh
+- Standardize edit/add/import buttons to the same amber/golden as the refresh.
+    - [ ] +Add button in WeaponsTab
+    - [ ] Import/Export and selected banner in PityTab
 - Standardize countours and selections to be white.
+    - [ ] White outline for every section in the dashboard
+    - [ ] White outline for search bar in CharactersTab and WeaponsTab
+    - [ ] White outline for filters field in WeaponsTab
+    - [ ] White outline for every section in PityTab
+    - [ ] White outline for every field in ExplorationTab
+    - [ ] White outline for every field in EndgameTab
+    - [ ] White outline for every field in SettingsTab
 - Rename any "pull" mention to Convene.
 - Rename any "Echo set" mention to Sonata Effect.
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.

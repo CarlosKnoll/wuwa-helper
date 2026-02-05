@@ -196,7 +196,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
 
       {/* Search and Add */}
       <div className="flex gap-3 items-center">
-        <div className="flex-1 bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input

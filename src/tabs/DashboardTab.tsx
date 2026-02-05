@@ -605,7 +605,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
           <h2 className="text-lg font-bold">Goals & Objectives</h2>
           <button
             onClick={() => setShowAddGoal(!showAddGoal)}
-            className="px-3 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg flex items-center gap-2"
+            className="px-3 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Goal
@@ -658,7 +658,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               </button>
               <button
                 onClick={handleAddGoal}
-                className="flex-1 px-3 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg"
+                className="flex-1 px-3 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg"
               >
                 Add Goal
               </button>
@@ -700,7 +700,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                     <div className="flex gap-1">
                       {!isEditing ? (
                         <>
-                          <button onClick={() => setEditingGoal(goal.id)} className="p-1 bg-cyan-500 hover:bg-cyan-600 rounded">
+                          <button onClick={() => setEditingGoal(goal.id)} className="p-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded">
                             <Edit2 className="w-3 h-3" />
                           </button>
                           <button onClick={() => handleDeleteGoal(goal.id, goal.goal_text)} className="p-1 bg-red-500 hover:bg-red-600 rounded">

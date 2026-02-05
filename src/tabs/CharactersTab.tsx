@@ -91,7 +91,7 @@ export default function CharactersTab({
       />
 
       <div className="flex gap-3 items-center">
-        <div className="flex-1 bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
@@ -104,7 +104,7 @@ export default function CharactersTab({
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="h-10 px-4 bg-cyan-500 rounded-lg font-semibold flex items-center gap-2 text-sm"
+          className="h-10 px-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg font-semibold flex items-center gap-2 text-sm transition-all"
         >
           <Plus size={18} />
           Add
@@ -207,8 +207,9 @@ function CharacterCard({
   return (
     <div
       onClick={onSelect}
-      className={`bg-slate-900/50 rounded-xl border transition cursor-pointer overflow-hidden ${rarityBorderClass} ${rarityHoverClass}`}
-    >
+      className={`relative bg-slate-900/50 backdrop-blur-sm rounded-xl border-2 transition cursor-pointer overflow-hidden shadow-[0_0_15px_rgba(226,232,240,0.1)] ${rarityBorderClass} ${rarityHoverClass}`}>
+      {/* Underglow */}
+      <div className="absolute inset-0 -z-10 bg-slate-200/8 rounded-xl blur-lg"></div>
       <div className="flex min-h-[12rem]">
         <div className="w-32 bg-slate-800/50 flex-shrink-0">
           {portraitSrc ? (
