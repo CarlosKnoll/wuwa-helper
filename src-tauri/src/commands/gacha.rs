@@ -203,7 +203,10 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
     };
 
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))  // 30 second timeout per request
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
     let conn = init_db(&app)?;
 
     let mut imported = 0;
@@ -218,6 +221,7 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
             }
         };
 
+        eprintln!("[INFO] Processing banner: {} (pool {})", banner, pool);
         let mut page = 1;
 
         loop {
@@ -248,76 +252,132 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
 
             let records = match res.data {
                 Some(r) if !r.is_empty() => {
+                    eprintln!("[INFO] Banner {} page {}: Got {} records", banner, page, r.len());
                     r
                 },
                 Some(_r) => {
+                    eprintln!("[INFO] Banner {} page {}: Empty response, moving to next banner", banner, page);
                     break;
                 },
                 None => {
+                    eprintln!("[INFO] Banner {} page {}: No data, moving to next banner", banner, page);
                     break;
                 }
             };
 
             fetched += records.len();
 
-
+            let mut new_pulls_on_this_page = 0;
+            
+            // First pass: group records by timestamp to identify multi-pulls
+            let mut timestamp_groups: std::collections::HashMap<String, Vec<GamePullRecord>> = 
+                std::collections::HashMap::new();
+            
             for r in records {
                 let normalized_date = normalize_date_format(&r.time);
+                timestamp_groups.entry(normalized_date).or_insert_with(Vec::new).push(r);
+            }
 
-
-                let exists: bool = conn.query_row(
-                    "SELECT EXISTS(
-                        SELECT 1 FROM pull_history
-                        WHERE banner_type = ? 
-                        AND item_name = ?
-                        AND pull_date = ?
-                    )",
-                    params![banner, r.name, normalized_date],
-                    |row| row.get(0),
-                ).unwrap_or(false);
-
-                // Count ALL rows for this (banner, name) ignoring date
-                let count_any_date: i64 = conn.query_row(
-                    "SELECT COUNT(*) FROM pull_history WHERE banner_type = ? AND item_name = ?",
-                    params![banner, r.name],
+            // Second pass: process each timestamp group
+            for (normalized_date, group_records) in timestamp_groups {
+                let is_multi_pull_on_page = group_records.len() > 1;
+                
+                // Check if there are already pulls at this timestamp in the database
+                let existing_max_group_order: i64 = conn.query_row(
+                    "SELECT COALESCE(MAX(group_order), 0) 
+                     FROM pull_history
+                     WHERE banner_type = ? 
+                     AND pull_date = ?",
+                    params![banner, normalized_date],
                     |row| row.get(0),
                 ).unwrap_or(0);
 
-                // Fetch actual stored dates in their own block so the stmt is dropped
-                let stored_dates: Vec<String> = {
-                    let mut s = conn.prepare(
-                        "SELECT pull_date FROM pull_history WHERE banner_type = ? AND item_name = ? LIMIT 5"
-                    ).unwrap();
-                    s.query_map(params![banner, r.name], |row| row.get(0))
-                        .unwrap()
-                        .filter_map(|r| r.ok())
-                        .collect()
-                };
-
-
-                if exists {
-                    continue;
-                }
-
-                let item_type = if r.resource_type == "Resonator" {
-                    "character"
+                // Determine starting group_order
+                // If existing_max is 0, this is new data - start fresh
+                // If existing_max > 0 AND we have multiple items, we're continuing a split 10-pull
+                // If existing_max > 0 AND we have 1 item, check if it's a duplicate first
+                let base_group_order = if existing_max_group_order == 0 {
+                    0  // Fresh start
+                } else if is_multi_pull_on_page {
+                    // Could be continuing a 10-pull OR reimporting old data
+                    // We'll check for duplicates to determine which
+                    existing_max_group_order
                 } else {
-                    "weapon"
+                    // Single item with existing data - likely a duplicate, will be caught below
+                    0
                 };
 
-                add_pull(
-                    app.clone(),
-                    banner.clone(),
-                    r.name.clone(),
-                    r.quality_level,
-                    item_type.into(),
-                    false,
-                    normalized_date.clone(),
-                    Some("Imported from game URL".into()),
-                    None, // group_order not available from game API
-                )?;
+                let mut skip_entire_group = false;
 
-                imported += 1;
+                for (index, r) in group_records.iter().enumerate() {
+                    if skip_entire_group {
+                        break;
+                    }
+
+                    let item_type = if r.resource_type == "Resonator" {
+                        "character"
+                    } else {
+                        "weapon"
+                    };
+
+                    // Calculate group_order
+                    let group_order = if is_multi_pull_on_page {
+                        // Multi-pull on this page
+                        base_group_order + (group_records.len() as i64) - (index as i64)
+                    } else {
+                        // Single pull: always 1
+                        1
+                    };
+
+                    // Check if this exact pull already exists
+                    let already_exists: bool = conn.query_row(
+                        "SELECT EXISTS(
+                            SELECT 1 FROM pull_history
+                            WHERE banner_type = ? 
+                            AND item_name = ?
+                            AND pull_date = ?
+                            AND group_order = ?
+                        )",
+                        params![banner, r.name, normalized_date, group_order],
+                        |row| row.get(0),
+                    ).unwrap_or(false);
+
+                    if already_exists {
+                        eprintln!("[INFO] Found existing pull at {} (group_order {}), skipping entire timestamp group", 
+                                  normalized_date, group_order);
+                        // If we hit a duplicate, this means we're reimporting old data
+                        // Skip the entire timestamp group to avoid creating duplicates
+                        skip_entire_group = true;
+                        break;
+                    }
+
+                    // Add the pull
+                    add_pull(
+                        app.clone(),
+                        banner.clone(),
+                        r.name.clone(),
+                        r.quality_level,
+                        item_type.into(),
+                        false,
+                        normalized_date.clone(),
+                        Some("Imported from game URL".into()),
+                        Some(group_order),
+                    )?;
+
+                    imported += 1;
+                    new_pulls_on_this_page += 1;
+                    
+                    eprintln!("[INFO] Imported: {} at {} (group_order {})", 
+                              r.name, normalized_date, group_order);
+                }
+            }
+
+            // If we didn't import ANY new pulls from this entire page,
+            // that means all records were duplicates and we've reached the end
+            // (the API keeps returning the same page or old data)
+            if new_pulls_on_this_page == 0 {
+                eprintln!("[INFO] Banner {} page {}: All records were duplicates, stopping pagination", banner, page);
+                break;
             }
 
             page += 1;
@@ -329,6 +389,7 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
         imported, fetched
     );
     
+    eprintln!("[INFO] Import complete: {}", result);
     
     Ok(result)
 }

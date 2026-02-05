@@ -36,6 +36,9 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
   // Clean import option
   const [cleanImport, setCleanImport] = useState(false);
   
+  // Instructions expansion
+  const [showUrlInstructions, setShowUrlInstructions] = useState(false);
+  
   // Filter states - changed to arrays for multiple selection
   const [rarityFilters, setRarityFilters] = useState<number[]>([]);
   const [itemTypeFilters, setItemTypeFilters] = useState<string[]>([]);
@@ -414,11 +417,33 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 </button>
               </div>
               <button
-                onClick={() => open('https://github.com/wuwatracker/wuwatracker/blob/main/import.ps1')}
+                onClick={() => setShowUrlInstructions(!showUrlInstructions)}
                 className="text-xs text-cyan-400 hover:underline mt-1 inline-block cursor-pointer"
               >
-                How to get your Convene URL →
+                {showUrlInstructions ? '▼' : '▶'} How to get your Convene URL
               </button>
+              
+              {showUrlInstructions && (
+                <div className="mt-3 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-300 space-y-2 border border-slate-700">
+                  <p className="font-semibold text-white">1. First, launch the game and open your in-game history details</p>
+                  <p>Afterwards, open Windows PowerShell, and then paste the following script:</p>
+                  <code className="block bg-slate-900/80 p-2 rounded text-cyan-400 font-mono text-[11px] overflow-x-auto">
+                    {'iwr -UseBasicParsing -Headers @{"User-Agent"="Mozilla/5.0"} https://raw.githubusercontent.com/wuwatracker/wuwatracker/refs/heads/main/import.ps1 | iex'}
+                  </code>
+                  <p className="text-slate-400 italic">
+                    NOTE: The script only reads your game logs to extract your Convene History URL. You can{' '}
+                    <a 
+                      href="#" 
+                      onClick={(e) => { e.preventDefault(); open('https://github.com/wuwatracker/wuwatracker/blob/main/import.ps1'); }}
+                      className="text-cyan-400 hover:underline"
+                    >
+                      view the script here
+                    </a>.
+                  </p>
+                  <p className="font-semibold text-white">2. Paste the URL here</p>
+                  <p className="font-semibold text-white">3. Press the "Import" button</p>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-slate-700 pt-4">
