@@ -76,6 +76,9 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
 - **Echoes:** Add dropdown menu when inserting name of echo, which allows user input for refining the dropdown entries
 - **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
+- **Pity/Tracker:** Fix import by URL missing some imports and not respecting 10 pulls ordering. (Probably the 10 pull ordering fixes the missing imports - I'm assuming the missing imports are being treated as duplicates)
+- **Pity/Tracker:** Investigate 5 star pity counter inner workings and fix the problems.
+- **Pity/Tracker:** Investigate pull_number column in database with duplicate entries.
 - **Pity/Tracker:** Change `How to get your Convene URL →` to, instead of open a url to the github, just expand a hardcoded text instruction.
 - **Endgame:** Remove the ability to edit the total stars achieved manually in Toa, and in Whimpering Wastes and Troop Matrix, Remove the ability to edit the points. (not the points achieved in each stage/teams, but the total sum)
 - **Endgame:** Fix stars counting under ToA gamemode.
