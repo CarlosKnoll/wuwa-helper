@@ -162,9 +162,15 @@ export default function TowerDetailsView({
         stars: stars
       });
       
-      // Recalculate total stars and astrite after updating floor
-      const allFloors = Object.values(towerFloors).flat();
-      const totalStars = allFloors.reduce((sum, floor) => sum + (floor.stars || 0), 0);
+      // Fetch fresh floor data from database to get accurate totals
+      const towerTypes = ['echoing', 'resonant', 'hazard'];
+      const floorResults = await Promise.all(
+        towerTypes.map(type => safeInvoke('get_tower_floors', { towerType: type }))
+      );
+      
+      // Calculate total stars from fresh data
+      const allFreshFloors = floorResults.flat();
+      const totalStars = allFreshFloors.reduce((sum: number, floor: any) => sum + (floor.stars || 0), 0);
       const calculatedAstrite = calculateTowerAstrite(totalStars);
       
       // Update the tower overview with new totals

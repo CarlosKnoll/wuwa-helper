@@ -55,10 +55,12 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
     - [ ] White outline for every field in ExplorationTab
     - [ ] White outline for every field in EndgameTab
     - [ ] White outline for every field in SettingsTab
+
 - Standardize alerts:
     - [ ] Errors should be displayed in react component, not as OS alerts
     - [ ] Success handles should be displayed in react component, not as OS alerts
     - [ ] Warnings should be displayed in react component, not as OS alerts
+
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
 
 
@@ -86,6 +88,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 - **Add Character:** Remove optional variant input, since frontend concats with element already (Check if database migration still uses the variant column. If so, stop and handle the migration properly).
 - **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
+- **Add Weapons:** Check and fix if adding weapon with equipped on character field set does not update character info/old weapon (if applicable)
 
 - **Dashboard:** Add account_info table data to dashboard.
 - **Dashboard:** Endgame data not refreshing whith database refresh.
@@ -96,8 +99,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Echoes:** Add entries and assets for all Phantom echoes.
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
 
-- **Endgame:** Move last reset editing to parent gamemodes card
-- **Endgame:** Fix stars counting under ToA gamemode.
+- **Endgame:** Move last reset date editing to parent gamemodes card
 
 - **Pity Tab:** Fix `Export JSON` not allowing selection of save directory.
 
