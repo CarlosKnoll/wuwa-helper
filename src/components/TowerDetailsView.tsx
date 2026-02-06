@@ -40,6 +40,7 @@ export default function TowerDetailsView({
 
   // Overview edit states
   const [editTotalStars, setEditTotalStars] = useState(0);
+  const [editLastReset, setEditLastReset] = useState('');
   const [editOverviewNotes, setEditOverviewNotes] = useState('');
 
   // Tower detail edit states
@@ -86,6 +87,7 @@ export default function TowerDetailsView({
   const startEditOverview = () => {
     if (towerInfo) {
       setEditTotalStars(towerInfo.total_stars);
+      setEditLastReset(towerInfo.last_reset);
       setEditOverviewNotes(towerInfo.notes || '');
       setEditingOverview(true);
     }
@@ -94,9 +96,15 @@ export default function TowerDetailsView({
   const saveOverview = async () => {
     setSaving(true);
     try {
-      const calculatedAstrite = calculateTowerAstrite(editTotalStars);
+      // Update last reset date
+      await safeInvoke('update_tower_last_reset', {
+        lastReset: editLastReset
+      });
+      
+      // Keep existing total_stars (not editable, calculated from floors)
+      const calculatedAstrite = calculateTowerAstrite(towerInfo?.total_stars || 0);
       await safeInvoke('update_tower_of_adversity', {
-        totalStars: editTotalStars,
+        totalStars: towerInfo?.total_stars || 0,
         astriteEarned: calculatedAstrite,
         notes: editOverviewNotes || null
       });
@@ -317,26 +325,13 @@ export default function TowerDetailsView({
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Total Stars</label>
+                <label className="text-sm text-slate-400 block mb-1">Last Reset</label>
                 <input
-                  type="number"
-                  value={editTotalStars}
-                  onChange={(e) => setEditTotalStars(parseInt(e.target.value) || 0)}
+                  type="date"
+                  value={editLastReset}
+                  onChange={(e) => setEditLastReset(e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                  max="36"
                 />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Astrite Earned (Auto-calculated)</label>
-                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
-                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
-                  {calculateTowerAstrite(editTotalStars)} / 800
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Based on stars: 3-24★ = 75 each (×{Math.min(Math.floor(editTotalStars / 3), 8)}), 
-                  27-36★ = 50 each (×{editTotalStars > 24 ? Math.floor((editTotalStars - 24) / 3) : 0})
-                </p>
               </div>
             </div>
             <div>

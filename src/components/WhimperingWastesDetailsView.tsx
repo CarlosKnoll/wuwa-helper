@@ -26,6 +26,7 @@ export default function WhimperingWastesDetailsView({
   const [editChasmStage, setEditChasmStage] = useState(0);
   const [editChasmPoints, setEditChasmPoints] = useState(0);
   const [editTorrentsPoints, setEditTorrentsPoints] = useState(0);
+  const [editLastReset, setEditLastReset] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
   // Stage edit states
@@ -44,6 +45,7 @@ export default function WhimperingWastesDetailsView({
       setEditChasmStage(wastesInfo.chasm_highest_stage);
       setEditChasmPoints(wastesInfo.chasm_total_points);
       setEditTorrentsPoints(wastesInfo.torrents_total_points);
+      setEditLastReset(wastesInfo.last_reset);
       setEditNotes(wastesInfo.notes || '');
       setEditing(true);
     }
@@ -52,14 +54,20 @@ export default function WhimperingWastesDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
-      const calculatedChasmAstrite = calculateChasmAstrite(editChasmPoints);
-      const calculatedTorrentsAstrite = calculateTorrentsAstrite(editTorrentsPoints);
+      // Update last reset date
+      await safeInvoke('update_wastes_last_reset', {
+        lastReset: editLastReset
+      });
+      
+      // Keep existing points (not editable)
+      const calculatedChasmAstrite = calculateChasmAstrite(wastesInfo?.chasm_total_points || 0);
+      const calculatedTorrentsAstrite = calculateTorrentsAstrite(wastesInfo?.torrents_total_points || 0);
       
       await safeInvoke('update_whimpering_wastes', {
         chasmHighestStage: editChasmStage,
-        chasmTotalPoints: editChasmPoints,
+        chasmTotalPoints: wastesInfo?.chasm_total_points || 0,
         chasmAstrite: calculatedChasmAstrite,
-        torrentsTotalPoints: editTorrentsPoints,
+        torrentsTotalPoints: wastesInfo?.torrents_total_points || 0,
         torrentsAstrite: calculatedTorrentsAstrite,
         notes: editNotes || null
       });
@@ -232,6 +240,15 @@ export default function WhimperingWastesDetailsView({
           <div className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
+                <label className="text-sm text-slate-400 block mb-1">Last Reset</label>
+                <input
+                  type="date"
+                  value={editLastReset}
+                  onChange={(e) => setEditLastReset(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                />
+              </div>
+              <div>
                 <label className="text-sm text-slate-400 block mb-1">Chasm Highest Stage</label>
                 <input
                   type="number"
@@ -240,46 +257,6 @@ export default function WhimperingWastesDetailsView({
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
                   min="0"
                 />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Chasm Points</label>
-                <input
-                  type="number"
-                  value={editChasmPoints}
-                  onChange={(e) => setEditChasmPoints(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Chasm Astrite (Auto-calculated)</label>
-                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
-                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
-                  {calculateChasmAstrite(editChasmPoints)} / 625
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Breakpoints at 5k, 7k, 9.5k, 12k, 15k (125 each)
-                </p>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Torrents Points</label>
-                <input
-                  type="number"
-                  value={editTorrentsPoints}
-                  onChange={(e) => setEditTorrentsPoints(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Torrents Astrite (Auto-calculated)</label>
-                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
-                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
-                  {calculateTorrentsAstrite(editTorrentsPoints)} / 175
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Breakpoints at 3.5k (75), 4k (50), 4.5k (50)
-                </p>
               </div>
             </div>
             <div>

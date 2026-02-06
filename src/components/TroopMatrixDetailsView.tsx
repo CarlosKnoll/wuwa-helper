@@ -23,10 +23,10 @@ export default function TroopMatrixDetailsView({
   const [saving, setSaving] = useState(false);
 
   // Main edit states
-  const [editUnlocked, setEditUnlocked] = useState(false);
   const [editStabilityPoints, setEditStabilityPoints] = useState(0);
   const [editSingularityPoints, setEditSingularityPoints] = useState(0);
   const [editSingularityRound, setEditSingularityRound] = useState(0);
+  const [editLastReset, setEditLastReset] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
   // Team edit states
@@ -41,10 +41,10 @@ export default function TroopMatrixDetailsView({
 
   const startEdit = () => {
     if (troopMatrix) {
-      setEditUnlocked(troopMatrix.unlocked);
       setEditStabilityPoints(troopMatrix.stability_accords_points);
       setEditSingularityPoints(troopMatrix.singularity_expansion_points);
       setEditSingularityRound(troopMatrix.singularity_expansion_highest_round);
+      setEditLastReset(troopMatrix.last_reset);
       setEditNotes(troopMatrix.notes || '');
       setEditing(true);
     }
@@ -53,20 +53,25 @@ export default function TroopMatrixDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
-      const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(editStabilityPoints);
+      // Update last reset date
+      await safeInvoke('update_matrix_last_reset', {
+        lastReset: editLastReset
+      });
+      
+      // Keep existing points (not editable)
+      const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(troopMatrix?.stability_accords_points || 0);
       
       // Get all singularity team scores for proper calculation
       const singularityTeamScores = singularityTeams.map(t => t.points);
       const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
-        editSingularityPoints,
+        troopMatrix?.singularity_expansion_points || 0,
         singularityTeamScores
       );
       
       await safeInvoke('update_troop_matrix', {
-        unlocked: editUnlocked,
-        stabilityAccordsPoints: editStabilityPoints,
+        stabilityAccordsPoints: troopMatrix?.stability_accords_points || 0,
         stabilityAccordsAstrite: calculatedStabilityAstrite,
-        singularityExpansionPoints: editSingularityPoints,
+        singularityExpansionPoints: troopMatrix?.singularity_expansion_points || 0,
         singularityExpansionAstrite: calculatedSingularityAstrite,
         singularityExpansionHighestRound: editSingularityRound,
         notes: editNotes || null
@@ -119,7 +124,6 @@ export default function TroopMatrixDetailsView({
         );
         
         await safeInvoke('update_troop_matrix', {
-          unlocked: troopMatrix.unlocked,
           stabilityAccordsPoints: stabilityPoints,
           stabilityAccordsAstrite: calculatedStabilityAstrite,
           singularityExpansionPoints: singularityPoints,
@@ -162,7 +166,6 @@ export default function TroopMatrixDetailsView({
         );
         
         await safeInvoke('update_troop_matrix', {
-          unlocked: troopMatrix.unlocked,
           stabilityAccordsPoints: stabilityPoints,
           stabilityAccordsAstrite: calculatedStabilityAstrite,
           singularityExpansionPoints: singularityPoints,
@@ -210,7 +213,6 @@ export default function TroopMatrixDetailsView({
         );
         
         await safeInvoke('update_troop_matrix', {
-          unlocked: troopMatrix.unlocked,
           stabilityAccordsPoints: stabilityPoints,
           stabilityAccordsAstrite: calculatedStabilityAstrite,
           singularityExpansionPoints: singularityPoints,
@@ -368,77 +370,15 @@ export default function TroopMatrixDetailsView({
 
         {editing ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={editUnlocked}
-                onChange={(e) => setEditUnlocked(e.target.checked)}
-                className="w-5 h-5 rounded"
-                id="unlocked"
-              />
-              <label htmlFor="unlocked" className="text-sm text-slate-300">
-                Unlocked (required to track teams)
-              </label>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-slate-400 block mb-1">Stability Points</label>
+                <label className="text-sm text-slate-400 block mb-1">Last Reset</label>
                 <input
-                  type="number"
-                  value={editStabilityPoints}
-                  onChange={(e) => setEditStabilityPoints(parseInt(e.target.value) || 0)}
+                  type="date"
+                  value={editLastReset}
+                  onChange={(e) => setEditLastReset(e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
                 />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Stability Astrite (Auto-calculated)</label>
-                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
-                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
-                  {calculateStabilityAccordsAstrite(editStabilityPoints)} / 150
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Breakpoints at 4.8k, 7.2k, 10k (50 each)
-                </p>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Singularity Points</label>
-                <input
-                  type="number"
-                  value={editSingularityPoints}
-                  onChange={(e) => setEditSingularityPoints(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Singularity Astrite (Auto-calculated)</label>
-                <div className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-yellow-400 font-semibold flex items-center gap-2">
-                  <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
-                  {(() => {
-                    const singularityTeamScores = singularityTeams.map(t => t.points);
-                    const { astrite, missingNonAstriteRewards } = calculateSingularityExpansionAstrite(
-                      editSingularityPoints,
-                      singularityTeamScores
-                    );
-                    return astrite;
-                  })()} / 250
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Score: 12k, 16k, 21k (50 each) + Teams at 5k: 3 teams (50), 4 teams (50)
-                </p>
-                {(() => {
-                  const singularityTeamScores = singularityTeams.map(t => t.points);
-                  const { missingNonAstriteRewards } = calculateSingularityExpansionAstrite(
-                    editSingularityPoints,
-                    singularityTeamScores
-                  );
-                  return missingNonAstriteRewards.length > 0 && (
-                    <p className="text-xs text-amber-400 mt-1">
-                      ⚠️ Missing rewards: {missingNonAstriteRewards.join(', ')}
-                    </p>
-                  );
-                })()}
               </div>
               <div className="md:col-span-2">
                 <label className="text-sm text-slate-400 block mb-1">Highest Round</label>
@@ -549,8 +489,7 @@ export default function TroopMatrixDetailsView({
       </div>
 
       {/* Teams Section */}
-      {troopMatrix.unlocked && (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Stability Accords Teams */}
           <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
             <div className="flex items-center justify-between mb-4">
@@ -623,7 +562,6 @@ export default function TroopMatrixDetailsView({
             )}
           </div>
         </div>
-      )}
     </div>
   );
 }

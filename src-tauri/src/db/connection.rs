@@ -15,5 +15,12 @@ pub fn get_db_path(_app: &tauri::AppHandle) -> Result<PathBuf, String> {
 
 pub fn init_db(app: &tauri::AppHandle) -> Result<Connection, String> {
     let db_path = get_db_path(app)?;
-    Connection::open(db_path).map_err(|e| format!("Failed to open database: {}", e))
+    let conn = Connection::open(db_path)
+        .map_err(|e| format!("Failed to open database: {}", e))?;
+    
+    // Run migrations (handles both new databases and updates)
+    crate::db::migrations::run_migrations(&conn)
+        .map_err(|e| format!("Failed to run database migrations: {}", e))?;
+    
+    Ok(conn)
 }

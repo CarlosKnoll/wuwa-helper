@@ -55,34 +55,51 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
     - [ ] White outline for every field in ExplorationTab
     - [ ] White outline for every field in EndgameTab
     - [ ] White outline for every field in SettingsTab
+- Standardize alerts:
+    - [ ] Errors should be displayed in react component, not as OS alerts
+    - [ ] Success handles should be displayed in react component, not as OS alerts
+    - [ ] Warnings should be displayed in react component, not as OS alerts
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
+
 
 ---
 
 #### Functionalities:
 - Research auto-update implementation.
-- Study a way to handle differences in database tables/entries between versions.
-- Modify edit fields to have immediate persistance instead of save button
-- **Exploration Tab:** Add support to 3.1 new maps.
-- Study a way to hardcode maps for exploration tab.
-- **Pity Tab:** Add run option to automatically run powershell command that fetches URL
+
+- Properly handle differences in `echo_builds` table, mainly regarding echo sets. Study if data migration is possible.
+
+- Modify edit fields to have immediate persistance instead of save button.
+
+- Migrate database only to hardcode regions and maps for exploration tab.
+
+- **Echoes:** Add dropdown/Search options when inserting name of echo, which allows user input for refining the displayed entries
+
+- **Pity Tab:** Add button/icon to automatically run the powershell command that fetches URL and copy button to automatically copy to clipboard the powershell command.
+
+- **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
 
 ---
 
 #### Minor changes and bugs:
-- **Dashboard:** Add account_info table data to dashboard.
 - Refresh button (should reload data from database) not working in pity tab (needs investigation on whether it works or not in other tabs)
-- Blank database creation does not have the tables needed;
+
+- **Add Character:** Remove optional variant input, since frontend concats with element already (Check if database migration still uses the variant column. If so, stop and handle the migration properly).
+- **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
+
+- **Dashboard:** Add account_info table data to dashboard.
+- **Dashboard:** Endgame data not refreshing whith database refresh.
+
 - **Character Info:** Display and allow edit of Resonance Date.
+- **Character Modal Overview Tab:** Max level display is wrong. It works as intended in Characters' Tab Info section.
+
 - **Echoes:** Add entries and assets for all Phantom echoes.
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
-- **Echoes:** Add dropdown menu when inserting name of echo, which allows user input for refining the dropdown entries
-- **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
-- **Endgame:** Remove the ability to edit the total stars achieved manually in Toa, and in Whimpering Wastes and Troop Matrix, Remove the ability to edit the points. (not the points achieved in each stage/teams, but the total sum)
+
+- **Endgame:** Move last reset editing to parent gamemodes card
 - **Endgame:** Fix stars counting under ToA gamemode.
-- **Endgame:** Allow editing of last reset date.
-- **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
-- **Pity Tab:** Add copy button to automatically copy to clipboard the powershell command.
+
+- **Pity Tab:** Fix `Export JSON` not allowing selection of save directory.
 
 ---
 

@@ -63,7 +63,7 @@ fn get_swords() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'stat
         ("T_IconWeapon21020076_UI.webp", "Everbright Polestar", 5, "Sword", vec!["5stars"]),
 
         //5-STARS STANDARD WEAPONS
-        ("21020015.webp", "Lustrous Razor", 5, "Sword", vec!["5stars"]),
+        ("21020015.webp", "Emerald of Genesis", 5, "Sword", vec!["5stars"]),
         ("21020045.webp", "Laser Shearer", 5, "Sword", vec!["5stars"]),
 
         //4-STARS WEAPONS

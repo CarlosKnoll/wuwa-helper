@@ -75,7 +75,6 @@ pub struct TorrentsStage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TroopMatrix {
     pub id: i64,
-    pub unlocked: bool,
     pub last_reset: String,
     pub stability_accords_points: i64,
     pub stability_accords_astrite: i64,
@@ -337,21 +336,20 @@ pub fn get_troop_matrix(app: tauri::AppHandle) -> Result<Option<TroopMatrix>, St
     
     let matrix = conn
         .query_row(
-            "SELECT id, unlocked, last_reset, stability_accords_points, stability_accords_astrite, 
+            "SELECT id, last_reset, stability_accords_points, stability_accords_astrite, 
              singularity_expansion_points, singularity_expansion_astrite, singularity_expansion_highest_round, notes 
              FROM troop_matrix WHERE id = 1",
             [],
             |row| {
                 Ok(TroopMatrix {
                     id: row.get(0)?,
-                    unlocked: row.get(1)?,
-                    last_reset: row.get(2)?,
-                    stability_accords_points: row.get(3)?,
-                    stability_accords_astrite: row.get(4)?,
-                    singularity_expansion_points: row.get(5)?,
-                    singularity_expansion_astrite: row.get(6)?,
-                    singularity_expansion_highest_round: row.get(7)?,
-                    notes: row.get(8)?,
+                    last_reset: row.get(1)?,
+                    stability_accords_points: row.get(2)?,
+                    stability_accords_astrite: row.get(3)?,
+                    singularity_expansion_points: row.get(4)?,
+                    singularity_expansion_astrite: row.get(5)?,
+                    singularity_expansion_highest_round: row.get(6)?,
+                    notes: row.get(7)?,
                 })
             },
         )
