@@ -54,7 +54,7 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
         {/* Header */}
         <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Plus size={24} className="text-orange-400" />
+            <Plus size={24} className="text-yellow-400" />
             <h2 className="text-2xl font-bold text-white">Add New Weapon</h2>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
@@ -178,7 +178,7 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-700 rounded-lg px-4 py-2 font-semibold transition-colors"
+              className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 disabled:bg-slate-700 rounded-lg px-4 py-2 font-semibold transition-colors"
             >
               {loading ? 'Adding...' : 'Add Weapon'}
             </button>

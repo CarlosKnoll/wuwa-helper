@@ -219,8 +219,8 @@ export default function CharacterInfo({
                 </div>
                 <div className="flex items-center gap-3">
                   {!editing ? (
-                    <button onClick={onEdit} className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
-                      <Edit2 size={16} className="text-cyan-400" />
+                    <button onClick={onEdit} className="p-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors">
+                      <Edit2 size={16} className="text-white-400" />
                     </button>
                   ) : (
                     <div className="flex gap-1.5">
@@ -338,8 +338,8 @@ export default function CharacterInfo({
                   <h3 className="text-lg font-bold text-yellow-400">Weapon</h3>
                 </div>
                 {!editingWeapon ? (
-                  <button onClick={() => setEditingWeapon(true)} className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors">
-                    <Edit2 size={16} className="text-cyan-400" />
+                  <button onClick={() => setEditingWeapon(true)} className="p-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors">
+                    <Edit2 size={16} className="text-white-400" />
                   </button>
                 ) : (
                   <div className="flex gap-1.5">

@@ -86,7 +86,7 @@ export default function SettingsTab() {
           </button>
           <button
             onClick={handleImport}
-            className="w-full px-4 py-3 bg-gradient-to-r from-yellow-600 to-amber-700 hover:from-yellow-500 hover:to-amber-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
             <Database className="w-5 h-5" />
             Import Database

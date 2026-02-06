@@ -261,7 +261,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
           {!editingResources ? (
             <button
               onClick={() => setEditingResources(true)}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors"
             >
               <Edit2 className="w-4 h-4" />
             </button>
@@ -410,7 +410,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
         <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
           <Calculator className="w-5 h-5 text-cyan-400" />
-          Pull Calculator
+          Convene Calculator
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-lg p-4 border border-yellow-500/30">
@@ -438,7 +438,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
             <div className="text-xs text-slate-400 mt-1">{afterglowCoral} ÷ 8</div>
           </div>
           <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg p-4 border border-cyan-500/50">
-            <div className="text-sm text-cyan-400 mb-1">Total Pulls</div>
+            <div className="text-sm text-cyan-400 mb-1">Total Convenes</div>
             <div className="text-4xl font-bold text-cyan-400">{totalPulls}</div>
             <div className="text-xs text-slate-400 mt-1">Available now</div>
           </div>
@@ -454,7 +454,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
           </h2>
           <button
             onClick={loadPityStatus}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors"
             title="Refresh pity status"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

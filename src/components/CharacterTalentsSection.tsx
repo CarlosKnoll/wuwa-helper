@@ -317,7 +317,7 @@ export default function CharacterTalentsSection({
             <div className="flex justify-between items-center mb-2">
             <label className="text-sm text-slate-400">Talent Notes</label>
             {!editing ? (
-              <button onClick={() => setEditing(true)} className="px-3 py-1 bg-slate-600/20 hover:bg-slate-600/30 rounded-lg transition-colors flex items-center gap-2">
+              <button onClick={() => setEditing(true)} className="px-3 py-1 bg-gradient-to-r from-yellow-500/90 to-amber-600 hover:from-yellow-400/90 hover:to-amber-500 rounded-lg transition-colors flex items-center gap-2">
                 <Edit2 size={16} className="text-slate-300" />
                 <span className="text-slate-300 text-sm font-semibold">Edit</span>
               </button>

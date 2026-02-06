@@ -98,12 +98,12 @@ export default function CharacterEchoBuildSection({
           });
           images[set.key] = `data:image/webp;base64,${base64}`;
         } catch (err) {
-          console.error(`Failed to load echo set image for ${set.key}:`, err);
+          console.error(`Failed to load sonata effect image for ${set.key}:`, err);
         }
       }
       setEchoSetImages(images);
     } catch (err) {
-      console.error('Failed to load echo sets:', err);
+      console.error('Failed to load sonata effects:', err);
     }
   };
 
@@ -486,16 +486,16 @@ export default function CharacterEchoBuildSection({
         {/* Header - Fixed at top */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700/50 flex-shrink-0">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <Shield size={20} className="text-cyan-400" />
-            Echo Set
+            <Shield size={20} className="text-yellow-400" />
+            Sonata Effect
           </h3>
           {/* Edit/Save/Cancel Buttons */}
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 rounded transition-colors"
+              className="p-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors"
             >
-              <Edit2 size={16} className="text-cyan-400" />
+              <Edit2 size={16} className="text-white-400" />
             </button>
           ) : (
             <div className="flex gap-1.5">
@@ -527,7 +527,7 @@ export default function CharacterEchoBuildSection({
                   onClick={() => handleConfigurationChange('5pc')}
                   className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     form.primary_set_pieces === 5
-                      ? 'bg-cyan-600 text-white'
+                      ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-white'
                       : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
@@ -537,7 +537,7 @@ export default function CharacterEchoBuildSection({
                   onClick={() => handleConfigurationChange('3pc+2pc')}
                   className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     form.primary_set_pieces === 3
-                      ? 'bg-cyan-600 text-white'
+                      ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-white'
                       : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
@@ -563,7 +563,7 @@ export default function CharacterEchoBuildSection({
                     })}
                     className={`relative aspect-square rounded-lg border-2 transition-all ${
                       form.primary_set_key === set.key
-                        ? 'border-cyan-500 bg-cyan-500/20 opacity-100'
+                        ? 'border-white-500 opacity-100'
                         : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 opacity-50 hover:opacity-75'
                     }`}
                     title={set.name}
@@ -590,7 +590,7 @@ export default function CharacterEchoBuildSection({
                   {/* For 5pc sets: show 2pc bonus first */}
                   {form.primary_set_pieces === 5 && primarySet.has_2pc && primarySet.two_piece_bonus && (
                     <div className="flex items-start gap-2">
-                      <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <Info size={14} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-green-400 leading-relaxed">
                         {primarySet.two_piece_bonus}
                       </div>
@@ -606,7 +606,7 @@ export default function CharacterEchoBuildSection({
                     (form.primary_set_pieces === 3 && primarySet.two_piece_bonus) ||
                     (form.primary_set_pieces === 2 && primarySet.two_piece_bonus)) && (
                     <div className="flex items-start gap-2">
-                      <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <Info size={14} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-green-400 leading-relaxed">
                         {form.primary_set_pieces === 5 && primarySet.five_piece_bonus}
                         {form.primary_set_pieces === 3 && primarySet.two_piece_bonus}
@@ -636,7 +636,7 @@ export default function CharacterEchoBuildSection({
                       })}
                       className={`relative aspect-square rounded-lg border-2 transition-all ${
                         form.secondary_set_key === set.key
-                          ? 'border-cyan-500 bg-cyan-500/20 opacity-100'
+                          ? 'border-white-500 opacity-100'
                           : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 opacity-50 hover:opacity-75'
                       }`}
                       title={set.name}
@@ -661,7 +661,7 @@ export default function CharacterEchoBuildSection({
                   <div className="mt-2 bg-slate-800/30 border border-slate-700/50 rounded-lg p-2.5">
                     <div className="text-xs font-semibold text-white mb-1">{secondarySet.name}</div>
                     <div className="flex items-start gap-2">
-                      <Info size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+                      <Info size={14} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                       <div className="text-xs text-green-400 leading-relaxed">
                         {form.secondary_set_pieces === 2 && secondarySet.two_piece_bonus}
                         {form.secondary_set_pieces === 3 && secondarySet.two_piece_bonus}
@@ -715,7 +715,7 @@ export default function CharacterEchoBuildSection({
                     )}
                     <div className="flex-1">
                       <div className="text-white font-semibold text-base">
-                        {primarySet.name} <span className="text-cyan-400 text-sm">({form.primary_set_pieces}pc)</span>
+                        {primarySet.name} <span className="text-yellow-400 text-sm">({form.primary_set_pieces}pc)</span>
                       </div>
                     </div>
                   </div>
@@ -725,13 +725,13 @@ export default function CharacterEchoBuildSection({
                   {/* For 5pc sets: show 2pc bonus first */}
                   {form.primary_set_pieces === 5 && primarySet.has_2pc && primarySet.two_piece_bonus && (
                     <>
-                      <div className="text-cyan-400 text-xs font-semibold">2-Piece Bonus</div>
-                      <div className="text-green-400 text-xs leading-relaxed">
+                      <div className="text-yellow-400 text-xs font-semibold">2-Piece Bonus</div>
+                      <div className="text-white-400 text-xs leading-relaxed">
                         {primarySet.two_piece_bonus}
                       </div>
                       <div className="border-t border-slate-700/30 pt-2 mt-2">
-                        <div className="text-cyan-400 text-xs font-semibold">5-Piece Bonus</div>
-                        <div className="text-green-400 text-xs leading-relaxed mt-1">
+                        <div className="text-yellow-400 text-xs font-semibold">5-Piece Bonus</div>
+                        <div className="text-white-400 text-xs leading-relaxed mt-1">
                           {primarySet.five_piece_bonus}
                         </div>
                       </div>
@@ -741,10 +741,10 @@ export default function CharacterEchoBuildSection({
                   {/* For 3pc or 2pc sets: show only the appropriate bonus */}
                   {form.primary_set_pieces !== 5 && (
                     <>
-                      <div className="text-cyan-400 text-xs font-semibold">
+                      <div className="text-yellow-400 text-xs font-semibold">
                         {form.primary_set_pieces === 3 ? '3-Piece Bonus' : '2-Piece Bonus'}
                       </div>
-                      <div className="text-green-400 text-xs leading-relaxed">
+                      <div className="text-white-400 text-xs leading-relaxed">
                         {primarySet.two_piece_bonus}
                       </div>
                     </>
@@ -766,17 +766,17 @@ export default function CharacterEchoBuildSection({
                         )}
                         <div className="flex-1">
                           <div className="text-white font-semibold text-base">
-                            {secondarySet.name} <span className="text-cyan-400 text-sm">({form.secondary_set_pieces}pc)</span>
+                            {secondarySet.name} <span className="text-yellow-400 text-sm">({form.secondary_set_pieces}pc)</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="bg-slate-800/30 rounded-lg p-2.5">
-                      <div className="text-cyan-400 text-xs font-semibold">
+                      <div className="text-yellow-400 text-xs font-semibold">
                         {form.secondary_set_pieces === 3 ? '3-Piece Bonus' : '2-Piece Bonus'}
                       </div>
-                      <div className="text-green-400 text-xs leading-relaxed mt-1">
+                      <div className="text-white-400 text-xs leading-relaxed mt-1">
                         {secondarySet.two_piece_bonus}
                       </div>
                     </div>
@@ -786,7 +786,7 @@ export default function CharacterEchoBuildSection({
             ) : (
               <div className="text-center py-6">
                 <Shield size={40} className="text-slate-600 mx-auto mb-2" />
-                <p className="text-slate-500 text-sm">No echo set selected</p>
+                <p className="text-slate-500 text-sm">No sonata effect selected</p>
                 <p className="text-slate-600 text-xs mt-1">Click edit to choose a set</p>
               </div>
             )}
@@ -796,7 +796,7 @@ export default function CharacterEchoBuildSection({
                 <div className="border-t border-slate-700/50" />
                 <div>
                   <div className="text-slate-400 text-xs uppercase tracking-wide mb-1.5">Build Quality</div>
-                  <div className="text-cyan-400 font-semibold text-sm">{form.overall_quality}</div>
+                  <div className="text-yellow-400 font-semibold text-sm">{form.overall_quality}</div>
                 </div>
               </>
             )}

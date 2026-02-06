@@ -47,7 +47,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     if (echo.echo_name) {
       invoke<string[]>('get_echo_available_sets', { echoName: echo.echo_name })
         .then(sets => setAvailableEchoSets(sets))
-        .catch(err => console.error('Failed to load available echo sets:', err));
+        .catch(err => console.error('Failed to load available sonata effects:', err));
     }
   }, [echo.echo_name]);
 
@@ -282,7 +282,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                   {echoSetImage && (
                     <img
                       src={echoSetImage}
-                      alt={form.echo_set || 'Echo set'}
+                      alt={form.echo_set || 'Sonata Effect'}
                       className="w-5 h-5 object-cover rounded"
                       title={form.echo_set || undefined}
                     />
@@ -302,9 +302,9 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
               <>
                 <button
                   onClick={() => setEditing(true)}
-                  className="p-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded text-xs transition-colors"
+                  className="p-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded text-xs transition-colors"
                 >
-                  <Edit2 className="w-3 h-3 text-cyan-400" />
+                  <Edit2 className="w-3 h-3 text-white-400" />
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(true)}
@@ -335,7 +335,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
         {/* Echo Passives and Cooldown (when not editing and metadata is available) */}
         {!editing && echoMetadata && (echoMetadata.passive1 || echoMetadata.passive2 || echoMetadata.cooldown > 0) && (
           <div className="mb-3 bg-slate-800/30 rounded-lg p-2.5">
-            <div className="text-green-400 text-xs leading-relaxed space-y-2">
+            <div className="text-white-400 text-xs leading-relaxed space-y-2">
               {echoMetadata.passive1 && (
                 <div>{echoMetadata.passive1}</div>
               )}
@@ -354,8 +354,8 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
         {/* Main Stat Display (when not editing) */}
         {!editing && form.main_stat && (
           <div className="mb-3">
-            <div className="flex justify-between items-center bg-slate-800/50 border border-purple-500/50 rounded-lg px-3 py-2">
-              <span className="text-purple-400 font-medium">{form.main_stat}</span>
+            <div className="flex justify-between items-center bg-slate-800/50 border border-yellow-500/50 rounded-lg px-3 py-2">
+              <span className="text-yellow-400 font-medium">{form.main_stat}</span>
               <span className="text-white font-medium">{form.main_stat_value}</span>
             </div>
           </div>
@@ -403,13 +403,13 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
             {/* Echo Set Dropdown */}
             {availableEchoSets.length > 0 && (
               <div>
-                <label className="text-xs text-slate-500">Echo Set</label>
+                <label className="text-xs text-slate-500">Sonata Effect</label>
                 <select
                   value={form.echo_set}
                   onChange={e => setForm({ ...form, echo_set: e.target.value })}
                   className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="">Select echo set...</option>
+                  <option value="">Select sonata effect...</option>
                   {availableEchoSets
                     .filter(setName => {
                       // If build has selected sets, only show those sets

@@ -47,9 +47,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 ### Remaining To-Dos:
 #### UI:
-- Standardize edit/add/import buttons to the same amber/golden as the refresh.
-    - [ ] +Add button in WeaponsTab
-    - [ ] Import/Export and selected banner in PityTab
 - Standardize countours and selections to be white.
     - [ ] White outline for every section in the dashboard
     - [ ] White outline for search bar in CharactersTab and WeaponsTab
@@ -58,15 +55,17 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
     - [ ] White outline for every field in ExplorationTab
     - [ ] White outline for every field in EndgameTab
     - [ ] White outline for every field in SettingsTab
-- Rename any "pull" mention to Convene.
-- Rename any "Echo set" mention to Sonata Effect.
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
 
 ---
 
 #### Functionalities:
 - Research auto-update implementation.
+- Study a way to handle differences in database tables/entries between versions.
 - Modify edit fields to have immediate persistance instead of save button
+- **Exploration Tab:** Add support to 3.1 new maps.
+- Study a way to hardcode maps for exploration tab.
+- **Pity Tab:** Add run option to automatically run powershell command that fetches URL
 
 ---
 
@@ -79,11 +78,11 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
 - **Echoes:** Add dropdown menu when inserting name of echo, which allows user input for refining the dropdown entries
 - **Add Characters/Weapons:** Add dropdown menu with hardcoded characters, allow refining dropdown list as user is typing. (Still allow to add custom characters that are not matching with any of the list)
-
 - **Endgame:** Remove the ability to edit the total stars achieved manually in Toa, and in Whimpering Wastes and Troop Matrix, Remove the ability to edit the points. (not the points achieved in each stage/teams, but the total sum)
 - **Endgame:** Fix stars counting under ToA gamemode.
 - **Endgame:** Allow editing of last reset date.
 - **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
+- **Pity Tab:** Add copy button to automatically copy to clipboard the powershell command.
 
 ---
 

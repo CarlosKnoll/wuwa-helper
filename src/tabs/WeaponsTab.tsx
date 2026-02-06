@@ -210,7 +210,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="h-10 px-4 bg-cyan-500 hover:bg-cyan-600 rounded-lg font-semibold flex items-center gap-2 transition-colors text-sm whitespace-nowrap"
+          className="h-10 px-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg rounded-lg font-semibold flex items-center gap-2 transition-colors text-sm whitespace-nowrap"
         >
           <Plus size={18} />
           Add

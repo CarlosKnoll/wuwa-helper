@@ -90,27 +90,27 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         const totalPulls = existingPulls.length;
         
         if (totalPulls > 0) {
-          setImportProgress(`Clearing existing pull history... (0/${totalPulls})`);
+          setImportProgress(`Clearing existing convene history... (0/${totalPulls})`);
           
           for (let i = 0; i < existingPulls.length; i++) {
             await safeInvoke('delete_pull', { id: existingPulls[i].id });
             
             // Update progress every 10 deletes or on the last one
             if ((i + 1) % 10 === 0 || i === existingPulls.length - 1) {
-              setImportProgress(`Clearing existing pull history... (${i + 1}/${totalPulls})`);
+              setImportProgress(`Clearing existing convene history... (${i + 1}/${totalPulls})`);
             }
           }
         }
       }
 
-      setImportProgress('Fetching pull history from game servers...');
+      setImportProgress('Fetching convene history from game servers...');
 
       const result = await safeInvoke('import_pulls_from_url', {
         url: conveneUrl
       }) as string;
 
       // IMPROVED: Show success message instead of alert
-      setImportSuccess(result || 'Successfully imported pull history from game!');
+      setImportSuccess(result || 'Successfully imported convene history from game!');
       await loadPullHistory();
       if (onUpdate) onUpdate();
       setConveneUrl('');
@@ -167,20 +167,20 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
           const totalPulls = existingPulls.length;
           
           if (totalPulls > 0) {
-            setImportProgress(`Clearing existing pull history... (0/${totalPulls})`);
+            setImportProgress(`Clearing existing convene history... (0/${totalPulls})`);
             
             for (let i = 0; i < existingPulls.length; i++) {
               await safeInvoke('delete_pull', { id: existingPulls[i].id });
               
               // Update progress every 10 deletes or on the last one
               if ((i + 1) % 10 === 0 || i === existingPulls.length - 1) {
-                setImportProgress(`Clearing existing pull history... (${i + 1}/${totalPulls})`);
+                setImportProgress(`Clearing existing convene history... (${i + 1}/${totalPulls})`);
               }
             }
           }
         }
 
-        setImportProgress(`Processing ${data.pulls.length} pulls...`);
+        setImportProgress(`Processing ${data.pulls.length} convenes...`);
         const pullsByBanner = importFromWuwaTrackerFormat(data);
         
         let totalImported = 0;
@@ -206,7 +206,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             }
           }
 
-          setImportProgress('Checking existing pulls...');
+          setImportProgress('Checking existing convenes...');
           for (const key of uniqueKeys) {
             const [bannerType, itemName, pullDate] = key.split('|');
             const count = await safeInvoke('get_pull_count', {
@@ -223,7 +223,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             processedCount++;
             
             if (processedCount % 10 === 0) {
-              setImportProgress(`Importing... ${processedCount}/${totalPulls} pulls processed`);
+              setImportProgress(`Importing... ${processedCount}/${totalPulls} convenes processed`);
             }
 
             const key = `${bannerType}|${pull.item_name}|${pull.pull_date}`;
@@ -248,7 +248,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         }
 
         // IMPROVED: Show success message instead of alert
-        setImportSuccess(`Successfully imported ${totalImported} new pulls (${processedCount} total in file)`);
+        setImportSuccess(`Successfully imported ${totalImported} new convenes (${processedCount} total in file)`);
         await loadPullHistory();
         if (onUpdate) onUpdate();
         setCleanImport(false); // Reset clean import checkbox
@@ -365,33 +365,33 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
     <div className="space-y-6">
       {/* All-Time Pull Statistics - Now on Top */}
       <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
-        <h2 className="text-xl font-bold mb-4">All-Time Pull Statistics</h2>
+        <h2 className="text-xl font-bold mb-4">All-Time Convene Statistics</h2>
         <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/30 rounded-lg">
           <div className="text-center">
             <div className="text-3xl font-bold text-yellow-400">{allTimeFiveStarCount}</div>
-            <div className="text-sm text-slate-400">5-Star Pulls</div>
+            <div className="text-sm text-slate-400">5-Star Convenes</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-400">{allTimeFourStarCount}</div>
-            <div className="text-sm text-slate-400">4-Star Pulls</div>
+            <div className="text-sm text-slate-400">4-Star Convenes</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-slate-400">{allTimeThreeStarCount}</div>
-            <div className="text-sm text-slate-400">3-Star Pulls</div>
+            <div className="text-sm text-slate-400">3-Star Convenes</div>
           </div>
         </div>
         <div className="mt-4 text-center text-slate-400 text-sm">
-          Total Pulls: {pullHistory.length}
+          Total Convenes: {pullHistory.length}
         </div>
       </div>
 
       {/* Pull History Section */}
       <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Pull History</h2>
+          <h2 className="text-xl font-bold">Convenes History</h2>
           <button
             onClick={() => setShowImportExport(!showImportExport)}
-            className="px-3 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg flex items-center gap-2"
+            className="px-3 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
             Import/Export
@@ -440,7 +440,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-500 focus:ring-red-500 focus:ring-offset-slate-900 disabled:opacity-50"
               />
               <span className={cleanImport ? 'text-red-400 font-medium' : 'text-slate-400'}>
-                Clean Import (⚠️ deletes all existing pulls first)
+                Clean Import (⚠️ deletes all existing convenes first)
               </span>
             </label>
 
@@ -461,7 +461,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 <button
                   onClick={handleImportFromUrl}
                   disabled={isImportingUrl || isImportingJson}
-                  className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Import
                 </button>
@@ -500,7 +500,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
               <h3 className="text-sm font-bold mb-2">Import/Export JSON</h3>
 
               <div className="flex gap-2">
-                <label className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm cursor-pointer text-center disabled:opacity-50">
+                <label className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg text-sm cursor-pointer text-center disabled:opacity-50">
                   <Upload className="w-4 h-4 inline mr-2" />
                   Import JSON
                   <input
@@ -514,7 +514,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 <button
                   onClick={handleExportToJson}
                   disabled={isImportingUrl || isImportingJson}
-                  className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4 inline mr-2" />
                   Export JSON
@@ -534,7 +534,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 onClick={() => setSelectedBanner(banner)}
                 className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
                   selectedBanner === banner
-                    ? 'bg-cyan-500 text-white'
+                    ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg text-white'
                     : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                 }`}
               >
@@ -620,7 +620,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             </div>
 
             <div className="mt-3 pt-3 border-t border-slate-700 text-sm text-slate-400">
-              Showing {filteredPulls.length} of {pullHistory.filter(p => p.banner_type === selectedBanner).length} pulls
+              Showing {filteredPulls.length} of {pullHistory.filter(p => p.banner_type === selectedBanner).length} convenes
             </div>
           </div>
         </div>
@@ -698,7 +698,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         <div className="space-y-1 max-h-[500px] overflow-y-auto">
           {filteredPulls.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              No pulls recorded for this banner yet.
+              No convenes recorded for this banner yet.
               {(rarityFilters.length > 0 || itemTypeFilters.length > 0 || dateRange !== 'all') && (
                 <div className="mt-2 text-sm">Try adjusting your filters.</div>
               )}
