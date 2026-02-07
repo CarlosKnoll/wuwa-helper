@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Edit2, Save, Plus, Trash2, X } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Edit2, Save, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import { EchoSubstat, EchoItemProps } from '../types';
 import { safeInvoke, getRarityStars } from '../utils';
 import ConfirmDialog from './ConfirmDialog';
@@ -15,11 +15,22 @@ interface EchoStatsOptions {
   substats: StatInfo[];
 }
 
+interface EchoListItem {
+  name: string;
+  cost: number;
+  echo_class: string;
+  available_sets: string[];
+}
+
 export default function EchoItem({ echo, substats = [], onUpdate, echoImage, echoSetImage, echoMetadata, allowedEchoSets = [] }: EchoItemProps & { allowedEchoSets?: string[] }) {
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [echoStatsOptions, setEchoStatsOptions] = useState<EchoStatsOptions | null>(null);
   const [availableEchoSets, setAvailableEchoSets] = useState<string[]>([]);
+  const [availableEchoes, setAvailableEchoes] = useState<EchoListItem[]>([]);
+  const [loadingEchoes, setLoadingEchoes] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [form, setForm] = useState({
     echo_name: '',
     echo_set: '',
@@ -40,6 +51,23 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     invoke<EchoStatsOptions>('get_echo_stats_options')
       .then(options => setEchoStatsOptions(options))
       .catch(err => console.error('Failed to load echo stats options:', err));
+  }, []);
+
+  // Load available echoes on mount
+  useEffect(() => {
+    const loadEchoes = async () => {
+      try {
+        const echoes = await invoke<EchoListItem[]>('get_available_echoes');
+        setAvailableEchoes(echoes);
+      } catch (err) {
+        console.error('Failed to load echo list:', err);
+        setAvailableEchoes([]);
+      } finally {
+        setLoadingEchoes(false);
+      }
+    };
+
+    loadEchoes();
   }, []);
 
   // Load available echo sets when echo name changes
@@ -63,12 +91,82 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       main_stat_value: echo.main_stat_value || '',
       notes: echo.notes || '',
     });
+    setSearchTerm(echo.echo_name || '');
   }, [echo]);
 
   // Sync substats whenever they change
   useEffect(() => {
     setSubstatForms([...substats]);
   }, [substats]);
+
+  // Filter echoes based on search term and selected sonata effect
+  const filteredEchoes = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    let filtered = availableEchoes;
+
+    // Filter by search term
+    if (term) {
+      filtered = filtered.filter(echoItem => 
+        echoItem.name.toLowerCase().includes(term)
+      );
+    }
+
+    // Filter by selected sonata effect
+    // Priority: allowedEchoSets (from build) > form.echo_set (user selected)
+    const filterSets = allowedEchoSets.length > 0 ? allowedEchoSets : (form.echo_set ? [form.echo_set] : []);
+    
+    if (filterSets.length > 0) {
+      filtered = filtered.filter(echoItem =>
+        echoItem.available_sets.some(set => filterSets.includes(set))
+      );
+    }
+
+    return filtered;
+  }, [searchTerm, availableEchoes, form.echo_set, allowedEchoSets]);
+
+  const handleEchoSelect = (echoItem: EchoListItem) => {
+    // Update available sets for this echo first
+    invoke<string[]>('get_echo_available_sets', { echoName: echoItem.name })
+      .then(sets => {
+        setAvailableEchoSets(sets);
+        
+        // Determine which echo_set to apply
+        let newEchoSet = form.echo_set;
+        
+        // Case 1: If a sonata is already selected and the echo supports it, keep it
+        if (form.echo_set && sets.includes(form.echo_set)) {
+          newEchoSet = form.echo_set;
+        }
+        // Case 2: If allowedEchoSets exist (from build), auto-select the first matching one
+        else if (allowedEchoSets.length > 0) {
+          const matchingSet = sets.find(set => allowedEchoSets.includes(set));
+          newEchoSet = matchingSet || '';
+        }
+        // Case 3: If current echo_set is not supported, clear it
+        else if (form.echo_set && !sets.includes(form.echo_set)) {
+          newEchoSet = '';
+        }
+        
+        // Update form with new values
+        setForm(prev => ({ 
+          ...prev, 
+          echo_name: echoItem.name,
+          cost: echoItem.cost,
+          echo_set: newEchoSet,
+        }));
+      })
+      .catch(err => console.error('Failed to load available sonata effects:', err));
+    
+    setSearchTerm(echoItem.name);
+    setShowDropdown(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setForm({ ...form, echo_name: value });
+    setSearchTerm(value);
+    setShowDropdown(true);
+  };
 
   const handleSave = async () => {
     try {
@@ -133,6 +231,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       main_stat_value: echo.main_stat_value || '',
       notes: echo.notes || '',
     });
+    setSearchTerm(echo.echo_name || '');
     setSubstatForms([...substats]);
     setNewSubstats([]);
     setDeletedSubstatIds([]);
@@ -240,16 +339,18 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       {/* Underglow effect */}
       <div className="absolute inset-0 -z-10 bg-slate-200/10 rounded-lg blur-xl"></div>
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={deleteConfirm}
-        title="Delete Echo"
-        message={`Are you sure you want to delete "${form.echo_name}"? This will also delete all substats. This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteConfirm(false)}
-        variant="danger"
-      />
+      {deleteConfirm && (
+        <ConfirmDialog
+          isOpen={deleteConfirm}
+          title="Delete Echo"
+          message={`Are you sure you want to delete "${form.echo_name || 'this echo'}"? This will also delete all substats. This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteConfirm(false)}
+          variant="danger"
+        />
+      )}
 
       {/* Echo Header */}
       <div className="p-3">
@@ -257,7 +358,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
           <div className="flex-1 flex items-center gap-3">
             {/* Echo Image on the left */}
             {echoImage && !editing && (
-              <div className="w-12 h-12 rounded-lg bg-slate-900 border-2 border-cyan-500/50 overflow-hidden flex-shrink-0">
+              <div className="w-12 h-12 rounded-lg bg-slate-900 border-2 border-white-500/50 overflow-hidden flex-shrink-0">
                 <img
                   src={echoImage}
                   alt={form.echo_name}
@@ -269,13 +370,80 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
             {/* Echo Name */}
             <div className="flex-1 min-w-0">
               {editing ? (
-                <input
-                  type="text"
-                  value={form.echo_name}
-                  onChange={e => setForm({ ...form, echo_name: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm font-medium focus:outline-none focus:border-cyan-500 mb-2"
-                  placeholder="Echo name"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={handleInputChange}
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => {
+                      // Delay hiding dropdown to allow click events to fire
+                      setTimeout(() => setShowDropdown(false), 200);
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 pr-8 text-sm font-medium focus:outline-none focus:border-white-500 mb-2"
+                    placeholder={loadingEchoes ? "Loading echoes..." : "Echo name"}
+                    disabled={loadingEchoes}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors -mt-1"
+                    disabled={loadingEchoes}
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                  
+                  {/* Dropdown */}
+                  {showDropdown && !loadingEchoes && (
+                    <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto -translate-y-2">
+                      {filteredEchoes.length > 0 ? (
+                        filteredEchoes.map((echoItem, index) => {
+                          // Check if this echo is available in multiple sets from the filter criteria
+                          const filterSets = allowedEchoSets.length > 0 ? allowedEchoSets : (form.echo_set ? [form.echo_set] : []);
+                          const matchingSets = filterSets.length > 0 
+                            ? echoItem.available_sets.filter(set => filterSets.includes(set))
+                            : echoItem.available_sets;
+                          const isMultiSet = matchingSets.length > 1;
+                          
+                          return (
+                            <button
+                              key={`${echoItem.name}-${index}`}
+                              type="button"
+                              onMouseDown={(e) => {
+                                // Use onMouseDown instead of onClick to fire before onBlur
+                                e.preventDefault();
+                                handleEchoSelect(echoItem);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-slate-700 transition-colors text-white flex items-center justify-between text-xs"
+                            >
+                              <span className="flex items-center gap-1">
+                                {echoItem.name}
+                                {isMultiSet && (
+                                  <span className="text-[10px] text-yellow-400 font-semibold" title={`Available in: ${matchingSets.join(', ')}`}>
+                                    [{matchingSets.length} sets]
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-slate-400">
+                                {echoItem.cost}-Cost • {echoItem.echo_class}
+                              </span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-3 py-2 text-slate-400 text-xs">
+                          {availableEchoes.length === 0 
+                            ? "No echoes loaded. You can still add a custom echo name."
+                            : form.echo_set
+                              ? `No echoes found matching "${searchTerm}" for the selected Sonata Effect "${form.echo_set}".`
+                              : `No matches found. You can still add "${form.echo_name}" as a custom echo.`
+                          }
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="font-semibold text-white text-base">{form.echo_name}</div>
@@ -371,7 +539,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                   type="number"
                   value={form.cost}
                   onChange={e => setForm({ ...form, cost: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                   min="1"
                   max="4"
                 />
@@ -382,7 +550,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                   type="number"
                   value={form.rarity}
                   onChange={e => setForm({ ...form, rarity: parseInt(e.target.value) || 5 })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                   min="2"
                   max="5"
                 />
@@ -393,7 +561,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                   type="number"
                   value={form.level}
                   onChange={e => setForm({ ...form, level: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                   min="0"
                   max="25"
                 />
@@ -407,7 +575,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                 <select
                   value={form.echo_set}
                   onChange={e => setForm({ ...form, echo_set: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                 >
                   <option value="">Select sonata effect...</option>
                   {availableEchoSets
@@ -440,7 +608,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                 <select
                   value={form.main_stat}
                   onChange={e => setForm({ ...form, main_stat: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                   disabled={!echoStatsOptions || !form.cost}
                 >
                   <option value="">Select main stat...</option>
@@ -460,7 +628,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                   value={stripPercentage(form.main_stat_value)}
                   onChange={e => handleMainStatValueChange(e.target.value)}
                   onBlur={handleMainStatValueBlur}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                   placeholder={isPercentageStat(form.main_stat) ? "22.8" : "e.g., 320"}
                 />
               </div>
@@ -468,7 +636,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
             <textarea
               value={form.notes}
               onChange={e => setForm({ ...form, notes: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
               placeholder="Echo notes..."
               rows={2}
             />
@@ -506,7 +674,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                           setSubstatForms(newSubstats);
                         }
                       }}
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                       disabled={!echoStatsOptions}
                     >
                       <option value="">Select stat...</option>
@@ -539,7 +707,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                           setSubstatForms(newSubstats);
                         }
                       }}
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500"
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                       placeholder={isPercentageStat(sub.stat_name) ? "6.0" : "50"}
                     />
                     <button
@@ -561,7 +729,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                         updated[idx] = { ...sub, stat_name: e.target.value };
                         setNewSubstats(updated);
                       }}
-                      className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
+                      className="flex-1 bg-slate-800 border border-yellow-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                       disabled={!echoStatsOptions}
                     >
                       <option value="">Select stat...</option>
@@ -590,7 +758,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                           setNewSubstats(updated);
                         }
                       }}
-                      className="flex-1 bg-slate-800 border border-green-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500"
+                      className="flex-1 bg-slate-800 border border-yellow-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
                       placeholder={isPercentageStat(sub.stat_name) ? "6.0" : "50"}
                     />
                     <button
@@ -605,7 +773,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                 <button
                   onClick={addNewSubstat}
                   disabled={totalSubstats >= 5}
-                  className="w-full py-1 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded text-xs text-cyan-400 disabled:text-slate-500 flex items-center justify-center gap-1"
+                  className="w-full py-1 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded text-xs text-yellow-400 disabled:text-slate-500 flex items-center justify-center gap-1"
                   title={totalSubstats >= 5 ? "Maximum 5 substats per echo" : "Add substat"}
                 >
                   <Plus className="w-3 h-3" />

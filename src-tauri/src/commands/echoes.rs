@@ -49,6 +49,14 @@ pub struct EchoMetadataResponse {
     pub cooldown: u8,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EchoListItem {
+    pub name: String,
+    pub cost: u8,
+    pub echo_class: String,
+    pub available_sets: Vec<String>,
+}
+
 // ============================================
 // Echo Set Commands (Updated with piece count info)
 // ============================================
@@ -466,4 +474,44 @@ pub fn get_echo_available_sets(echo_name: String) -> Result<Vec<String>, String>
     }
     
     Ok(vec![])
+}
+
+/// Get all available echoes for the echo name dropdown
+/// Returns a list of echo names with their cost, class, and available sets
+#[tauri::command]
+pub fn get_available_echoes() -> Result<Vec<EchoListItem>, String> {
+    use crate::assets::mappings::echoes::get_echo_mappings;
+    
+    let mappings = get_echo_mappings();
+    
+    let mut echoes: Vec<EchoListItem> = mappings
+        .iter()
+        .map(|(_filename, metadata)| {
+            // Parse available sets from the element field (comma-separated)
+            let available_sets: Vec<String> = metadata
+                .element
+                .as_ref()
+                .map(|sets_str| {
+                    sets_str
+                        .split(", ")
+                        .map(|s| s.trim().to_string())
+                        .collect()
+                })
+                .unwrap_or_default();
+            
+            EchoListItem {
+                name: metadata.display_name.clone(),
+                cost: metadata.cost.unwrap_or(0),
+                echo_class: metadata.echo_class.clone().unwrap_or_default(),
+                available_sets,
+            }
+        })
+        .collect();
+    
+    // Sort by cost (descending) then by name
+    echoes.sort_by(|a, b| {
+        b.cost.cmp(&a.cost).then_with(|| a.name.cmp(&b.name))
+    });
+    
+    Ok(echoes)
 }

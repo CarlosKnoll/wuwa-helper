@@ -1,17 +1,22 @@
-import { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { X, Plus, ChevronDown } from 'lucide-react';
 import { AddCharacterModalProps } from '../types';
 import { safeInvoke, getBuildStatusOptions } from '../utils';
 
 const elements = ['Spectro', 'Havoc', 'Aero', 'Electro', 'Fusion', 'Glacio'];
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
 
+interface CharacterListItem {
+  name: string;
+  rarity: number;
+  element: string;
+}
+
 export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterModalProps) {
   const buildStatusOptions = getBuildStatusOptions();
   
   const [form, setForm] = useState({
     character_name: '',
-    variant: '',
     resonance_date: new Date().toISOString().split('T')[0],
     rarity: 5,
     element: 'Spectro',
@@ -24,6 +29,49 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
   });
 
   const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [availableCharacters, setAvailableCharacters] = useState<CharacterListItem[]>([]);
+  const [loadingCharacters, setLoadingCharacters] = useState(true);
+
+  // Load available characters from backend on mount
+  useEffect(() => {
+    const loadCharacters = async () => {
+      try {
+        const chars = await safeInvoke('get_available_characters') as CharacterListItem[];
+        setAvailableCharacters(chars);
+      } catch (err) {
+        console.error('Failed to load character list:', err);
+        // Fallback to empty array - user can still type custom names
+        setAvailableCharacters([]);
+      } finally {
+        setLoadingCharacters(false);
+      }
+    };
+
+    loadCharacters();
+  }, []);
+
+  // Filter characters based on user input
+  const filteredCharacters = useMemo(() => {
+    if (!form.character_name.trim()) {
+      return availableCharacters;
+    }
+    const searchTerm = form.character_name.toLowerCase();
+    return availableCharacters.filter(char => 
+      char.name.toLowerCase().includes(searchTerm)
+    );
+  }, [form.character_name, availableCharacters]);
+
+  const handleCharacterSelect = (character: CharacterListItem) => {
+    setForm({ 
+      ...form, 
+      character_name: character.name,
+      rarity: character.rarity,
+      element: character.element !== 'Unknown' ? character.element : form.element,
+    });
+    setShowDropdown(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +94,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
       setLoading(true);
       await safeInvoke('add_character', {
         characterName: form.character_name,
-        variant: form.variant || null,
+        variant: null, // Always null now - variant is handled via element prefix in display
         resonanceDate: form.resonance_date,
         rarity: form.rarity,
         element: form.element,
@@ -70,7 +118,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 rounded-xl border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex justify-between items-center">
+        <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex justify-between items-center z-10">
           <div className="flex items-center gap-2">
             <Plus size={24} className="text-yellow-400" />
             <h2 className="text-2xl font-bold text-white">Add New Character</h2>
@@ -83,27 +131,69 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+            {/* Character Name with Dropdown */}
+            <div className="col-span-2 relative">
               <label className="text-sm text-slate-400">Character Name *</label>
-              <input
-                type="text"
-                value={form.character_name}
-                onChange={e => setForm({ ...form, character_name: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-                placeholder="e.g., Jiyan"
-                required
-              />
-            </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={form.character_name}
+                  onChange={e => {
+                    setForm({ ...form, character_name: e.target.value });
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => {
+                    setInputFocused(true);
+                    setShowDropdown(true);
+                  }}
+                  onBlur={() => {
+                    setInputFocused(false);
+                    // Delay hiding dropdown to allow click events to fire
+                    setTimeout(() => setShowDropdown(false), 200);
+                  }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 pr-10 mt-1 focus:outline-none focus:border-cyan-500"
+                  placeholder={loadingCharacters ? "Loading characters..." : "Select or type character name..."}
+                  required
+                  autoComplete="off"
+                  disabled={loadingCharacters}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors mt-0.5"
+                  disabled={loadingCharacters}
+                >
+                  <ChevronDown size={20} />
+                </button>
+              </div>
 
-            <div>
-              <label className="text-sm text-slate-400">Variant</label>
-              <input
-                type="text"
-                value={form.variant}
-                onChange={e => setForm({ ...form, variant: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
-                placeholder="Optional (for Rover)"
-              />
+              {/* Dropdown */}
+              {showDropdown && !loadingCharacters && (
+                <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {filteredCharacters.length > 0 ? (
+                    filteredCharacters.map((char) => (
+                      <button
+                        key={char.name}
+                        type="button"
+                        onClick={() => handleCharacterSelect(char)}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors text-white flex items-center justify-between"
+                      >
+                        <span>{char.name}</span>
+                        <span className="text-xs text-slate-400">
+                          {char.rarity}★ {char.element !== 'Unknown' ? char.element : ''}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-slate-400 text-sm">
+                      {availableCharacters.length === 0 
+                        ? "No characters loaded. You can still add a custom character."
+                        : `No matches found. You can still add "${form.character_name}" as a custom character.`
+                      }
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -219,7 +309,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || loadingCharacters}
               className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 disabled:bg-slate-700 rounded-lg px-4 py-2 font-semibold transition-colors"
             >
               {loading ? 'Adding...' : 'Add Character'}

@@ -1,5 +1,58 @@
 use crate::db::{init_db, Character, CharacterTalents, CharacterWeapon};
 use rusqlite::{OptionalExtension, Result};
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+pub struct CharacterListItem {
+    pub name: String,
+    pub rarity: u8,
+    pub element: String,
+}
+
+/// Get list of all available characters from backend mappings
+/// Excludes characters that have already been added to the database
+/// Exception: Rover is always shown (users can have multiple Rover variants)
+#[tauri::command]
+pub fn get_available_characters(app: tauri::AppHandle) -> Result<Vec<CharacterListItem>, String> {
+    let conn = init_db(&app)?;
+    let mappings = crate::assets::mappings::characters::get_character_mappings();
+    
+    // Get all character names already in the database
+    let mut stmt = conn
+        .prepare("SELECT character_name FROM characters")
+        .map_err(|e| e.to_string())?;
+    
+    let existing_names: std::collections::HashSet<String> = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<_, _>>()
+        .map_err(|e| e.to_string())?;
+    
+    let mut characters: Vec<CharacterListItem> = mappings
+        .values()
+        .filter(|meta| {
+            // Always show Rover (users can have multiple variants)
+            if meta.display_name == "Rover" {
+                return true;
+            }
+            // Otherwise, exclude if already added
+            !existing_names.contains(&meta.display_name)
+        })
+        .map(|meta| CharacterListItem {
+            name: meta.display_name.clone(),
+            rarity: meta.rarity.unwrap_or(4),
+            element: meta.element.clone().unwrap_or_else(|| "Unknown".to_string()),
+        })
+        .collect();
+    
+    // Sort by rarity (5-star first), then by name
+    characters.sort_by(|a, b| {
+        b.rarity.cmp(&a.rarity)
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    
+    Ok(characters)
+}
 
 #[tauri::command]
 pub fn get_all_characters(app: tauri::AppHandle) -> Result<Vec<Character>, String> {

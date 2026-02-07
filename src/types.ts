@@ -208,6 +208,13 @@ export interface EchoSubstat {
   stat_value: string;
 }
 
+export interface EchoListItem {
+  name: string;
+  cost: number;
+  echo_class: string;
+  available_sets: string[];
+}
+
 export interface EchoItemProps {
   echo: Echo;
   substats: EchoSubstat[];

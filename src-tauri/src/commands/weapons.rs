@@ -1,5 +1,43 @@
 use crate::db::{init_db, Weapon};
 use rusqlite::Result;
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+pub struct WeaponListItem {
+    pub name: String,
+    pub weapon_type: String,
+    pub rarity: u8,
+}
+
+/// Get list of all available weapons from backend mappings
+#[tauri::command]
+pub fn get_available_weapons(app: tauri::AppHandle) -> Result<Vec<WeaponListItem>, String> {
+    let mappings = crate::assets::mappings::weapons::get_weapon_mappings();
+    
+    // Map has dual indexing (filename + display_name), so deduplicate by display_name
+    let mut seen_names = std::collections::HashSet::new();
+    
+    let mut weapons: Vec<WeaponListItem> = mappings
+        .values()
+        .filter(|meta| {
+            meta.asset_type == "weapon" && seen_names.insert(meta.display_name.clone())
+        })
+        .map(|meta| WeaponListItem {
+            name: meta.display_name.clone(),
+            weapon_type: meta.weapon_type.clone().unwrap_or_else(|| "Unknown".to_string()),
+            rarity: meta.rarity.unwrap_or(3),
+        })
+        .collect();
+    
+    // Sort by rarity (5-star first), then weapon type, then name
+    weapons.sort_by(|a, b| {
+        b.rarity.cmp(&a.rarity)
+            .then_with(|| a.weapon_type.cmp(&b.weapon_type))
+            .then_with(|| a.name.cmp(&b.name))
+    });
+    
+    Ok(weapons)
+}
 
 #[tauri::command]
 pub fn get_all_weapons(app: tauri::AppHandle) -> Result<Vec<Weapon>, String> {

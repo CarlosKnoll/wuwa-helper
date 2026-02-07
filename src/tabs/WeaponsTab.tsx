@@ -611,7 +611,7 @@ function WeaponCard({
             </div>
             <div className="col-span-2 flex gap-1.5">
               <span className="text-slate-400">Equipped On</span>
-              <span className={safeForm.equipped_on !== 'Nobody' ? 'text-cyan-400' : 'text-slate-500'}>
+              <span className={safeForm.equipped_on !== 'Nobody' ? 'text-yellow-400' : 'text-slate-500'}>
                 {safeForm.equipped_on}
               </span>
             </div>
