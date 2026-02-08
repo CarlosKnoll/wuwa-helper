@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { WuwaTrackerPull, PullHistory, WuwaTrackerExport, EchoSetData } from './types';
+import { WuwaTrackerPull, PullHistory, WuwaTrackerExport, EchoSetData, EchoBuild } from './types';
 
 export async function safeInvoke(cmd: string, args?: Record<string, any>) {
   try {

@@ -73,10 +73,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 - Modify edit fields to have immediate persistance instead of save button.
 
-- Migrate database only to hardcode regions and maps for exploration tab.
-
-
-- **Pity Tab:** Add button/icon to automatically run the powershell command that fetches URL and copy button to automatically copy to clipboard the powershell command.
+- Migrate database entries to hardcode regions and maps for exploration tab.
 
 - **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
 
@@ -97,8 +94,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
 
 - **Endgame:** Move last reset date editing to parent gamemodes card
-
-- **Pity Tab:** Fix `Export JSON` not allowing selection of save directory.
 
 ---
 

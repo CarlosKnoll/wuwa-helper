@@ -102,15 +102,16 @@ pub fn check_pull_exists(
     banner_type: String,
     item_name: String,
     pull_date: String,
+    group_order: Option<i64>,
 ) -> Result<bool, String> {
     let conn = init_db(&app)?;
 
     let exists: bool = conn.query_row(
         "SELECT EXISTS(
             SELECT 1 FROM pull_history
-            WHERE banner_type = ? AND item_name = ? AND pull_date = ?
+            WHERE banner_type = ? AND item_name = ? AND pull_date = ? AND group_order = ?
         )",
-        params![banner_type, item_name, pull_date],
+        params![banner_type, item_name, pull_date, group_order],
         |row| row.get(0),
     ).map_err(|e| e.to_string())?;
 
