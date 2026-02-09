@@ -218,10 +218,10 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
         {/* Tower of Adversity Card */}
         <div
           onClick={() => handleModeClick('tower')}
-          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden cursor-pointer ${
-            selectedMode === 'tower' 
-              ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' 
-              : 'border-slate-800 hover:border-cyan-500/50'
+          className={`bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 transition-all relative overflow-hidden cursor-pointer shadow-[0_0_12px_rgba(226,232,240,0.08)] ${
+            selectedMode === 'tower'
+              ? 'border-white shadow-lg shadow-white/20'
+              : 'border-white/30 hover:border-white/60'
           }`}
         >
           <div className="relative z-10">
@@ -256,7 +256,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300"
+                      className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all duration-300"
                       style={{ width: `${towerCompletion.percentage}%` }}
                     />
                   </div>
@@ -272,10 +272,10 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
         {/* Whimpering Wastes Card */}
         <div
           onClick={() => handleModeClick('wastes')}
-          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden cursor-pointer ${
-            selectedMode === 'wastes' 
-              ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
-              : 'border-slate-800 hover:border-purple-500/50'
+          className={`bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 transition-all relative overflow-hidden cursor-pointer shadow-[0_0_12px_rgba(226,232,240,0.08)] ${
+            selectedMode === 'wastes'
+              ? 'border-white shadow-lg shadow-white/20'
+              : 'border-white/30 hover:border-white/60'
           }`}
         >
           <div className="relative z-10">
@@ -310,7 +310,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300"
+                      className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all duration-300"
                       style={{ width: `${wastesCompletion.percentage}%` }}
                     />
                   </div>
@@ -326,10 +326,10 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
         {/* Troop Matrix Card */}
         <div
           onClick={() => handleModeClick('matrix')}
-          className={`bg-slate-900/50 rounded-xl p-6 border transition-all relative overflow-hidden cursor-pointer ${
-            selectedMode === 'matrix' 
-              ? 'border-orange-500 shadow-lg shadow-orange-500/20' 
-              : 'border-slate-800 hover:border-orange-500/50'
+          className={`bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 transition-all relative overflow-hidden cursor-pointer shadow-[0_0_12px_rgba(226,232,240,0.08)] ${
+            selectedMode === 'matrix'
+              ? 'border-white shadow-lg shadow-white/20'
+              : 'border-white/30 hover:border-white/60'
           }`}
         >
           <div className="relative z-10">
@@ -364,7 +364,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-orange-500 to-red-500 h-full transition-all duration-300"
+                      className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all duration-300"
                       style={{ width: `${matrixCompletion.percentage}%` }}
                     />
                   </div>

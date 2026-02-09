@@ -196,7 +196,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
 
       {/* Search and Add */}
       <div className="flex gap-3 items-center">
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
+        <div className="flex-1 p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
@@ -204,7 +204,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
               placeholder="Search weapons..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:border-cyan-500"
+              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-white/[0.4] rounded-lg focus:outline-none focus:border-yellow-400"
             />
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+      <div className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Weapon Type Filter */}
           <div>
@@ -226,7 +226,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
             <select
               value={filterWeaponType}
               onChange={(e) => setFilterWeaponType(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-colors"
+              className="w-full bg-slate-800 border border-white/[0.4] rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 transition-colors"
             >
               <option value="all">All Types</option>
               {weaponTypes.map(type => (
@@ -241,7 +241,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
             <select
               value={filterRarity}
               onChange={(e) => setFilterRarity(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-colors"
+              className="w-full bg-slate-800 border border-white/[0.4] rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 transition-colors"
             >
               <option value="all">All Rarities</option>
               <option value="5">5★ Legendary</option>
@@ -256,7 +256,7 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500 transition-colors"
+              className="w-full bg-slate-800 border border-white/[0.4] rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 transition-colors"
             >
               <option value="all">All Categories</option>
               <option value="building">Building</option>
@@ -459,8 +459,27 @@ function WeaponCard({
     }
   };
 
+  // Get brighter hover border color based on rarity
+  const getRarityFocusColor = (rarity: number): string => {
+    switch (rarity) {
+      case 5:
+        return 'focus:border-yellow-400';
+      case 4:
+        return 'focus:border-purple-400';
+      case 3:
+        return 'focus:border-blue-400';
+      case 2:
+        return 'focus:border-green-400';
+      case 1:
+        return 'focus:border-slate-400';
+      default:
+        return 'focus:border-slate-600';
+    }
+  };
+
   const rarityBorderClass = getRarityBorderColor(weapon.rarity);
   const rarityHoverClass = getRarityHoverColor(weapon.rarity);
+  const rarityFocusClass = getRarityFocusColor(weapon.rarity);
 
   return (
     <div
@@ -532,7 +551,7 @@ function WeaponCard({
                 type="number"
                 value={safeForm.level}
                 onChange={(e) => onFormChange({ level: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                className={`w-full bg-slate-800 border ${rarityBorderClass} rounded px-2 py-1 focus:outline-none ${rarityFocusClass}`}
                 min="1"
                 max="90"
               />
@@ -543,7 +562,7 @@ function WeaponCard({
                 type="number"
                 value={safeForm.rank}
                 onChange={(e) => onFormChange({ rank: parseInt(e.target.value) || 1 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                className={`w-full bg-slate-800 border ${rarityBorderClass} rounded px-2 py-1 focus:outline-none ${rarityFocusClass}`}
                 min="1"
                 max="5"
               />
@@ -553,7 +572,7 @@ function WeaponCard({
               <select
                 value={safeForm.rarity}
                 onChange={(e) => onFormChange({ rarity: parseInt(e.target.value) })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                className={`w-full bg-slate-800 border ${rarityBorderClass} rounded px-2 py-1 focus:outline-none ${rarityFocusClass}`}
               >
                 <option value={5}>5 Star</option>
                 <option value={4}>4 Star</option>
@@ -568,7 +587,7 @@ function WeaponCard({
                 type="text"
                 value={safeForm.equipped_on}
                 onChange={(e) => onEquippedOnChange(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                className={`w-full bg-slate-800 border ${rarityBorderClass} rounded px-2 py-1 focus:outline-none ${rarityFocusClass}`}
               />
               {equipWarning && (
                 <div className="mt-1 bg-orange-500/20 border border-orange-500/50 rounded p-1.5 text-[10px] text-orange-300 flex items-start gap-1">
@@ -582,7 +601,7 @@ function WeaponCard({
               <select
                 value={safeForm.category}
                 onChange={(e) => onFormChange({ category: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                className={`w-full bg-slate-800 border ${rarityBorderClass} rounded px-2 py-1 focus:outline-none ${rarityFocusClass}`}
               >
                 <option value="building">Building</option>
                 <option value="leveled">Leveled</option>
@@ -593,7 +612,7 @@ function WeaponCard({
               <textarea
                 value={safeForm.notes}
                 onChange={(e) => onFormChange({ notes: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                className={`w-full bg-slate-800 border ${rarityBorderClass} rounded px-2 py-1 focus:outline-none ${rarityFocusClass}`}
                 placeholder="Notes..."
                 rows={2}
               />

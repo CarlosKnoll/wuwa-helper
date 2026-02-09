@@ -13,7 +13,7 @@ fn get_character_cards() -> Vec<(&'static str, &'static str, u8, &'static str, V
         // 5-STAR LIMITED CHARACTERS
         // Note: Some use numeric IDs (44.webp, 45.webp, etc.)
         // Others use descriptive names (card_cam.webp, jiyan_card.webp, etc.)
-        ("44_card.webp", "Sigrika", 5, "Unknown", vec!["5star", "limited", "unknown"]),
+        ("44_card.webp", "Sigrika", 5, "Aero", vec!["5star", "limited", "unknown"]),
         ("45_card.webp", "Luuk Herssen", 5, "Spectro", vec!["5star", "limited", "dps"]),
         ("46_card.webp", "Mornye", 5, "Fusion", vec!["5star", "limited", "healer"]),
         ("47_card.webp", "Lucilla", 5, "Unknown", vec!["5star", "limited", "unknown"]),

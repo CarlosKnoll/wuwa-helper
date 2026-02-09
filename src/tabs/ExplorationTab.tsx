@@ -56,7 +56,11 @@ export default function ExplorationTab({ regions, onUpdate }: { regions: Explora
           <button
             key={region.id}
             onClick={() => setSelectedRegion(selectedRegion?.id === region.id ? null : region)}
-            className={`bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 transition-all text-left shadow-[0_0_12px_rgba(226,232,240,0.08)] ${selectedRegion?.id === region.id ? 'border-yellow-400 shadow-lg shadow-yellow-500/20' : 'border-slate-800 hover:border-yellow-500/50'}`}
+            className={`bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 transition-all text-left shadow-[0_0_12px_rgba(226,232,240,0.08)] ${
+              selectedRegion?.id === region.id
+                ? 'border-white shadow-lg shadow-white/20'
+                : 'border-white/30 hover:border-white/60'
+            }`}
           >
             <Map className="w-8 h-8 text-yellow-400 mb-3" />
             <h3 className="font-bold text-lg">{region.region_name}</h3>
@@ -66,7 +70,7 @@ export default function ExplorationTab({ regions, onUpdate }: { regions: Explora
       </div>
 
       {selectedRegion && maps.length > 0 && (
-        <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
+        <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
           <h3 className="text-xl font-bold mb-4">{selectedRegion.region_name} - Maps</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {maps.map((map) => {
@@ -74,17 +78,17 @@ export default function ExplorationTab({ regions, onUpdate }: { regions: Explora
               const form = mapForms[map.id] || { exploration_percent: map.exploration_percent, notes: map.notes || '' };
 
               return (
-                <div key={map.id} className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border-2 border-slate-200/15 shadow-[0_0_10px_rgba(226,232,240,0.06)]">
+                <div key={map.id} className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border-2 border-white/20 shadow-[0_0_10px_rgba(226,232,240,0.06)]">
                   <div className="flex items-start justify-between mb-3">
                     <h4 className="font-bold">{map.map_name}</h4>
                     <div className="flex gap-2">
                       {!isEditing ? (
                         <button onClick={() => setEditingMap(map.id)} className="p-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded">
-                          <Edit2 className="w-3 h-3 text-yellow-400" />
+                          <Edit2 className="w-3 h-3 text-white-400" />
                         </button>
                       ) : (
                         <button onClick={() => handleSaveMap(map)} className="p-1 bg-green-500 hover:bg-green-600 rounded">
-                          <Check className="w-3 h-3 text-yellow-400" />
+                          <Check className="w-3 h-3 text-white-400" />
                         </button>
                       )}
                     </div>

@@ -220,7 +220,7 @@ export default function WhimperingWastesDetailsView({
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Zap className="w-6 h-6 text-purple-400" />
@@ -248,16 +248,6 @@ export default function WhimperingWastesDetailsView({
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
                 />
               </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Chasm Highest Stage</label>
-                <input
-                  type="number"
-                  value={editChasmStage}
-                  onChange={(e) => setEditChasmStage(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                />
-              </div>
             </div>
             <div>
               <label className="text-sm text-slate-400 block mb-1">Notes</label>
@@ -279,7 +269,7 @@ export default function WhimperingWastesDetailsView({
               <button
                 onClick={saveChanges}
                 disabled={saving}
-                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded flex items-center gap-2"
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded flex items-center gap-2"
               >
                 <Save className="w-4 h-4" />
                 {saving ? 'Saving...' : 'Save'}
@@ -290,12 +280,8 @@ export default function WhimperingWastesDetailsView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Respawning Waters: Chasm */}
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-cyan-400 mb-3">Respawning Waters: Chasm</h4>
+              <h4 className="text-lg font-bold text-yellow-400 mb-3">Respawning Waters: Chasm</h4>
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Highest Stage:</span>
-                  <span className="font-semibold">{wastesInfo.chasm_highest_stage}</span>
-                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Points:</span>
                   <span className="font-semibold">{wastesInfo.chasm_total_points.toLocaleString()}</span>
@@ -309,7 +295,7 @@ export default function WhimperingWastesDetailsView({
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-cyan-500 h-full transition-all"
+                    className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all"
                     style={{ width: `${Math.min((wastesInfo.chasm_astrite / 625) * 100, 100)}%` }}
                   />
                 </div>
@@ -318,7 +304,7 @@ export default function WhimperingWastesDetailsView({
 
             {/* Respawning Waters: Torrents */}
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-blue-400 mb-3">Respawning Waters: Torrents</h4>
+              <h4 className="text-lg font-bold text-yellow-400 mb-3">Respawning Waters: Torrents</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Points:</span>
@@ -333,7 +319,7 @@ export default function WhimperingWastesDetailsView({
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-blue-500 h-full transition-all"
+                    className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all"
                     style={{ width: `${Math.min((wastesInfo.torrents_astrite / 175) * 100, 100)}%` }}
                   />
                 </div>
@@ -351,11 +337,11 @@ export default function WhimperingWastesDetailsView({
       </div>
 
       {/* Respawning Waters: Torrents Teams */}
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
         <div className="flex items-center justify-between mb-4">
           <button 
             onClick={() => setTorrentsCollapsed(!torrentsCollapsed)}
-            className="flex items-center gap-2 text-lg font-bold text-blue-400 hover:text-blue-300 transition-colors"
+            className="flex items-center gap-2 text-lg font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
           >
             <span>Respawning Waters: Torrents Teams</span>
             <span className="text-sm">{torrentsCollapsed ? '▶' : '▼'}</span>
@@ -363,7 +349,7 @@ export default function WhimperingWastesDetailsView({
           {!torrentsCollapsed && canAddTeam && (
             <button
               onClick={startAddStage}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-sm"
             >
               <Plus className="w-4 h-4" />
               Add Team
@@ -378,7 +364,7 @@ export default function WhimperingWastesDetailsView({
                 {addingStage && (
                   <div className="bg-slate-700/50 rounded-lg p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-blue-400">New Team</p>
+                      <p className="text-sm font-semibold text-yellow-400">New Team</p>
                     </div>
                     <div>
                       <label className="text-xs text-slate-400 block mb-1">Side (1 or 2)</label>
@@ -386,7 +372,7 @@ export default function WhimperingWastesDetailsView({
                         type="number"
                         value={newStageNumber}
                         onChange={(e) => setNewStageNumber(parseInt(e.target.value) || 1)}
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                         min="1"
                         max="2"
                       />
@@ -396,21 +382,21 @@ export default function WhimperingWastesDetailsView({
                         type="text"
                         value={editChar1}
                         onChange={(e) => setEditChar1(e.target.value)}
-                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                         placeholder="Char 1"
                       />
                       <input
                         type="text"
                         value={editChar2}
                         onChange={(e) => setEditChar2(e.target.value)}
-                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                         placeholder="Char 2"
                       />
                       <input
                         type="text"
                         value={editChar3}
                         onChange={(e) => setEditChar3(e.target.value)}
-                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                         placeholder="Char 3"
                       />
                     </div>
@@ -421,7 +407,7 @@ export default function WhimperingWastesDetailsView({
                           type="text"
                           value={editToken}
                           onChange={(e) => setEditToken(e.target.value)}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                         />
                       </div>
                       <div>
@@ -430,7 +416,7 @@ export default function WhimperingWastesDetailsView({
                           type="number"
                           value={editPoints}
                           onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                         />
                       </div>
                     </div>
@@ -445,7 +431,7 @@ export default function WhimperingWastesDetailsView({
                       <button
                         onClick={addNewStage}
                         disabled={saving}
-                        className="px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs flex items-center gap-1"
+                        className="px-2 py-1 bg-green-500/[0.5] hover:bg-green-500/[0.65] rounded text-xs flex items-center gap-1"
                       >
                         <Save className="w-3 h-3" />
                         Add
@@ -461,27 +447,27 @@ export default function WhimperingWastesDetailsView({
                     <div key={stage.id} className="bg-slate-700/50 rounded-lg p-3 space-y-2">
                       {isEditingThis ? (
                         <>
-                          <p className="text-sm font-semibold text-blue-400">Side {stage.stage_number}</p>
+                          <p className="text-sm font-semibold text-yellow-400">Side {stage.stage_number}</p>
                           <div className="grid grid-cols-3 gap-2">
                             <input
                               type="text"
                               value={editChar1}
                               onChange={(e) => setEditChar1(e.target.value)}
-                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                               placeholder="Char 1"
                             />
                             <input
                               type="text"
                               value={editChar2}
                               onChange={(e) => setEditChar2(e.target.value)}
-                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                               placeholder="Char 2"
                             />
                             <input
                               type="text"
                               value={editChar3}
                               onChange={(e) => setEditChar3(e.target.value)}
-                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                               placeholder="Char 3"
                             />
                           </div>
@@ -492,7 +478,7 @@ export default function WhimperingWastesDetailsView({
                                 type="text"
                                 value={editToken}
                                 onChange={(e) => setEditToken(e.target.value)}
-                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                               />
                             </div>
                             <div>
@@ -501,7 +487,7 @@ export default function WhimperingWastesDetailsView({
                                 type="number"
                                 value={editPoints}
                                 onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                               />
                             </div>
                           </div>
@@ -516,7 +502,7 @@ export default function WhimperingWastesDetailsView({
                             <button
                               onClick={() => saveStage(stage.id)}
                               disabled={saving}
-                              className="px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded text-xs flex items-center gap-1"
+                              className="px-2 py-1 bg-green-500/[0.5] hover:bg-green-500/[0.65] rounded text-xs flex items-center gap-1"
                             >
                               <Save className="w-3 h-3" />
                               Save
@@ -526,7 +512,7 @@ export default function WhimperingWastesDetailsView({
                       ) : (
                         <>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-blue-400">
+                            <span className="text-sm font-semibold text-yellow-400">
                               Side {stage.stage_number}
                             </span>
                             <div className="flex gap-1">
@@ -545,21 +531,21 @@ export default function WhimperingWastesDetailsView({
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">{stage.token}</span>
+                            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{stage.token}</span>
                             <span className="text-xs text-slate-400">{stage.points} pts</span>
                           </div>
                           <div className="flex gap-2 flex-wrap">
-                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/20 rounded">
+                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-500/20 rounded">
                               <CharacterPortrait characterName={stage.character1} size="md" />
-                              <span className="text-xs text-blue-400">{stage.character1}</span>
+                              <span className="text-xs text-yellow-400">{stage.character1}</span>
                             </div>
-                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/20 rounded">
+                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-500/20 rounded">
                               <CharacterPortrait characterName={stage.character2} size="md" />
-                              <span className="text-xs text-blue-400">{stage.character2}</span>
+                              <span className="text-xs text-yellow-400">{stage.character2}</span>
                             </div>
-                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-500/20 rounded">
+                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-500/20 rounded">
                               <CharacterPortrait characterName={stage.character3} size="md" />
-                              <span className="text-xs text-blue-400">{stage.character3}</span>
+                              <span className="text-xs text-yellow-400">{stage.character3}</span>
                             </div>
                           </div>
                         </>

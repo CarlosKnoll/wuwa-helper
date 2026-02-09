@@ -232,8 +232,8 @@ export default function TroopMatrixDetailsView({
   const renderTeamCard = (team: MatrixTeam) => {
     const isEditing = editingTeam === team.id;
     const isStability = team.mode === 'Stability Accords';
-    const colorClass = isStability ? 'text-cyan-400' : 'text-purple-400';
-    const bgClass = isStability ? 'bg-cyan-500/20' : 'bg-purple-500/20';
+    const colorClass = 'text-yellow-400';
+    const bgClass = 'bg-yellow-500/20';
     
     return (
       <div key={team.id} className="bg-slate-700/50 rounded-lg p-3 space-y-2">
@@ -267,21 +267,21 @@ export default function TroopMatrixDetailsView({
                 type="text"
                 value={editChar1}
                 onChange={(e) => setEditChar1(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
                 placeholder="Char 1"
               />
               <input
                 type="text"
                 value={editChar2}
                 onChange={(e) => setEditChar2(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
                 placeholder="Char 2"
               />
               <input
                 type="text"
                 value={editChar3}
                 onChange={(e) => setEditChar3(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
                 placeholder="Char 3"
               />
             </div>
@@ -292,7 +292,7 @@ export default function TroopMatrixDetailsView({
                   type="number"
                   value={editPoints}
                   onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
                 />
               </div>
               {!isStability && (
@@ -302,7 +302,7 @@ export default function TroopMatrixDetailsView({
                     type="number"
                     value={editRound || ''}
                     onChange={(e) => setEditRound(parseInt(e.target.value) || null)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
                   />
                 </div>
               )}
@@ -318,7 +318,7 @@ export default function TroopMatrixDetailsView({
               <button
                 onClick={() => saveTeamEdit(team.id)}
                 disabled={saving}
-                className={`px-2 py-1 ${bgClass} hover:opacity-80 rounded text-xs flex items-center gap-1 ${colorClass}`}
+                className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs flex items-center gap-1"
               >
                 <Save className="w-3 h-3" />
                 Save
@@ -352,7 +352,7 @@ export default function TroopMatrixDetailsView({
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Users className="w-6 h-6 text-orange-400" />
@@ -380,16 +380,6 @@ export default function TroopMatrixDetailsView({
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="text-sm text-slate-400 block mb-1">Highest Round</label>
-                <input
-                  type="number"
-                  value={editSingularityRound}
-                  onChange={(e) => setEditSingularityRound(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                  min="0"
-                />
-              </div>
             </div>
             <div>
               <label className="text-sm text-slate-400 block mb-1">Notes</label>
@@ -411,7 +401,7 @@ export default function TroopMatrixDetailsView({
               <button
                 onClick={saveChanges}
                 disabled={saving}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded flex items-center gap-2"
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded flex items-center gap-2"
               >
                 <Save className="w-4 h-4" />
                 {saving ? 'Saving...' : 'Save'}
@@ -422,7 +412,7 @@ export default function TroopMatrixDetailsView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Stability Accords */}
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-cyan-400 mb-3">Stability Accords</h4>
+              <h4 className="text-lg font-bold text-yellow-400 mb-3">Stability Accords</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Points:</span>
@@ -437,7 +427,7 @@ export default function TroopMatrixDetailsView({
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-cyan-500 h-full transition-all"
+                    className="bg-yellow-500 h-full transition-all"
                     style={{ width: `${Math.min((troopMatrix.stability_accords_astrite / 150) * 100, 100)}%` }}
                   />
                 </div>
@@ -449,15 +439,11 @@ export default function TroopMatrixDetailsView({
 
             {/* Singularity Expansion */}
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-purple-400 mb-3">Singularity Expansion</h4>
+              <h4 className="text-lg font-bold text-yellow-400 mb-3">Singularity Expansion</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Points:</span>
                   <span className="font-semibold">{troopMatrix.singularity_expansion_points.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Highest Round:</span>
-                  <span className="font-semibold text-purple-400">{troopMatrix.singularity_expansion_highest_round}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-400">Astrite Earned:</span>
@@ -468,7 +454,7 @@ export default function TroopMatrixDetailsView({
                 </div>
                 <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div 
-                    className="bg-purple-500 h-full transition-all"
+                    className="bg-yellow-500 h-full transition-all"
                     style={{ width: `${Math.min((troopMatrix.singularity_expansion_astrite / 250) * 100, 100)}%` }}
                   />
                 </div>
@@ -491,11 +477,11 @@ export default function TroopMatrixDetailsView({
       {/* Teams Section */}
       <div className="space-y-6">
           {/* Stability Accords Teams */}
-          <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+          <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
             <div className="flex items-center justify-between mb-4">
               <button 
                 onClick={() => setStabilityCollapsed(!stabilityCollapsed)} 
-                className="flex items-center gap-2 text-lg font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="flex items-center gap-2 text-lg font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
               >
                 <span>Stability Accords Teams</span>
                 <span className="text-sm">{stabilityCollapsed ? '▶' : '▼'}</span>
@@ -503,7 +489,7 @@ export default function TroopMatrixDetailsView({
               {!stabilityCollapsed && stabilityTeams.length < 3 && (
                 <button
                   onClick={() => addTeam('Stability Accords')}
-                  className="flex items-center gap-2 px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-sm"
                 >
                   <Plus className="w-4 h-4" />
                   Add Team
@@ -527,11 +513,11 @@ export default function TroopMatrixDetailsView({
           </div>
 
           {/* Singularity Expansion Teams */}
-          <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+          <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
             <div className="flex items-center justify-between mb-4">
               <button 
                 onClick={() => setSingularityCollapsed(!singularityCollapsed)} 
-                className="flex items-center gap-2 text-lg font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                className="flex items-center gap-2 text-lg font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
               >
                 <span>Singularity Expansion Teams</span>
                 <span className="text-sm">{singularityCollapsed ? '▶' : '▼'}</span>
@@ -539,7 +525,7 @@ export default function TroopMatrixDetailsView({
               {!singularityCollapsed && (
                 <button
                   onClick={() => addTeam('Singularity Expansion')}
-                  className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-sm"
                 >
                   <Plus className="w-4 h-4" />
                   Add Team

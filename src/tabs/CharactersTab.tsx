@@ -91,14 +91,14 @@ export default function CharactersTab({
       />
 
       <div className="flex gap-3 items-center">
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
+        <div className="flex-1 p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search characters..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg"
+              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-white/[0.4] rounded-lg focus:outline-none focus:border-yellow-400"
             />
           </div>
         </div>

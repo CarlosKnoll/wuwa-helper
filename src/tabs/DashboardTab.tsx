@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Coins, Target, Calculator, Plus, Trash2, Trophy, Zap, Users, Calendar, Edit2, Save } from 'lucide-react';
+import { Target, Calculator, Plus, Trash2, Trophy, Zap, Users, Edit2, Save } from 'lucide-react';
 import { Goal } from '../types';
 import { safeInvoke } from '../utils';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { CurrencyIcon } from '../components/CurrencyIcon';
 
-export default function DashboardTab({ characters, resources, pityStatus, onUpdate }: any) {
+export default function DashboardTab({ resources, pityStatus, onUpdate }: any) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [editingGoal, setEditingGoal] = useState<number | null>(null);
   const [goalForms, setGoalForms] = useState<Record<number, Goal>>({});
@@ -252,7 +252,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       />
 
       {/* 1. Resources - Editable */}
-      <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <CurrencyIcon currencyName="astrite" className="w-5 h-5" />
@@ -261,7 +261,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
           {!editingResources ? (
             <button
               onClick={() => setEditingResources(true)}
-              className="p-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors"
+              className="p-2 hover:bg-slate-700 rounded transition-colors"
             >
               <Edit2 className="w-4 h-4" />
             </button>
@@ -275,7 +275,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               </button>
               <button
                 onClick={handleSaveResources}
-                className="px-3 py-1 bg-green-500 hover:bg-green-600 rounded-lg text-sm"
+                className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded-lg text-sm"
               >
                 Save
               </button>
@@ -294,7 +294,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 type="number"
                 value={resourcesForm.astrite}
                 onChange={e => setResourcesForm({...resourcesForm, astrite: parseInt(e.target.value) || 0})}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-yellow-400"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-yellow-400 focus:outline-none focus:border-yellow-400"
               />
             </div>
             <div>
@@ -306,7 +306,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 type="number"
                 value={resourcesForm.lustrous_tide}
                 onChange={e => setResourcesForm({...resourcesForm, lustrous_tide: parseInt(e.target.value) || 0})}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-blue-400"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-blue-400 focus:outline-none focus:border-blue-400"
               />
             </div>
             <div>
@@ -318,7 +318,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 type="number"
                 value={resourcesForm.radiant_tide}
                 onChange={e => setResourcesForm({...resourcesForm, radiant_tide: parseInt(e.target.value) || 0})}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-purple-400"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-purple-400 focus:outline-none focus:border-purple-400"
               />
             </div>
             <div>
@@ -330,7 +330,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 type="number"
                 value={resourcesForm.forged_tide}
                 onChange={e => setResourcesForm({...resourcesForm, forged_tide: parseInt(e.target.value) || 0})}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-orange-400"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-orange-400 focus:outline-none focus:border-orange-400"
               />
             </div>
             <div>
@@ -342,7 +342,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 type="number"
                 value={resourcesForm.afterglow_coral}
                 onChange={e => setResourcesForm({...resourcesForm, afterglow_coral: parseInt(e.target.value) || 0})}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-pink-400"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-pink-400 focus:outline-none focus:border-pink-400"
               />
             </div>
             <div>
@@ -354,7 +354,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 type="number"
                 value={resourcesForm.oscillated_coral}
                 onChange={e => setResourcesForm({...resourcesForm, oscillated_coral: parseInt(e.target.value) || 0})}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-teal-400"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-lg font-bold text-teal-400 focus:outline-none focus:border-teal-400"
               />
             </div>
           </div>
@@ -407,9 +407,9 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       </div>
 
       {/* 2. Pull Calculator */}
-      <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-          <Calculator className="w-5 h-5 text-cyan-400" />
+          <Calculator className="w-5 h-5 text-yellow-400" />
           Convene Calculator
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -446,7 +446,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       </div>
 
       {/* 3. Pity Counters - Compact Grid */}
-      <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Target className="w-5 h-5 text-orange-400" />
@@ -454,7 +454,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
           </h2>
           <button
             onClick={loadPityStatus}
-            className="p-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded transition-colors"
+            className="p-2 hover:bg-slate-700 rounded transition-colors"
             title="Refresh pity status"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -465,7 +465,6 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {localPityStatus?.map((pity: any) => {
-            const isFeatured = pity.banner_type === 'featuredCharacter' || pity.banner_type === 'featuredWeapon';
             const bannerName = pity.banner_type.replace(/([A-Z])/g, ' $1').trim();
 
             return (
@@ -477,13 +476,13 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
                 {/* 5-Star Pity */}
                 <div className="mb-3">
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-2xl font-bold text-cyan-400">{pity.current_pity_5star}</span>
+                    <span className="text-2xl font-bold text-yellow-400">{pity.current_pity_5star}</span>
                     <span className="text-sm text-slate-400">/ 80</span>
                   </div>
 
                   <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden mb-1">
                     <div
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all"
+                      className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all"
                       style={{ width: `${(pity.current_pity_5star / 80) * 100}%` }}
                     />
                   </div>
@@ -524,7 +523,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       </div>
 
       {/* 4. Endgame Summary */}
-      <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
           <Trophy className="w-5 h-5 text-orange-400" />
           Endgame Content (This Cycle)
@@ -587,7 +586,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
             <div className="text-xs text-slate-400 mt-1">{((endgameData.matrix_astrite / endgameData.matrix_max) * 100).toFixed(1)}% Complete</div>
           </div>
         </div>
-        <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
+        <div className="mt-4 p-3 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-400">Total Endgame Astrite This Cycle:</span>
             <span className="text-xl font-bold text-yellow-400 flex items-center gap-2">
@@ -600,7 +599,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
       </div>
 
       {/* 5. Goals */}
-      <div className="bg-slate-900/50 rounded-xl p-5 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Goals & Objectives</h2>
           <button
@@ -618,14 +617,14 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               type="text"
               value={newGoalForm.goal_text}
               onChange={e => setNewGoalForm({ ...newGoalForm, goal_text: e.target.value })}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-yellow-400"
               placeholder="Goal description..."
             />
             <div className="grid grid-cols-2 gap-3">
               <select
                 value={newGoalForm.priority}
                 onChange={e => setNewGoalForm({ ...newGoalForm, priority: e.target.value })}
-                className="bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                className="bg-slate-700 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-yellow-400"
               >
                 <option value="highest">Highest Priority</option>
                 <option value="high">High Priority</option>
@@ -635,7 +634,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
               <select
                 value={newGoalForm.category}
                 onChange={e => setNewGoalForm({ ...newGoalForm, category: e.target.value })}
-                className="bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                className="bg-slate-700 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-yellow-400"
               >
                 <option value="immediate">Immediate</option>
                 <option value="shortTerm">Short Term</option>
@@ -645,7 +644,7 @@ export default function DashboardTab({ characters, resources, pityStatus, onUpda
             <textarea
               value={newGoalForm.notes}
               onChange={e => setNewGoalForm({ ...newGoalForm, notes: e.target.value })}
-              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm"
+              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
               placeholder="Add notes... (optional)"
               rows={2}
             />

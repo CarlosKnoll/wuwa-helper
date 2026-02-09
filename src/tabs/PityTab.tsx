@@ -407,7 +407,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
   return (
     <div className="space-y-6">
       {/* All-Time Pull Statistics - Now on Top */}
-      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h2 className="text-xl font-bold mb-4">All-Time Convene Statistics</h2>
         <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/30 rounded-lg">
           <div className="text-center">
@@ -429,7 +429,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
       </div>
 
       {/* Pull History Section */}
-      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-slate-200/20 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Convenes History</h2>
           <button
@@ -443,7 +443,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
         {/* Import/Export Panel */}
         {showImportExport && (
-          <div className="bg-slate-800/50 rounded-lg p-4 mb-4 space-y-4">
+          <div className="rounded-lg p-4 mb-4 space-y-4 border border-yellow-400/[0.75]">
             {/* IMPROVED: Success Message */}
             {importSuccess && (
               <div 
@@ -463,7 +463,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
 
             {/* IMPROVED: Loading Progress - now shows for both URL and JSON */}
             {(isImportingUrl || isImportingJson) && (
-              <div className="bg-amber-900/30 border border-yellow-500/50 rounded-lg p-3">
+              <div className="bg-amber-900/30 border border-white/40 rounded-lg p-3">
                 <div className="flex items-center gap-3">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-400"></div>
                   <div className="flex-1">
@@ -496,6 +496,18 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                   Import
                 </button>
               </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer p-3 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={cleanImport}
+                  onChange={e => setCleanImport(e.target.checked)}
+                  disabled={isImportingUrl || isImportingJson}
+                  className="w-4 h-4 rounded text-red-500 focus:ring-red-500 focus:ring-offset-slate-900 disabled:opacity-50"
+                />
+                <span className={cleanImport ? 'text-red-400 font-medium' : 'text-slate-400'}>
+                  Clean Import
+                </span>
+            </label>
               <button
                 onClick={() => setShowUrlInstructions(!showUrlInstructions)}
                 className="text-xs text-yellow-400 hover:underline mt-1 inline-block cursor-pointer"
@@ -514,7 +526,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                     </code>
                     <button
                       onClick={handleCopyPowerShellScript}
-                      className="absolute top-1 right-1 p-1.5 bg-slate-700/80 hover:bg-slate-600 rounded transition-colors"
+                      className="absolute top-1 right-1 p-1.5 hover:bg-slate-700 rounded transition-colors"
                       title="Copy script to clipboard"
                     >
                       {isCopied ? (
@@ -555,19 +567,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
                 </div>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm cursor-pointer bg-slate-900/50 p-3 rounded-lg border border-slate-700">
-              <input
-                type="checkbox"
-                checked={cleanImport}
-                onChange={e => setCleanImport(e.target.checked)}
-                disabled={isImportingUrl || isImportingJson}
-                className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-red-500 focus:ring-red-500 focus:ring-offset-slate-900 disabled:opacity-50"
-              />
-              <span className={cleanImport ? 'text-red-400 font-medium' : 'text-slate-400'}>
-                Clean Import (⚠️ deletes all existing convenes first)
-              </span>
-            </label>
-            <div className="border-t border-slate-700 pt-4">
+            <div className="border-t border-white/20 pt-4">
               <h3 className="text-sm font-bold mb-2">Import/Export JSON</h3>
 
               <div className="flex gap-2">
@@ -616,7 +616,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
           ))}
         </div>
 
-        {/* Current Pity Status for Selected Banner */}
+      {/* Current Pity Status for Selected Banner */}
         {(() => {
           const currentPity = pityStatus.find(p => p.banner_type === selectedBanner);
           if (!currentPity) return null;
@@ -627,7 +627,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
           return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
               {/* Current Pity Card */}
-              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-white/20">
                 <div className="text-sm text-slate-400 uppercase tracking-wide mb-3 flex items-center justify-between">
                   <span>Current Pity</span>
                   {selectedBanner === 'featuredCharacter' && (
@@ -684,7 +684,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
         })()}
 
         {/* Filters */}
-        <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 mb-4">
+        <div className="bg-slate-800/50 rounded-lg p-4 border border-white/20 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-slate-400" />
             <span className="text-sm font-medium text-slate-300">Filters</span>
@@ -759,7 +759,7 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-slate-700 text-sm text-slate-400">
+          <div className="mt-3 pt-3 border-t border-white/20 text-sm text-slate-400">
             Showing {filteredPulls.length} of {bannerPulls.length} convenes
           </div>
         </div>

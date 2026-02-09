@@ -245,7 +245,7 @@ export default function CharacterInfo({
                       type="number"
                       value={form.level}
                       onChange={e => onChange({ ...form, level: parseInt(e.target.value) || 1 })}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-white"
                       min="1"
                       max="90"
                     />
@@ -262,7 +262,7 @@ export default function CharacterInfo({
                       type="number"
                       value={form.ascension}
                       onChange={e => onChange({ ...form, ascension: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-white"
                       min="0"
                       max="6"
                     />
@@ -279,7 +279,7 @@ export default function CharacterInfo({
                       type="number"
                       value={form.waveband}
                       onChange={e => onChange({ ...form, waveband: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-white"
                       min="0"
                       max="6"
                     />
@@ -295,7 +295,7 @@ export default function CharacterInfo({
                     <select
                       value={form.build_status}
                       onChange={e => onChange({ ...form, build_status: e.target.value })}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-white"
                     >
                       {buildStatusOptions.map(status => (
                         <option key={status} value={status}>{status}</option>
@@ -316,7 +316,7 @@ export default function CharacterInfo({
                       <textarea
                         value={form.notes}
                         onChange={e => onChange({ ...form, notes: e.target.value })}
-                        className="w-full bg-slate-800/30 border border-slate-700/50 rounded px-2 py-1.5 min-h-[60px] focus:outline-none focus:border-cyan-500 text-white text-xs"
+                        className="w-full bg-slate-800/30 border border-slate-700/50 rounded px-2 py-1.5 min-h-[60px] focus:outline-none focus:border-white text-white text-xs"
                         placeholder="Add notes..."
                       />
                     ) : (
@@ -357,7 +357,7 @@ export default function CharacterInfo({
                 <div className="space-y-3">
                   {/* Character weapon type info */}
                   {currentCharacter && (
-                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded px-2 py-1.5 text-xs text-cyan-300 flex items-center gap-1.5">
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded px-2 py-1.5 text-xs text-yellow-300 flex items-center gap-1.5">
                       <AlertCircle size={14} />
                       <span>Showing {currentCharacter.weapon_type} weapons</span>
                     </div>
@@ -365,7 +365,7 @@ export default function CharacterInfo({
 
                   {/* Weapon swap warning */}
                   {selectedWeaponWarning && (
-                    <div className="bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1.5 text-xs text-orange-300 flex items-start gap-1.5">
+                    <div className="bg-red-500/10 border border-red-500/30 rounded px-2 py-1.5 text-xs text-red-300 flex items-start gap-1.5">
                       <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold">Weapon Swap</p>
@@ -380,7 +380,7 @@ export default function CharacterInfo({
                     <select
                       value={weaponForm.weapon_name}
                       onChange={handleWeaponSelect}
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500"
                     >
                       <option value="None">No Weapon</option>
                       
@@ -413,7 +413,7 @@ export default function CharacterInfo({
                     <textarea
                       value={weaponForm.notes}
                       onChange={e => setWeaponForm({ ...weaponForm, notes: e.target.value })}
-                      className="w-full bg-slate-800/30 border border-slate-700/50 rounded px-2 py-1.5 min-h-[60px] text-white text-xs focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-800/30 border border-slate-700/50 rounded px-2 py-1.5 min-h-[60px] text-white text-xs focus:outline-none focus:border-yellow-500"
                       placeholder="Weapon notes..."
                     />
                   </div>

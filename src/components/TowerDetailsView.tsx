@@ -58,27 +58,36 @@ export default function TowerDetailsView({
   const [newTeamFloor, setNewTeamFloor] = useState(1);
 
   const getTowerConfig = (type: string) => {
-    const configs: Record<string, { name: string; color: string; bg: string; border: string; bar: string }> = {
+    const configs: Record<string, { name: string; color: string; bg: string; border_active: string; border_inactive: string; bar: string; hover: string; focus: string }> = {
       'echoing': { 
         name: 'Echoing Tower', 
         color: 'text-cyan-400', 
         bg: 'bg-cyan-500/20', 
-        border: 'border-cyan-500/30',
-        bar: 'bg-cyan-500'
+        border_active: 'border-cyan-500/[0.75] backdrop-blur-sm border-2',
+        border_inactive: 'border-cyan-500/[0.35] backdrop-blur-sm border-2',
+        bar: 'bg-cyan-500',
+        hover: 'hover:border-cyan-500/[0.75]',
+        focus: 'focus:border-cyan-500/[0.75]'
       },
       'resonant': { 
         name: 'Resonant Tower', 
         color: 'text-emerald-400', 
         bg: 'bg-emerald-500/20', 
-        border: 'border-emerald-500/30',
-        bar: 'bg-emerald-500'
+        border_active: 'border-emerald-500/[0.75] backdrop-blur-sm border-2',
+        border_inactive: 'border-emerald-500/[0.35] backdrop-blur-sm border-2',
+        bar: 'bg-emerald-500',
+        hover: 'hover:border-emerald-500/[0.75]',
+        focus: 'focus:border-emerald-500/[0.75]'
       },
       'hazard': { 
         name: 'Hazard Tower', 
         color: 'text-red-400', 
         bg: 'bg-red-500/20', 
-        border: 'border-red-500/30',
-        bar: 'bg-red-500'
+        border_active: 'border-red-500/[0.75] backdrop-blur-sm border-2',
+        border_inactive: 'border-red-500/[0.35] backdrop-blur-sm border-2',
+        bar: 'bg-red-500',
+        hover: 'hover:border-red-500/[0.75]',
+        focus: 'focus:border-red-500/[0.75]'
       }
     };
     return configs[type] || configs['echoing'];
@@ -311,7 +320,7 @@ export default function TowerDetailsView({
   return (
     <div className="space-y-6">
       {/* Overview Card */}
-      <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Trophy className="w-6 h-6 text-cyan-400" />
@@ -361,7 +370,7 @@ export default function TowerDetailsView({
               <button
                 onClick={saveOverview}
                 disabled={saving}
-                className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded flex items-center gap-2"
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded flex items-center gap-2"
               >
                 <Save className="w-4 h-4" />
                 {saving ? 'Saving...' : 'Save'}
@@ -370,20 +379,20 @@ export default function TowerDetailsView({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-800/50 rounded-lg p-4">
+            <div className="rounded-lg p-4">
               <p className="text-sm text-slate-400 mb-1">Total Stars</p>
-              <p className="text-2xl font-bold text-cyan-400">{towerInfo.total_stars} / 36</p>
+              <p className="text-2xl font-bold text-yellow-400">{towerInfo.total_stars} / 36</p>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-4">
+            <div className="rounded-lg p-4">
               <p className="text-sm text-slate-400 mb-1">Astrite Earned</p>
               <p className="text-2xl font-bold text-yellow-400 flex items-center gap-2">
                 <CurrencyIcon currencyName="astrite" className="w-6 h-6" />
                 {towerInfo.astrite_earned} / 800
               </p>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-4">
+            <div className="rounded-lg p-4">
               <p className="text-sm text-slate-400 mb-1">Completion</p>
-              <p className="text-2xl font-bold text-emerald-400">
+              <p className="text-2xl font-bold text-yellow-400">
                 {((towerInfo.astrite_earned / 800) * 100).toFixed(1)}%
               </p>
             </div>
@@ -405,15 +414,14 @@ export default function TowerDetailsView({
           
           const config = getTowerConfig(detail.tower_type);
           const isSelected = selectedTower === detail.tower_type;
-          
           return (
             <div
               key={detail.id}
               onClick={() => handleTowerClick(detail.tower_type)}
               className={`bg-slate-900/50 rounded-xl p-4 border transition-all cursor-pointer ${
                 isSelected 
-                  ? `${config.border} shadow-lg` 
-                  : 'border-slate-800 hover:border-slate-600'
+                  ? `${config.border_active} shadow-lg ` 
+                  : `${config.border_inactive} rounded-xl p-6 shadow-[0_0_12px_rgba(226,232,240,0.08)] ${config.hover}`
               }`}
             >
               <h4 className={`text-lg font-bold ${config.color} mb-3`}>
@@ -448,7 +456,7 @@ export default function TowerDetailsView({
         const canAddTeam = teams.length < MAX_TEAMS;
 
         return (
-          <div className={`bg-slate-900/50 rounded-xl p-6 border ${config.border}`}>
+          <div className={`bg-slate-900/50 rounded-xl p-6 border ${config.border_active}`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${config.color}`}>{config.name} Details</h3>
               {!editingTower && (
@@ -464,22 +472,11 @@ export default function TowerDetailsView({
             {editingTower ? (
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="text-sm text-slate-400 block mb-1">Stars Achieved</label>
-                  <input
-                    type="number"
-                    value={editStarsAchieved}
-                    onChange={(e) => setEditStarsAchieved(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                    min="0"
-                    max="36"
-                  />
-                </div>
-                <div>
                   <label className="text-sm text-slate-400 block mb-1">Notes</label>
                   <textarea
                     value={editTowerNotes}
                     onChange={(e) => setEditTowerNotes(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                    className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-3 py-2 focus:outline-none ${config.focus}`}
                     rows={2}
                     placeholder="Notes about this tower..."
                   />
@@ -503,7 +500,7 @@ export default function TowerDetailsView({
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 mb-6">
+              <div className="rounded-lg p-4 mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Progress</p>
@@ -530,20 +527,20 @@ export default function TowerDetailsView({
                   const isEditingThis = editingEffect === effect.id;
                   
                   return (
-                    <div key={effect.id} className={`${config.bg} rounded-lg p-3 border ${config.border}`}>
+                    <div key={effect.id} className={`${config.bg} rounded-lg p-3 border ${config.border_active}`}>
                       {isEditingThis ? (
                         <div className="space-y-2">
                           <input
                             type="text"
                             value={editFloorRange}
                             onChange={(e) => setEditFloorRange(e.target.value)}
-                            className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm"
+                            className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-3 py-2 text-sm focus:outline-none ${config.focus}`}
                             placeholder="Floor range (e.g., 1-4)"
                           />
                           <textarea
                             value={editEffectDesc}
                             onChange={(e) => setEditEffectDesc(e.target.value)}
-                            className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm"
+                            className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-3 py-2 text-sm focus:outline-none ${config.focus}`}
                             placeholder="Effect description"
                             rows={2}
                           />
@@ -612,7 +609,7 @@ export default function TowerDetailsView({
                     )}
 
                     {addingTeam && (
-                      <div className={`${config.bg} rounded-lg p-3 border ${config.border} space-y-2`}>
+                      <div className={`${config.bg} rounded-lg p-3 border ${config.border_active} space-y-2`}>
                         <p className="text-sm font-semibold">Add New Team</p>
                         <div>
                           <label className="text-xs text-slate-400 block mb-1">Floor Number</label>
@@ -620,9 +617,9 @@ export default function TowerDetailsView({
                             type="number"
                             value={newTeamFloor}
                             onChange={(e) => setNewTeamFloor(parseInt(e.target.value) || 1)}
-                            className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                            className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                             min="1"
-                            max="12"
+                            max="4"
                           />
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -630,21 +627,21 @@ export default function TowerDetailsView({
                             type="text"
                             value={editChar1}
                             onChange={(e) => setEditChar1(e.target.value)}
-                            className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                            className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                             placeholder="Char 1"
                           />
                           <input
                             type="text"
                             value={editChar2}
                             onChange={(e) => setEditChar2(e.target.value)}
-                            className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                            className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                             placeholder="Char 2"
                           />
                           <input
                             type="text"
                             value={editChar3}
                             onChange={(e) => setEditChar3(e.target.value)}
-                            className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                            className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                             placeholder="Char 3"
                           />
                         </div>
@@ -680,7 +677,7 @@ export default function TowerDetailsView({
                       const isEditingThisTeam = editingTeam === floorTeam?.id;
 
                       return (
-                        <div key={floor.id} className={`${config.bg} rounded-lg p-3 border ${config.border} space-y-2`}>
+                        <div key={floor.id} className={`${config.bg} rounded-lg p-3 border ${config.border_active} space-y-2`}>
                           <div className="flex items-center justify-between mb-2">
                             <div>
                               <span className={`text-sm font-semibold ${config.color}`}>
@@ -721,21 +718,21 @@ export default function TowerDetailsView({
                                     type="text"
                                     value={editChar1}
                                     onChange={(e) => setEditChar1(e.target.value)}
-                                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                                    className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                                     placeholder="Char 1"
                                   />
                                   <input
                                     type="text"
                                     value={editChar2}
                                     onChange={(e) => setEditChar2(e.target.value)}
-                                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                                    className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                                     placeholder="Char 2"
                                   />
                                   <input
                                     type="text"
                                     value={editChar3}
                                     onChange={(e) => setEditChar3(e.target.value)}
-                                    className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm"
+                                    className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
                                     placeholder="Char 3"
                                   />
                                 </div>

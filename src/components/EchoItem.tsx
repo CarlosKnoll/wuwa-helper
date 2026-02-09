@@ -380,7 +380,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                       // Delay hiding dropdown to allow click events to fire
                       setTimeout(() => setShowDropdown(false), 200);
                     }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 pr-8 text-sm font-medium focus:outline-none focus:border-white-500 mb-2"
+                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 pr-8 text-sm font-medium focus:outline-none focus:border-yellow-500 mb-2"
                     placeholder={loadingEchoes ? "Loading echoes..." : "Echo name"}
                     disabled={loadingEchoes}
                     autoComplete="off"

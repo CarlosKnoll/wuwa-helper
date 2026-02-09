@@ -403,8 +403,8 @@ export default function CharacterEchoBuildSection({
                 {/* Main Circle - Increased size from w-14 h-14 to w-20 h-20 */}
                 <div className={`w-20 h-20 rounded-full bg-slate-900 border-2 overflow-hidden relative flex items-center justify-center transition-all ${
                   selectedEchoId === echo.id
-                    ? 'border-slate-100 shadow-[0_0_20px_rgba(226,232,240,0.4)]'
-                    : 'border-slate-200/30 shadow-[0_0_12px_rgba(226,232,240,0.2)]'
+                    ? 'border-yellow-300 shadow-[0_0_20px_rgba(226,232,240,0.4)]'
+                    : 'border-yellow-400/30 shadow-[0_0_12px_rgba(226,232,240,0.2)]'
                 }`}>
                   {echoImages[echo.id] ? (
                     <img
@@ -447,7 +447,7 @@ export default function CharacterEchoBuildSection({
               onClick={addNewEcho}
               className="w-full flex justify-center transition-all hover:scale-105"
             >
-              <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 bg-slate-800/30 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-700 bg-slate-800/30 hover:border-yellow-500/50 hover:bg-yellow-500/5 transition-all flex items-center justify-center">
                 <Plus size={24} className="text-slate-500" />
               </div>
             </button>
@@ -554,34 +554,45 @@ export default function CharacterEchoBuildSection({
                 </label>
               </div>
               <div className="grid grid-cols-8 gap-2 max-h-[300px] overflow-y-auto p-1">
-                {getAvailablePrimarySets().map(set => (
-                  <button
-                    key={set.key}
-                    onClick={() => setForm({ 
-                      ...form, 
-                      primary_set_key: form.primary_set_key === set.key ? null : set.key 
-                    })}
-                    className={`relative aspect-square rounded-lg border-2 transition-all ${
-                      form.primary_set_key === set.key
-                        ? 'border-white-500 opacity-100'
-                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 opacity-50 hover:opacity-75'
-                    }`}
-                    title={set.name}
-                  >
-                    {echoSetImages[set.key] ? (
-                      <img
-                        src={echoSetImages[set.key]}
-                        alt={set.name}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Shield size={20} className="text-slate-600" />
+                {getAvailablePrimarySets().map(set => {
+                  const selected = form.primary_set_key === set.key;
+
+                  return (
+                    <button
+                      key={set.key}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          primary_set_key: selected ? null : set.key,
+                        })
+                      }
+                      className="relative aspect-square flex items-center justify-center focus:outline-none"
+                      title={set.name}
+                    >
+                      <div
+                        className={`w-full h-full rounded-full transition-opacity ${
+                          selected
+                            ? "opacity-100"
+                            : "opacity-40 hover:opacity-70"
+                        }`}
+                      >
+                        {echoSetImages[set.key] ? (
+                          <img
+                            src={echoSetImages[set.key]}
+                            alt={set.name}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center rounded-full">
+                            <Shield size={20} className="text-slate-600" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
+
               
               {/* Show primary set effect */}
               {primarySet && (
@@ -627,34 +638,45 @@ export default function CharacterEchoBuildSection({
                   </label>
                 </div>
                 <div className="grid grid-cols-8 gap-2 max-h-[200px] overflow-y-auto p-1">
-                  {getAvailableSecondarySets().map(set => (
-                    <button
-                      key={set.key}
-                      onClick={() => setForm({ 
-                        ...form, 
-                        secondary_set_key: form.secondary_set_key === set.key ? null : set.key 
-                      })}
-                      className={`relative aspect-square rounded-lg border-2 transition-all ${
-                        form.secondary_set_key === set.key
-                          ? 'border-white-500 opacity-100'
-                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 opacity-50 hover:opacity-75'
-                      }`}
-                      title={set.name}
-                    >
-                      {echoSetImages[set.key] ? (
-                        <img
-                          src={echoSetImages[set.key]}
-                          alt={set.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Shield size={20} className="text-slate-600" />
+                  {getAvailableSecondarySets().map(set => {
+                    const selected = form.secondary_set_key === set.key;
+
+                    return (
+                      <button
+                        key={set.key}
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            secondary_set_key: selected ? null : set.key,
+                          })
+                        }
+                        className="relative aspect-square flex items-center justify-center focus:outline-none"
+                        title={set.name}
+                      >
+                        <div
+                          className={`w-full h-full rounded-full transition-opacity ${
+                            selected
+                              ? "opacity-100"
+                              : "opacity-40 hover:opacity-70"
+                          }`}
+                        >
+                          {echoSetImages[set.key] ? (
+                            <img
+                              src={echoSetImages[set.key]}
+                              alt={set.name}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center rounded-full">
+                              <Shield size={20} className="text-slate-600" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
+
                 
                 {/* Show secondary set effect */}
                 {secondarySet && isMixedBuild && (
@@ -677,7 +699,7 @@ export default function CharacterEchoBuildSection({
               <select
                 value={form.overall_quality}
                 onChange={e => setForm({ ...form, overall_quality: e.target.value })}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
               >
                 <option value="">Select quality...</option>
                 <option value="Poor">Poor</option>
@@ -694,7 +716,7 @@ export default function CharacterEchoBuildSection({
               <textarea
                 value={form.notes}
                 onChange={e => setForm({ ...form, notes: e.target.value })}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 min-h-[60px]"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500 min-h-[60px]"
                 placeholder="Additional build notes..."
               />
             </div>

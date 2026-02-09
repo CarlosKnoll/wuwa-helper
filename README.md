@@ -47,22 +47,12 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 ### Remaining To-Dos:
 #### UI:
-- Standardize countours and selections to be white.
-    - [ ] White outline for every section in the dashboard
-    - [ ] White outline for search bar in CharactersTab and WeaponsTab
-    - [ ] White outline for filters field in WeaponsTab
-    - [ ] White outline for every section in PityTab
-    - [ ] White outline for every field in ExplorationTab
-    - [ ] White outline for every field in EndgameTab
-    - [ ] White outline for every field in SettingsTab
-
 - Standardize alerts:
     - [ ] Errors should be displayed in react component, not as OS alerts
     - [ ] Success handles should be displayed in react component, not as OS alerts
     - [ ] Warnings should be displayed in react component, not as OS alerts
 
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
-
 
 ---
 
@@ -86,6 +76,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Dashboard:** Endgame data not refreshing whith database refresh.
 
 - **Character Info:** Display and allow edit of Resonance Date.
+- **Character Modal Overview Tab:** Weapon swap warning does not clear if selecting the weapon currently equipped.
 - **Character Modal Overview Tab:** Max level display is wrong. It works as intended in Characters' Tab Info section.
 
 - **Echoes:** Fix deletion confirmation modal on first new echo rendering under header.
@@ -94,6 +85,11 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
 
 - **Endgame:** Move last reset date editing to parent gamemodes card
+- **Endgame:** Removing a team goes through before confirmation dialog.
+- **Endgame - ToA:** Move Progress X/12 stars to header area, on the right side.
+- **Endgame - ToA:** If a team is set with less than 3 characters, don't render slate bg for empty slots.
+- **Endgame - ToA:** Implement logic check to prevent adding two teams to the same side.
+- **Endgame - Troop Matrix:** Removing a team out of order and attempt to add it again errors with `Failed to add team: UNIQUE constraint failed: matrix_teams.mode, matrix_teams.team_number` (to replicate: Add a couple o teams on either stability/singularity accord, remove first team and attempt to add again).
 
 ---
 
