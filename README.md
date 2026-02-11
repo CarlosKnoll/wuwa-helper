@@ -53,6 +53,8 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
     - [ ] Warnings should be displayed in react component, not as OS alerts
 
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
+- **Endgame:** Move last reset date editing to parent gamemodes card
+- **Endgame - ToA:** Move Progress X/12 stars to header area, on the right side.
 
 ---
 
@@ -63,7 +65,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 - Modify edit fields to have immediate persistance instead of save button.
 
-- Migrate database entries to hardcode regions and maps for exploration tab.
+- Migrate database entries to hardcoded regions and maps for exploration tab.
 
 - **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
 
@@ -81,14 +83,12 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 - **Echoes:** Fix deletion confirmation modal on first new echo rendering under header.
 - **Echoes:** Fix error on saving with no set selected if Sonata Effect is set to 3pc/2pc (default behavior should be saving as if is set to 5pc with no sonata effect).
-- **Echoes:** Add entries and assets for all Phantom echoes.
 - **Echoes:** Fix needing to save an echo with a valid name before showing the select echo set field. (Maybe needs to be implemented/will be fixed upon changing the edit fields to have immediate persistance).
 
-- **Endgame:** Move last reset date editing to parent gamemodes card
 - **Endgame:** Removing a team goes through before confirmation dialog.
-- **Endgame - ToA:** Move Progress X/12 stars to header area, on the right side.
 - **Endgame - ToA:** If a team is set with less than 3 characters, don't render slate bg for empty slots.
 - **Endgame - ToA:** Implement logic check to prevent adding two teams to the same side.
+- **Endgame - WhiWa:** Adding a second team spawns the add form on the left instead of the right.
 - **Endgame - Troop Matrix:** Removing a team out of order and attempt to add it again errors with `Failed to add team: UNIQUE constraint failed: matrix_teams.mode, matrix_teams.team_number` (to replicate: Add a couple o teams on either stability/singularity accord, remove first team and attempt to add again).
 
 ---

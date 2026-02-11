@@ -31,6 +31,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
   const [loadingEchoes, setLoadingEchoes] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isPhantom, setIsPhantom] = useState(false);
   const [form, setForm] = useState({
     echo_name: '',
     echo_set: '',
@@ -81,6 +82,9 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
 
   // Sync form with echo whenever it changes
   useEffect(() => {
+    const isPhantomVariant = echo.echo_name?.startsWith('Phantom • ') || false;
+    setIsPhantom(isPhantomVariant);
+    
     setForm({
       echo_name: echo.echo_name || '',
       echo_set: echo.echo_set || '',
@@ -104,6 +108,9 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     const term = searchTerm.trim().toLowerCase();
     let filtered = availableEchoes;
 
+    // Filter out phantom variants from dropdown
+    filtered = filtered.filter(echoItem => !echoItem.name.startsWith('Phantom • '));
+
     // Filter by search term
     if (term) {
       filtered = filtered.filter(echoItem => 
@@ -123,6 +130,18 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
 
     return filtered;
   }, [searchTerm, availableEchoes, form.echo_set, allowedEchoSets]);
+
+  // Check if phantom variant exists for this echo
+  const hasPhantomVariant = useMemo(() => {
+    if (!form.echo_name) return false;
+    
+    const baseName = form.echo_name.replace('Phantom • ', '');
+    const phantomName = 'Phantom • ' + baseName;
+    
+    return availableEchoes.some(e => 
+      e.name === phantomName || (e.name === baseName && availableEchoes.some(x => x.name === phantomName))
+    );
+  }, [form.echo_name, availableEchoes]);
 
   const handleEchoSelect = (echoItem: EchoListItem) => {
     // Update available sets for this echo first
@@ -166,6 +185,45 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     setForm({ ...form, echo_name: value });
     setSearchTerm(value);
     setShowDropdown(true);
+  };
+
+  const togglePhantomVariant = async () => {
+    const currentName = form.echo_name;
+    let newName: string;
+    
+    if (currentName.startsWith('Phantom • ')) {
+      // Remove "Phantom • " prefix
+      newName = currentName.replace('Phantom • ', '');
+    } else {
+      // Add "Phantom • " prefix
+      newName = 'Phantom • ' + currentName;
+    }
+    
+    // Immediately save the name change to database
+    try {
+      await safeInvoke('update_echo', {
+        id: echo.id,
+        echoName: newName,
+        echoSet: form.echo_set || null,
+        cost: form.cost || null,
+        rarity: form.rarity || null,
+        level: form.level || null,
+        mainStat: form.main_stat || null,
+        mainStatValue: form.main_stat_value || null,
+        notes: form.notes || null,
+      });
+      
+      // Update local state
+      setForm({ ...form, echo_name: newName });
+      setSearchTerm(newName);
+      setIsPhantom(!isPhantom);
+      
+      // Trigger parent update to reload images
+      await onUpdate();
+    } catch (err) {
+      console.error('Failed to toggle phantom variant:', err);
+      alert('Failed to switch variant: ' + err);
+    }
   };
 
   const handleSave = async () => {
@@ -468,6 +526,24 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
           <div className="flex items-start gap-2">
             {!editing ? (
               <>
+                {/* Phantom Toggle - Only show if phantom variant exists */}
+                {hasPhantomVariant && (
+                  <div className="flex items-center gap-1.5 mr-1">
+                    <span className="text-[10px] text-slate-400">Phantom</span>
+                    <button
+                      onClick={togglePhantomVariant}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        isPhantom ? 'bg-yellow-500' : 'bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          isPhantom ? 'translate-x-5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={() => setEditing(true)}
                   className="p-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded text-xs transition-colors"
