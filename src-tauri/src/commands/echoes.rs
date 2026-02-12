@@ -196,12 +196,15 @@ pub fn update_echo_build(
         ));
     }
     
-    // If using secondary set, ensure both set keys are provided and different
+    // FIXED: Only validate secondary set requirements for mixed builds only if one is set.
     if secondary_set_pieces > 0 {
-        if secondary_set_key.is_none() {
+        if !primary_set_key.is_none() && secondary_set_key.is_none() {
             return Err("Secondary set key required when secondary_set_pieces > 0".to_string());
         }
-        if primary_set_key == secondary_set_key {
+        if primary_set_key.is_none() && !secondary_set_key.is_none() {
+            return Err("Primary set key required for mixed builds".to_string());
+        }
+        if primary_set_key == secondary_set_key && !primary_set_key.is_none(){
             return Err("Primary and secondary sets must be different".to_string());
         }
     }

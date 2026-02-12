@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Edit2, Save, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import { EchoSubstat, EchoItemProps } from '../types';
 import { safeInvoke, getRarityStars } from '../utils';
@@ -71,17 +72,23 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     loadEchoes();
   }, []);
 
-  // Load available echo sets when echo name changes
+  // Load available echo sets when echo name changes OR when form.echo_name changes during editing
   useEffect(() => {
-    if (echo.echo_name) {
-      invoke<string[]>('get_echo_available_sets', { echoName: echo.echo_name })
+    const echoName = form.echo_name || echo.echo_name;
+    if (echoName) {
+      invoke<string[]>('get_echo_available_sets', { echoName })
         .then(sets => setAvailableEchoSets(sets))
         .catch(err => console.error('Failed to load available sonata effects:', err));
     }
-  }, [echo.echo_name]);
+  }, [echo.echo_name, form.echo_name]);
 
-  // Sync form with echo whenever it changes
+  // Sync form with echo whenever it changes, but only when not actively editing
+  // to avoid clobbering unsaved changes when the parent re-renders (e.g. Sonata
+  // Effect selection in the left column changes allowedEchoSets, which triggers
+  // a new object reference for the echo prop even though its data is the same).
   useEffect(() => {
+    if (editing) return;
+
     const isPhantomVariant = echo.echo_name?.startsWith('Phantom • ') || false;
     setIsPhantom(isPhantomVariant);
     
@@ -96,12 +103,13 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       notes: echo.notes || '',
     });
     setSearchTerm(echo.echo_name || '');
-  }, [echo]);
+  }, [echo, editing]);
 
-  // Sync substats whenever they change
+  // Sync substats whenever they change, but not while editing
   useEffect(() => {
+    if (editing) return;
     setSubstatForms([...substats]);
-  }, [substats]);
+  }, [substats, editing]);
 
   // Filter echoes based on search term and selected sonata effect
   const filteredEchoes = useMemo(() => {
@@ -396,8 +404,8 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     }`}>
       {/* Underglow effect */}
       <div className="absolute inset-0 -z-10 bg-slate-200/10 rounded-lg blur-xl"></div>
-      {/* Delete Confirmation Dialog */}
-      {deleteConfirm && (
+      {/* Delete Confirmation Dialog - FIXED: Using React Portal for proper z-index layering */}
+      {deleteConfirm && createPortal(
         <ConfirmDialog
           isOpen={deleteConfirm}
           title="Delete Echo"
@@ -407,7 +415,8 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm(false)}
           variant="danger"
-        />
+        />,
+        document.body
       )}
 
       {/* Echo Header */}
@@ -644,38 +653,41 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
               </div>
             </div>
             
-            {/* Echo Set Dropdown */}
-            {availableEchoSets.length > 0 && (
-              <div>
-                <label className="text-xs text-slate-500">Sonata Effect</label>
-                <select
-                  value={form.echo_set}
-                  onChange={e => setForm({ ...form, echo_set: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
-                >
-                  <option value="">Select sonata effect...</option>
-                  {availableEchoSets
-                    .filter(setName => {
-                      // If build has selected sets, only show those sets
-                      // Otherwise, show all available sets for this echo
-                      if (allowedEchoSets.length > 0) {
-                        return allowedEchoSets.includes(setName);
-                      }
-                      return true;
-                    })
-                    .map(setName => (
-                      <option key={setName} value={setName}>
-                        {setName}
-                      </option>
-                    ))}
-                </select>
-                {allowedEchoSets.length > 0 && (
-                  <div className="text-xs text-slate-400 mt-1">
-                    Only showing sets from your build configuration
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Echo Set Dropdown - FIXED: Show even when availableEchoSets is empty initially */}
+            <div>
+              <label className="text-xs text-slate-500">Sonata Effect</label>
+              <select
+                value={form.echo_set}
+                onChange={e => setForm({ ...form, echo_set: e.target.value })}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
+              >
+                <option value="">Select sonata effect...</option>
+                {availableEchoSets
+                  .filter(setName => {
+                    // If build has selected sets, only show those sets
+                    // Otherwise, show all available sets for this echo
+                    if (allowedEchoSets.length > 0) {
+                      return allowedEchoSets.includes(setName);
+                    }
+                    return true;
+                  })
+                  .map(setName => (
+                    <option key={setName} value={setName}>
+                      {setName}
+                    </option>
+                  ))}
+              </select>
+              {availableEchoSets.length === 0 && form.echo_name && (
+                <div className="text-xs text-slate-400 mt-1">
+                  No sonata effects available for this echo
+                </div>
+              )}
+              {allowedEchoSets.length > 0 && availableEchoSets.length > 0 && (
+                <div className="text-xs text-slate-400 mt-1">
+                  Only showing sets from your build configuration
+                </div>
+              )}
+            </div>
             
             {/* Main Stat: Dropdown for name, text input for value */}
             <div className="grid grid-cols-2 gap-2">
