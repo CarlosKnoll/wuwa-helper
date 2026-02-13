@@ -64,13 +64,24 @@ pub fn get_all_characters(app: tauri::AppHandle) -> Result<Vec<Character>, Strin
     
     let characters = stmt
         .query_map([], |row| {
+            let char_name: String = row.get(1)?;
+            let element: String = row.get(5)?;
+            
+            // For Rover, append element to make unique display name for dropdowns
+            // Format: "Rover - Aero", "Rover - Havoc", "Rover - Spectro"
+            let display_name = if char_name == "Rover" {
+                format!("{} Rover", element)
+            } else {
+                char_name
+            };
+            
             Ok(Character {
                 id: row.get(0)?,
-                character_name: row.get(1)?,
+                character_name: display_name,  // Use display name with element for Rover
                 variant: row.get(2)?,
                 resonance_date: row.get(3)?,
                 rarity: row.get(4)?,
-                element: row.get(5)?,
+                element: element,
                 weapon_type: row.get(6)?,
                 waveband: row.get(7)?,
                 level: row.get(8)?,
@@ -428,4 +439,19 @@ pub fn delete_character(app: tauri::AppHandle, id: i64) -> Result<String, String
         .map_err(|e| e.to_string())?;
     
     Ok("Character deleted successfully".to_string())
+}
+
+/// Get display names of all characters tagged as "healer" in the asset mappings.
+/// Used by the Troop Matrix vigor system — healers start with 2 vigor instead of 1.
+/// Update the tag in assets/mappings/characters.rs to keep this in sync.
+#[tauri::command]
+pub fn get_healer_characters() -> Result<Vec<String>, String> {
+    let mappings = crate::assets::mappings::characters::get_character_mappings();
+    let mut healers: Vec<String> = mappings
+        .values()
+        .filter(|m| m.tags.iter().any(|t| t == "healer"))
+        .map(|m| m.display_name.clone())
+        .collect();
+    healers.sort();
+    Ok(healers)
 }

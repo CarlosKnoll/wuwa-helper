@@ -1,5 +1,5 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Trophy, Zap, Users, RotateCcw } from 'lucide-react';
+import { Trophy, Zap, Users, RotateCcw, Edit2, Save, X } from 'lucide-react';
 import { safeInvoke } from '../utils';
 import { 
   TowerOfAdversity, 
@@ -30,6 +30,10 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
   const [showResetDialog, setShowResetDialog] = useState<{mode: string, name: string} | null>(null);
   const [resetting, setResetting] = useState(false);
 
+  // Inline last-reset editing per card
+  const [editingLastReset, setEditingLastReset] = useState<'tower' | 'wastes' | 'matrix' | null>(null);
+  const [editLastResetValue, setEditLastResetValue] = useState('');
+
   // Tower of Adversity State
   const [towerInfo, setTowerInfo] = useState<TowerOfAdversity | null>(null);
   const [towerDetails, setTowerDetails] = useState<TowerDetails[]>([]);
@@ -45,6 +49,10 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
   // Troop Matrix State
   const [troopMatrix, setTroopMatrix] = useState<TroopMatrix | null>(null);
   const [matrixTeams, setMatrixTeams] = useState<MatrixTeam[]>([]);
+
+  // Available characters for vigor dropdowns
+  const [availableCharacters, setAvailableCharacters] = useState<string[]>([]);
+  const [healerCharacters, setHealerCharacters] = useState<string[]>([]);
 
   useEffect(() => {
     loadAllEndgameData();
@@ -79,6 +87,18 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
       if (results[5].status === 'fulfilled') setTorrentsStages(results[5].value as TorrentsStage[]);
       if (results[6].status === 'fulfilled') setTroopMatrix(results[6].value as TroopMatrix);
       if (results[7].status === 'fulfilled') setMatrixTeams(results[7].value as MatrixTeam[]);
+
+      // Load owned character names and healer list for vigor dropdowns
+      try {
+        const [allChars, healers] = await Promise.all([
+          safeInvoke('get_all_characters') as Promise<{ character_name: string }[]>,
+          safeInvoke('get_healer_characters') as Promise<string[]>,
+        ]);
+        setAvailableCharacters(allChars.map(c => c.character_name).sort());
+        setHealerCharacters(healers);
+      } catch {
+        // non-fatal: dropdowns will just be empty
+      }
 
       // Load floor data for each tower type
       await loadTowerFloors();
@@ -132,7 +152,8 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
     }
   };
 
-  const openResetDialog = (mode: string, name: string) => {
+  const openResetDialog = (mode: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setShowResetDialog({ mode, name });
   };
 
@@ -180,41 +201,60 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
   };
 
   const handleModeClick = (mode: EndgameMode) => {
-    if (selectedMode === mode) {
-      setSelectedMode(null);
-    } else {
-      setSelectedMode(mode);
-    }
+    setSelectedMode(selectedMode === mode ? null : mode);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
-      </div>
-    );
-  }
+  const startEditLastReset = (mode: 'tower' | 'wastes' | 'matrix', currentDate: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingLastReset(mode);
+    setEditLastResetValue(currentDate);
+  };
+
+  const saveLastReset = async (mode: 'tower' | 'wastes' | 'matrix', e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      if (mode === 'tower') {
+        await safeInvoke('update_tower_last_reset', { lastReset: editLastResetValue });
+      } else if (mode === 'wastes') {
+        await safeInvoke('update_wastes_last_reset', { lastReset: editLastResetValue });
+      } else if (mode === 'matrix') {
+        await safeInvoke('update_matrix_last_reset', { lastReset: editLastResetValue });
+      }
+      setEditingLastReset(null);
+      await loadAllEndgameData();
+    } catch (error) {
+      console.error('Failed to update last reset:', error);
+      alert('Failed to update last reset');
+    }
+  };
 
   const towerCompletion = calculateTowerCompletion();
   const wastesCompletion = calculateWastesCompletion();
   const matrixCompletion = calculateMatrixCompletion();
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-slate-400">Loading endgame data...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Reset Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showResetDialog !== null}
         title={`Reset ${showResetDialog?.name}?`}
-        message={`This will reset all progress data for ${showResetDialog?.name} including: Astrite earned (0), Stars/Points (0), Team compositions (cleared), Notes (cleared), and Last reset date (updated to today). ⚠️ This action cannot be undone!`}
-        confirmText={resetting ? "Resetting..." : "Reset"}
-        cancelText="Cancel"
+        message="This will reset all progress and teams for this mode. This action cannot be undone."
         onConfirm={handleResetConfirm}
         onCancel={() => setShowResetDialog(null)}
-        disabled={resetting}
+        confirmText="Reset"
+        cancelText="Cancel"
+        isDestructive
+        isLoading={resetting}
       />
 
-      {/* Endgame Mode Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Tower of Adversity Card */}
         <div
           onClick={() => handleModeClick('tower')}
@@ -226,26 +266,48 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
         >
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <Trophy className="w-8 h-8 text-cyan-400" />
+              <Trophy className="w-8 h-8 text-blue-400" />
               {towerInfo && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openResetDialog('tower', 'Tower of Adversity');
-                  }}
-                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
-                  title="Reset tower progress"
-                >
-                  <RotateCcw className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => startEditLastReset('tower', towerInfo.last_reset, e)}
+                    className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors group"
+                    title="Edit last reset date"
+                  >
+                    <Edit2 className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
+                  </button>
+                  <button
+                    onClick={(e) => openResetDialog('tower', 'Tower of Adversity', e)}
+                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
+                    title="Reset tower progress"
+                  >
+                    <RotateCcw className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
+                  </button>
+                </div>
               )}
             </div>
             <h3 className="font-bold text-xl mb-2">Tower of Adversity</h3>
             {towerInfo && (
               <>
-                <p className="text-sm text-slate-400 mb-3">
-                  Last Reset: {towerInfo.last_reset}
-                </p>
+                <div className="mb-3" >
+                  {editingLastReset === 'tower' ? (
+                    <div className="flex items-center gap-2">
+                      <input onClick={(e) => e.stopPropagation()}
+                        type="date"
+                        value={editLastResetValue}
+                        onChange={(e) => setEditLastResetValue(e.target.value)}
+                        className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-white/60"
+                        autoFocus
+                      />
+                      <button onClick={(e) => saveLastReset('tower', e)} className="p-1 hover:bg-green-500/20 rounded transition-colors text-green-400" title="Save"><Save className="w-3 h-3" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingLastReset(null); }} className="p-1 hover:bg-slate-600 rounded transition-colors text-slate-400" title="Cancel"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-400">
+                      Last Reset: {towerInfo.last_reset}
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Astrite Earned:</span>
@@ -282,24 +344,46 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
             <div className="flex items-center justify-between mb-3">
               <Zap className="w-8 h-8 text-purple-400" />
               {wastesInfo && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openResetDialog('wastes', 'Whimpering Wastes');
-                  }}
-                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
-                  title="Reset wastes progress"
-                >
-                  <RotateCcw className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => startEditLastReset('wastes', wastesInfo.last_reset, e)}
+                    className="p-2 hover:bg-purple-500/20 rounded-lg transition-colors group"
+                    title="Edit last reset date"
+                  >
+                    <Edit2 className="w-4 h-4 text-slate-400 group-hover:text-purple-400" />
+                  </button>
+                  <button
+                    onClick={(e) => openResetDialog('wastes', 'Whimpering Wastes', e)}
+                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
+                    title="Reset wastes progress"
+                  >
+                    <RotateCcw className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
+                  </button>
+                </div>
               )}
             </div>
             <h3 className="font-bold text-xl mb-2">Whimpering Wastes</h3>
             {wastesInfo && (
               <>
-                <p className="text-sm text-slate-400 mb-3">
-                  Last Reset: {wastesInfo.last_reset}
-                </p>
+                <div className="mb-3" >
+                  {editingLastReset === 'wastes' ? (
+                    <div className="flex items-center gap-2">
+                      <input onClick={(e) => e.stopPropagation()}
+                        type="date"
+                        value={editLastResetValue}
+                        onChange={(e) => setEditLastResetValue(e.target.value)}
+                        className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-white/60"
+                        autoFocus
+                      />
+                      <button onClick={(e) => saveLastReset('wastes', e)} className="p-1 hover:bg-green-500/20 rounded transition-colors text-green-400" title="Save"><Save className="w-3 h-3" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingLastReset(null); }} className="p-1 hover:bg-slate-600 rounded transition-colors text-slate-400" title="Cancel"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-400">
+                      Last Reset: {wastesInfo.last_reset}
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Astrite Earned:</span>
@@ -336,24 +420,46 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
             <div className="flex items-center justify-between mb-3">
               <Users className="w-8 h-8 text-orange-400" />
               {troopMatrix && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openResetDialog('matrix', 'Doubled Pawns Matrix');
-                  }}
-                  className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
-                  title="Reset matrix progress"
-                >
-                  <RotateCcw className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => startEditLastReset('matrix', troopMatrix.last_reset, e)}
+                    className="p-2 hover:bg-orange-500/20 rounded-lg transition-colors group"
+                    title="Edit last reset date"
+                  >
+                    <Edit2 className="w-4 h-4 text-slate-400 group-hover:text-orange-400" />
+                  </button>
+                  <button
+                    onClick={(e) => openResetDialog('matrix', 'Doubled Pawns Matrix', e)}
+                    className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
+                    title="Reset matrix progress"
+                  >
+                    <RotateCcw className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
+                  </button>
+                </div>
               )}
             </div>
             <h3 className="font-bold text-xl mb-2">Doubled Pawns Matrix</h3>
             {troopMatrix && (
               <>
-                <p className="text-sm text-slate-400 mb-3">
-                  Last Reset: {troopMatrix.last_reset}
-                </p>
+                <div className="mb-3" >
+                  {editingLastReset === 'matrix' ? (
+                    <div className="flex items-center gap-2">
+                      <input onClick={(e) => e.stopPropagation()}
+                        type="date"
+                        value={editLastResetValue}
+                        onChange={(e) => setEditLastResetValue(e.target.value)}
+                        className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-white/60"
+                        autoFocus
+                      />
+                      <button onClick={(e) => saveLastReset('matrix', e)} className="p-1 hover:bg-green-500/20 rounded transition-colors text-green-400" title="Save"><Save className="w-3 h-3" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingLastReset(null); }} className="p-1 hover:bg-slate-600 rounded transition-colors text-slate-400" title="Cancel"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-400">
+                      Last Reset: {troopMatrix.last_reset}
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Astrite Earned:</span>
@@ -390,6 +496,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
           onTowerSelect={setSelectedTower}
           onUpdate={loadAllEndgameData}
           onInitializeFloors={initializeTowerFloors}
+          availableCharacters={availableCharacters}
         />
       )}
 
@@ -398,6 +505,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
           wastesInfo={wastesInfo}
           torrentsStages={torrentsStages}
           onUpdate={loadAllEndgameData}
+          availableCharacters={availableCharacters}
         />
       )}
 
@@ -406,6 +514,8 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
           troopMatrix={troopMatrix}
           matrixTeams={matrixTeams}
           onUpdate={loadAllEndgameData}
+          availableCharacters={availableCharacters}
+          healerCharacters={healerCharacters}
         />
       )}
     </div>

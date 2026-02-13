@@ -39,13 +39,9 @@ export default function CharacterPortrait({
       setError(false);
 
       try {
-        // Auto-resolve Rover variations to just "Rover"
         let assetName = characterName;
-        if (characterName.toLowerCase().includes('rover')) {
-          assetName = 'Rover';
-        }
 
-        const result = await getAsset('character', assetName);
+        const result = await getAsset('characters', assetName);
         
         if (result) {
           setImageSrc(`data:image/webp;base64,${result}`);

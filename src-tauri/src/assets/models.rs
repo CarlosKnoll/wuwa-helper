@@ -33,7 +33,7 @@ impl AssetType {
         let url_lower = url.to_lowercase();
         if url_lower.contains("element_") {
             AssetType::Element
-        } else if url_lower.contains("_card") || url_lower.contains("character") {
+        } else if url_lower.contains("_card") || url_lower.contains("character") || url_lower.contains("characters") {
             AssetType::Character
         } else if url_lower.contains("weapon") {
             AssetType::Weapon

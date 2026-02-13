@@ -46,10 +46,18 @@ export default function CharactersTab({
   };
 
   const getDisplayName = (c: Character) => {
+    // If character_name is already "Rover - Element", use it as-is
+    // Otherwise, fall back to original logic
+    if (c.character_name.startsWith('Rover - ')) {
+      return c.character_name;
+    }
+    
+    // Legacy format support (shouldn't happen anymore)
     if (c.character_name.toLowerCase() === 'rover') {
       const elementName = c.element.charAt(0).toUpperCase() + c.element.slice(1);
       return `${elementName} Rover`;
     }
+    
     return c.character_name;
   };
 
@@ -72,7 +80,7 @@ export default function CharactersTab({
     });
 
   const isRoverVariant = (c: Character) =>
-    c.character_name.toLowerCase() === 'rover';
+    c.character_name.toLowerCase().startsWith('rover');
 
 
   const getMaxLevel = (a: number) => [20, 40, 50, 60, 70, 80, 90][a] ?? 20;

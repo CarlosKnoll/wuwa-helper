@@ -1,9 +1,221 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Trophy, Edit2, Save, X, Plus, Trash2, Star } from 'lucide-react';
 import { TowerOfAdversity, TowerDetails, TowerFloor, TowerAreaEffect, TowerTeam } from '../types';
 import { safeInvoke, calculateTowerAstrite } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
 import { CurrencyIcon } from './CurrencyIcon';
+import ConfirmDialog from './ConfirmDialog';
+import { createPortal } from 'react-dom';
+
+// ─── CharDropdown ────────────────────────────────────────────────────────────
+// Self-contained: owns all its own state so nothing depends on a parent
+// render cycle. Position is measured synchronously in event handlers so the
+// portal jumps instantly when switching inputs.
+//
+// backdrop-filter (backdrop-blur) on ancestors breaks position:fixed by
+// creating a new containing block. We work around this by measuring the true
+// viewport rect via getBoundingClientRect and using position:fixed with the
+// 4px gap baked directly into `top`, so no CSS margin is needed.
+interface CharDropdownProps {
+  value: string;
+  onChange: (v: string) => void;
+  towerType: string;
+  floorNum: number;
+  placeholder: string;
+  config: { border_inactive: string; focus: string };
+  availableCharacters: string[];
+  vigorConsumedMap: Record<string, number>;
+}
+
+function CharDropdown({
+  value, onChange,
+  towerType, floorNum, placeholder, config,
+  availableCharacters, vigorConsumedMap,
+}: CharDropdownProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const MAX_VIGOR = 10;
+  const cost = towerType === 'hazard' ? 5 : floorNum;
+
+  // Process characters: consolidate Rover variants.
+  const roverVariants = availableCharacters.filter(c => c.startsWith('Rover'));
+  const nonRoverChars  = availableCharacters.filter(c => !c.startsWith('Rover'));
+  const processedChars: Array<{ display: string; actual: string; isRover: boolean }> = [];
+  const seenRover = new Set<string>();
+  nonRoverChars.forEach(c => processedChars.push({ display: c, actual: c, isRover: false }));
+  roverVariants.forEach(rover => {
+    const el = rover.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
+    const display = el ? `Rover (${el})` : 'Rover';
+    if (!seenRover.has(display)) { seenRover.add(display); processedChars.push({ display, actual: rover, isRover: true }); }
+  });
+
+  const filtered = processedChars.filter(c => c.display.toLowerCase().includes(search.toLowerCase()));
+
+  // Measure and determine if dropdown should flip up
+  const measurePosition = () => {
+    if (!inputRef.current) return null;
+    const r = inputRef.current.getBoundingClientRect();
+    const width = Math.max(r.width, 220);
+    const gap = 4;
+    
+    // Calculate dropdown height
+    let dropdownHeight: number;
+    if (dropdownRef.current && dropdownRef.current.offsetHeight > 0) {
+      // Use actual measured height if available
+      dropdownHeight = dropdownRef.current.offsetHeight;
+    } else {
+      // Estimate based on number of items
+      const itemHeight = 28; // py-1.5 + text height
+      const itemCount = filtered.length + 1; // +1 for "None" option
+      const maxHeight = 176; // max-h-44 in pixels
+      dropdownHeight = Math.min(itemCount * itemHeight, maxHeight);
+    }
+    
+    // Check if there's enough space below
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top;
+    
+    // Flip up if not enough space below AND there's more space above
+    const flipUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+    
+    return {
+      top: flipUp ? r.top - dropdownHeight - gap : r.bottom + gap,
+      left: r.left,
+      width
+    };
+  };
+
+  // Initial position calculation when opening
+  useLayoutEffect(() => {
+    if (open && inputRef.current) {
+      const newPos = measurePosition();
+      if (newPos) setPos(newPos);
+    }
+  }, [open]);
+
+  // Update position when content changes
+  useLayoutEffect(() => {
+    if (open && inputRef.current) {
+      const newPos = measurePosition();
+      if (newPos) setPos(newPos);
+    }
+  }, [open, filtered.length]);
+
+  // Keep position fresh while open (scroll / resize).
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const newPos = measurePosition();
+      if (newPos) setPos(newPos);
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
+  const displayValue = () => {
+    if (!value) return '';
+    if (value.startsWith('Rover')) {
+      const el = value.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
+      return el ? `Rover (${el})` : 'Rover';
+    }
+    return value;
+  };
+
+  const vigorOf = (charObj: { actual: string; isRover: boolean }) => {
+    if (charObj.isRover) {
+      const consumed = roverVariants.reduce((s, rv) => s + (vigorConsumedMap[rv] || 0), 0);
+      return MAX_VIGOR - consumed;
+    }
+    return MAX_VIGOR - (vigorConsumedMap[charObj.actual] || 0);
+  };
+
+  const close = () => { setOpen(false); setSearch(''); };
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={open ? search : displayValue()}
+        onChange={(e) => {
+          const v = e.target.value;
+          setSearch(v);
+          if (!open) setOpen(true);
+          if (!v.trim() || v.toLowerCase() === 'none') {
+            onChange('');
+          } else {
+            const exact = processedChars.find(c => c.display.toLowerCase() === v.toLowerCase());
+            onChange(exact ? exact.actual : v.trim());
+          }
+        }}
+        onFocus={() => {
+          setSearch(value ? displayValue() : '');
+          setOpen(true);
+        }}
+        onBlur={(e) => {
+          const relatedTarget = e.relatedTarget as HTMLElement;
+          if (!relatedTarget || relatedTarget.tagName !== 'INPUT') {
+            setTimeout(close, 200);
+          } else {
+            close();
+          }
+        }}
+        className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
+        placeholder={placeholder}
+      />
+      {open && filtered.length > 0 && pos && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          className="bg-slate-800 border border-slate-600 rounded shadow-lg max-h-44 overflow-y-auto"
+        >
+          <button
+            onMouseDown={() => { onChange(''); close(); }}
+            className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-700 transition-colors"
+          >
+            — None —
+          </button>
+          {filtered.map(charObj => {
+            const remaining = vigorOf(charObj);
+            const canUse    = remaining >= cost;
+            const depleted  = remaining <= 0;
+            return (
+              <button
+                key={charObj.display}
+                onMouseDown={depleted ? undefined : () => { onChange(charObj.actual); close(); }}
+                disabled={depleted}
+                className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between transition-colors ${
+                  depleted   ? 'text-slate-600 cursor-not-allowed'
+                  : canUse  ? 'hover:bg-slate-700 text-slate-200'
+                  :            'hover:bg-slate-700/50 text-slate-400'
+                }`}
+              >
+                <span className="truncate">{charObj.display}</span>
+                <span className={`ml-2 flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  remaining <= 0 ? 'bg-red-500/30 text-red-500'
+                  : remaining < cost ? 'bg-orange-500/30 text-orange-400'
+                  : 'bg-slate-600 text-slate-400'
+                }`}>
+                  {remaining}/{MAX_VIGOR}
+                </span>
+              </button>
+            );
+          })}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface TowerDetailsViewProps {
   towerInfo: TowerOfAdversity | null;
@@ -15,6 +227,7 @@ interface TowerDetailsViewProps {
   onTowerSelect: (tower: string | null) => void;
   onUpdate: () => void;
   onInitializeFloors?: () => void;
+  availableCharacters?: string[];
 }
 
 type TowerType = 'echoing' | 'resonant' | 'hazard' | null;
@@ -28,7 +241,8 @@ export default function TowerDetailsView({
   selectedTower,
   onTowerSelect,
   onUpdate,
-  onInitializeFloors
+  onInitializeFloors,
+  availableCharacters = []
 }: TowerDetailsViewProps) {
   const [editingOverview, setEditingOverview] = useState(false);
   const [editingTower, setEditingTower] = useState(false);
@@ -37,10 +251,9 @@ export default function TowerDetailsView({
   const [addingTeam, setAddingTeam] = useState(false);
   const [saving, setSaving] = useState(false);
   const [floorsCollapsed, setFloorsCollapsed] = useState(false);
+  const [deleteTeamDialog, setDeleteTeamDialog] = useState<number | null>(null);
 
   // Overview edit states
-  const [editTotalStars, setEditTotalStars] = useState(0);
-  const [editLastReset, setEditLastReset] = useState('');
   const [editOverviewNotes, setEditOverviewNotes] = useState('');
 
   // Tower detail edit states
@@ -56,6 +269,32 @@ export default function TowerDetailsView({
   const [editChar2, setEditChar2] = useState('');
   const [editChar3, setEditChar3] = useState('');
   const [newTeamFloor, setNewTeamFloor] = useState(1);
+
+
+
+  // Compute per-character vigor consumed across ALL towers
+  // Echoing/Resonant: vigor consumed = floor number used on. Hazard: 5 per floor used on.
+  const computeVigorMap = (): Record<string, number> => {
+    const consumed: Record<string, number> = {};
+    const towerTypes = ['echoing', 'resonant', 'hazard'];
+    for (const tt of towerTypes) {
+      const floors = towerFloors[tt] || [];
+      const teams = towerTeams.filter(t => t.tower_type === tt);
+      for (const team of teams) {
+        const floor = floors.find(f => f.floor_number === team.floor_number);
+        if (!floor || floor.stars === 0) continue; // floor not cleared, no vigor consumed
+        const cost = tt === 'hazard' ? 5 : team.floor_number;
+        for (const char of [team.character1, team.character2, team.character3]) {
+          if (char && char !== 'None') {
+            consumed[char] = (consumed[char] || 0) + cost;
+          }
+        }
+      }
+    }
+    return consumed;
+  };
+
+  const vigorConsumedMap = computeVigorMap();
 
   const getTowerConfig = (type: string) => {
     const configs: Record<string, { name: string; color: string; bg: string; border_active: string; border_inactive: string; bar: string; hover: string; focus: string }> = {
@@ -95,8 +334,6 @@ export default function TowerDetailsView({
 
   const startEditOverview = () => {
     if (towerInfo) {
-      setEditTotalStars(towerInfo.total_stars);
-      setEditLastReset(towerInfo.last_reset);
       setEditOverviewNotes(towerInfo.notes || '');
       setEditingOverview(true);
     }
@@ -105,12 +342,6 @@ export default function TowerDetailsView({
   const saveOverview = async () => {
     setSaving(true);
     try {
-      // Update last reset date
-      await safeInvoke('update_tower_last_reset', {
-        lastReset: editLastReset
-      });
-      
-      // Keep existing total_stars (not editable, calculated from floors)
       const calculatedAstrite = calculateTowerAstrite(towerInfo?.total_stars || 0);
       await safeInvoke('update_tower_of_adversity', {
         totalStars: towerInfo?.total_stars || 0,
@@ -229,13 +460,21 @@ export default function TowerDetailsView({
   };
 
   const saveTeam = async (id: number) => {
+    // Validate no duplicates
+    const chars = [editChar1, editChar2, editChar3].filter(c => c && c !== 'None' && c !== '');
+    const uniqueChars = new Set(chars);
+    if (chars.length !== uniqueChars.size) {
+      alert('Cannot use the same character more than once in a team');
+      return;
+    }
+    
     setSaving(true);
     try {
       await safeInvoke('update_tower_team', {
         id,
-        character1: editChar1,
-        character2: editChar2,
-        character3: editChar3
+        character1: editChar1 || 'None',
+        character2: editChar2 || 'None',
+        character3: editChar3 || 'None'
       });
       setEditingTeam(null);
       onUpdate();
@@ -248,18 +487,32 @@ export default function TowerDetailsView({
   };
 
   const deleteTeam = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this team?')) return;
+    setDeleteTeamDialog(id);
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (deleteTeamDialog === null) return;
     
     try {
-      await safeInvoke('delete_tower_team', { id });
+      await safeInvoke('delete_tower_team', { id: deleteTeamDialog });
       onUpdate();
     } catch (error) {
       console.error('Failed to delete team:', error);
       alert('Failed to delete team');
+    } finally {
+      setDeleteTeamDialog(null);
     }
   };
 
   const addTeam = async () => {
+    // Validate no duplicates
+    const chars = [editChar1, editChar2, editChar3].filter(c => c && c !== 'None' && c !== '');
+    const uniqueChars = new Set(chars);
+    if (chars.length !== uniqueChars.size) {
+      alert('Cannot use the same character more than once in a team');
+      return;
+    }
+    
     setSaving(true);
     try {
       await safeInvoke('add_tower_team', {
@@ -338,17 +591,6 @@ export default function TowerDetailsView({
 
         {editingOverview ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Last Reset</label>
-                <input
-                  type="date"
-                  value={editLastReset}
-                  onChange={(e) => setEditLastReset(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                />
-              </div>
-            </div>
             <div>
               <label className="text-sm text-slate-400 block mb-1">Notes</label>
               <textarea
@@ -459,14 +701,20 @@ export default function TowerDetailsView({
           <div className={`bg-slate-900/50 rounded-xl p-6 border ${config.border_active}`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${config.color}`}>{config.name} Details</h3>
-              {!editingTower && (
-                <button
-                  onClick={() => startEditTower(detail)}
-                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <Star className={`w-4 h-4 ${config.color}`} fill="currentColor" />
+                  <span className={`text-sm font-semibold ${config.color}`}>{detail.stars_achieved}/12</span>
+                </div>
+                {!editingTower && (
+                  <button
+                    onClick={() => startEditTower(detail)}
+                    className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {editingTower ? (
@@ -499,303 +747,270 @@ export default function TowerDetailsView({
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Progress</p>
-                    <p className={`text-lg font-semibold ${config.color}`}>
-                      {detail.stars_achieved} / 12 Stars
-                    </p>
-                  </div>
-                </div>
-                {detail.notes && (
-                  <div className="pt-3 border-t border-slate-700/50">
-                    <p className="text-xs text-slate-400 mb-1">Notes</p>
-                    <p className="text-sm text-slate-300">{detail.notes}</p>
-                  </div>
+            ) : detail.notes ? (
+              <div className="mb-6 bg-slate-800/50 rounded-lg p-4">
+                <p className="text-sm text-slate-400 mb-2">Notes</p>
+                <p className="text-sm">{detail.notes}</p>
+              </div>
+            ) : null}
+
+            {/* Area Effects */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className={`text-md font-semibold ${config.color}`}>Area Effects</h4>
+              </div>
+              <div className="space-y-2">
+                {towerEffects
+                  .filter(e => e.tower_type === selectedTower)
+                  .map((effect) => {
+                    const isEditingThis = editingEffect === effect.id;
+                    return (
+                      <div key={effect.id} className={`${config.bg} rounded-lg p-3 border ${config.border_active}`}>
+                        {isEditingThis ? (
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-xs text-slate-400 block mb-1">Floor Range</label>
+                              <input
+                                type="text"
+                                value={editFloorRange}
+                                onChange={(e) => setEditFloorRange(e.target.value)}
+                                className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
+                                placeholder="e.g., 1-2"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-slate-400 block mb-1">Effect Description</label>
+                              <textarea
+                                value={editEffectDesc}
+                                onChange={(e) => setEditEffectDesc(e.target.value)}
+                                className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
+                                rows={2}
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => setEditingEffect(null)}
+                                className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
+                              >
+                                <X className="w-3 h-3" />
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => saveEffect(effect.id, selectedTower)}
+                                disabled={saving}
+                                className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
+                              >
+                                <Save className="w-3 h-3" />
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`text-sm font-semibold ${config.color}`}>
+                                Floors {effect.floor_range}
+                              </span>
+                              <button
+                                onClick={() => startEditEffect(effect)}
+                                className="p-1 hover:bg-slate-600 rounded transition-colors"
+                                title="Edit effect"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <p className="text-xs text-slate-300">{effect.effect_description}</p>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Floors & Teams */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={() => setFloorsCollapsed(!floorsCollapsed)}
+                  className={`flex items-center gap-2 text-md font-semibold ${config.color} hover:opacity-80 transition-opacity`}
+                >
+                  <span>Floors & Teams</span>
+                  <span className="text-sm">{floorsCollapsed ? '▶' : '▼'}</span>
+                </button>
+                {!floorsCollapsed && canAddTeam && !addingTeam && (
+                  <button
+                    onClick={() => setAddingTeam(true)}
+                    className={`flex items-center gap-2 px-3 py-2 ${config.bg} hover:opacity-80 ${config.color} rounded-lg transition-opacity text-sm`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Team
+                  </button>
                 )}
               </div>
-            )}
 
-            {/* Area Effects Section */}
-            <div className="space-y-3 mb-6">
-              <h4 className="text-sm font-semibold text-slate-400 uppercase">Area Effects</h4>
-              {towerEffects
-                .filter(e => e.tower_type === selectedTower)
-                .map((effect) => {
-                  const isEditingThis = editingEffect === effect.id;
-                  
-                  return (
-                    <div key={effect.id} className={`${config.bg} rounded-lg p-3 border ${config.border_active}`}>
-                      {isEditingThis ? (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={editFloorRange}
-                            onChange={(e) => setEditFloorRange(e.target.value)}
-                            className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-3 py-2 text-sm focus:outline-none ${config.focus}`}
-                            placeholder="Floor range (e.g., 1-4)"
-                          />
-                          <textarea
-                            value={editEffectDesc}
-                            onChange={(e) => setEditEffectDesc(e.target.value)}
-                            className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-3 py-2 text-sm focus:outline-none ${config.focus}`}
-                            placeholder="Effect description"
-                            rows={2}
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => setEditingEffect(null)}
-                              className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                            >
-                              <X className="w-3 h-3" />
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => saveEffect(effect.id, effect.tower_type)}
-                              disabled={saving}
-                              className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
-                            >
-                              <Save className="w-3 h-3" />
-                              Save
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-xs text-slate-400 mb-1">Floor {effect.floor_range}</p>
-                            <p className="text-sm">{effect.effect_description}</p>
-                          </div>
-                          <button
-                            onClick={() => startEditEffect(effect)}
-                            className="p-1 hover:bg-slate-700/50 rounded transition-colors"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-
-            {/* Floors and Teams Section */}
-            <div className="space-y-3">
-
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-slate-400 uppercase">Floors & Teams</h4>
-                  <button
-                    onClick={() => setFloorsCollapsed(!floorsCollapsed)}
-                    className="text-xs text-slate-500 hover:text-slate-400"
-                  >
-                    {floorsCollapsed ? 'Expand' : 'Collapse'}
-                  </button>
-                </div>
-
-                {!floorsCollapsed && (
-                  <div className="space-y-3">
-                    {floors.length === 0 && onInitializeFloors && (
-                      <div className="text-center py-6">
-                        <p className="text-slate-500 mb-3">No floor data available</p>
+              {!floorsCollapsed && (
+                <div className="space-y-3">
+                  {addingTeam && (
+                    <div className={`${config.bg} rounded-lg p-3 border ${config.border_active} space-y-2`}>
+                      <p className="text-sm font-semibold">Add New Team</p>
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1">Floor Number</label>
+                        <input
+                          type="number"
+                          value={newTeamFloor}
+                          onChange={(e) => setNewTeamFloor(parseInt(e.target.value) || 1)}
+                          className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
+                          min="1"
+                          max="4"
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <CharDropdown value={editChar1} onChange={setEditChar1} towerType={selectedTower!} floorNum={newTeamFloor} placeholder="Char 1" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
+                        <CharDropdown value={editChar2} onChange={setEditChar2} towerType={selectedTower!} floorNum={newTeamFloor} placeholder="Char 2" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
+                        <CharDropdown value={editChar3} onChange={setEditChar3} towerType={selectedTower!} floorNum={newTeamFloor} placeholder="Char 3" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
+                      </div>
+                      <div className="flex gap-2 justify-end">
                         <button
-                          onClick={onInitializeFloors}
-                          className={`px-4 py-2 ${config.bg} ${config.color} rounded-lg hover:opacity-80 transition-colors`}
+                          onClick={() => {
+                            setAddingTeam(false);
+                            setEditChar1('');
+                            setEditChar2('');
+                            setEditChar3('');
+                            setNewTeamFloor(1);
+                          }}
+                          className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
                         >
-                          Initialize Floors
+                          <X className="w-3 h-3" />
+                          Cancel
+                        </button>
+                        <button
+                          onClick={addTeam}
+                          disabled={saving}
+                          className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add
                         </button>
                       </div>
-                    )}
-
-                    {addingTeam && (
-                      <div className={`${config.bg} rounded-lg p-3 border ${config.border_active} space-y-2`}>
-                        <p className="text-sm font-semibold">Add New Team</p>
-                        <div>
-                          <label className="text-xs text-slate-400 block mb-1">Floor Number</label>
-                          <input
-                            type="number"
-                            value={newTeamFloor}
-                            onChange={(e) => setNewTeamFloor(parseInt(e.target.value) || 1)}
-                            className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                            min="1"
-                            max="4"
-                          />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <input
-                            type="text"
-                            value={editChar1}
-                            onChange={(e) => setEditChar1(e.target.value)}
-                            className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                            placeholder="Char 1"
-                          />
-                          <input
-                            type="text"
-                            value={editChar2}
-                            onChange={(e) => setEditChar2(e.target.value)}
-                            className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                            placeholder="Char 2"
-                          />
-                          <input
-                            type="text"
-                            value={editChar3}
-                            onChange={(e) => setEditChar3(e.target.value)}
-                            className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                            placeholder="Char 3"
-                          />
-                        </div>
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => {
-                              setAddingTeam(false);
-                              setEditChar1('');
-                              setEditChar2('');
-                              setEditChar3('');
-                              setNewTeamFloor(1);
-                            }}
-                            className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                          >
-                            <X className="w-3 h-3" />
-                            Cancel
-                          </button>
-                          <button
-                            onClick={addTeam}
-                            disabled={saving}
-                            className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
-                          >
-                            <Plus className="w-3 h-3" />
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {floors.map((floor) => {
-                      const floorTeam = teams.find(t => t.floor_number === floor.floor_number);
-                      const isEditingThisTeam = editingTeam === floorTeam?.id;
-
-                      return (
-                        <div key={floor.id} className={`${config.bg} rounded-lg p-3 border ${config.border_active} space-y-2`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <span className={`text-sm font-semibold ${config.color}`}>
-                                Floor {floor.floor_number}
-                              </span>
-                              <span className="text-xs text-slate-500 ml-2">
-                                {floor.stars === 0 ? 'Not cleared' : `${floor.stars}/3 stars`}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {renderStarSelector(floor)}
-                              {floorTeam && !isEditingThisTeam && (
-                                <>
-                                  <button
-                                    onClick={() => startEditTeam(floorTeam)}
-                                    className="p-1 hover:bg-slate-600 rounded transition-colors"
-                                    title="Edit team"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => deleteTeam(floorTeam.id)}
-                                    className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
-                                    title="Delete team"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {floorTeam ? (
-                            isEditingThisTeam ? (
-                              <div className="space-y-2">
-                                <div className="grid grid-cols-3 gap-2">
-                                  <input
-                                    type="text"
-                                    value={editChar1}
-                                    onChange={(e) => setEditChar1(e.target.value)}
-                                    className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                                    placeholder="Char 1"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={editChar2}
-                                    onChange={(e) => setEditChar2(e.target.value)}
-                                    className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                                    placeholder="Char 2"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={editChar3}
-                                    onChange={(e) => setEditChar3(e.target.value)}
-                                    className={`bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-                                    placeholder="Char 3"
-                                  />
-                                </div>
-                                <div className="flex gap-2 justify-end">
-                                  <button
-                                    onClick={() => setEditingTeam(null)}
-                                    className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                                  >
-                                    <X className="w-3 h-3" />
-                                    Cancel
-                                  </button>
-                                  <button
-                                    onClick={() => saveTeam(floorTeam.id)}
-                                    disabled={saving}
-                                    className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
-                                  >
-                                    <Save className="w-3 h-3" />
-                                    Save
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex gap-2 flex-1 min-w-0">
-                                <div className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded min-w-0 flex-1">
-                                  <CharacterPortrait characterName={floorTeam.character1} size="md" className="flex-shrink-0" />
-                                  <span className="text-xs text-slate-300 truncate">{floorTeam.character1}</span>
-                                </div>
-                                <div className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded min-w-0 flex-1">
-                                  <CharacterPortrait characterName={floorTeam.character2} size="md" className="flex-shrink-0" />
-                                  <span className="text-xs text-slate-300 truncate">{floorTeam.character2}</span>
-                                </div>
-                                <div className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded min-w-0 flex-1">
-                                  <CharacterPortrait characterName={floorTeam.character3} size="md" className="flex-shrink-0" />
-                                  <span className="text-xs text-slate-300 truncate">{floorTeam.character3}</span>
-                                </div>
-                              </div>
-                            )
-                          ) : (
-                            canAddTeam && (
-                              <button
-                                onClick={() => {
-                                  setEditChar1('');
-                                  setEditChar2('');
-                                  setEditChar3('');
-                                  setNewTeamFloor(floor.floor_number);
-                                  setAddingTeam(true);
-                                }}
-                                className="w-full py-2 border border-dashed border-slate-600 hover:border-slate-500 rounded text-xs text-slate-500 hover:text-slate-400 transition-colors"
-                              >
-                                + Add team for this floor
-                              </button>
-                            )
-                          )}
-                        </div>
-                      );
-                    })}
                     </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {floors.map((floor) => {
+                    const floorTeam = teams.find(t => t.floor_number === floor.floor_number);
+                    const isEditingThisTeam = editingTeam === floorTeam?.id;
+
+                    return (
+                      <div key={floor.id} className={`${config.bg} rounded-lg p-3 border ${config.border_active} space-y-2`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <span className={`text-sm font-semibold ${config.color}`}>
+                              Floor {floor.floor_number}
+                            </span>
+                            <span className="text-xs text-slate-500 ml-2">
+                              {floor.stars === 0 ? 'Not cleared' : `${floor.stars}/3 stars`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {renderStarSelector(floor)}
+                            {floorTeam && !isEditingThisTeam && (
+                              <>
+                                <button
+                                  onClick={() => startEditTeam(floorTeam)}
+                                  className="p-1 hover:bg-slate-600 rounded transition-colors"
+                                  title="Edit team"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => deleteTeam(floorTeam.id)}
+                                  className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
+                                  title="Delete team"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {floorTeam ? (
+                          isEditingThisTeam ? (
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-3 gap-2">
+                                <CharDropdown value={editChar1} onChange={setEditChar1} towerType={selectedTower!} floorNum={floor.floor_number} placeholder="Char 1" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
+                                <CharDropdown value={editChar2} onChange={setEditChar2} towerType={selectedTower!} floorNum={floor.floor_number} placeholder="Char 2" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
+                                <CharDropdown value={editChar3} onChange={setEditChar3} towerType={selectedTower!} floorNum={floor.floor_number} placeholder="Char 3" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  onClick={() => setEditingTeam(null)}
+                                  className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => saveTeam(floorTeam.id)}
+                                  disabled={saving}
+                                  className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
+                                >
+                                  <Save className="w-3 h-3" />
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 flex-1 min-w-0">
+                              {[floorTeam.character1, floorTeam.character2, floorTeam.character3]
+                                .filter(char => char && char !== 'None')
+                                .map((char, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded min-w-0 flex-1">
+                                    <CharacterPortrait characterName={char} size="md" className="flex-shrink-0" />
+                                    <span className="text-xs text-slate-300 truncate">{char}</span>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          )
+                        ) : (
+                          canAddTeam && (
+                            <button
+                              onClick={() => {
+                                setEditChar1('');
+                                setEditChar2('');
+                                setEditChar3('');
+                                setNewTeamFloor(floor.floor_number);
+                                setAddingTeam(true);
+                              }}
+                              className="w-full py-2 border border-dashed border-slate-600 hover:border-slate-500 rounded text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                            >
+                              + Add team for this floor
+                            </button>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
                   </div>
-                )}
-            </div>
+                </div>
+              )}
           </div>
-        );
-      })()}
-    </div>
-  );
+        </div>
+      );
+    })()}
+
+    <ConfirmDialog
+      isOpen={deleteTeamDialog !== null}
+      title="Delete Team"
+      message="Are you sure you want to delete this team? This action cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      variant="danger"
+      onConfirm={confirmDeleteTeam}
+      onCancel={() => setDeleteTeamDialog(null)}
+    />
+  </div>
+);
 }

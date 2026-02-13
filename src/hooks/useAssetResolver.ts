@@ -42,7 +42,7 @@ export function useAssetResolver() {
       if (filename) {
         // Get the actual asset data (base64)
         const assetData = await invoke<string>('get_asset', {
-          assetType: 'character', // Or determine from metadata
+          assetType: 'characters', // Or determine from metadata
           name: filename.replace('_card.webp', '').replace('.webp', ''),
         });
         return `data:image/webp;base64,${assetData}`;

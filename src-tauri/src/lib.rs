@@ -31,6 +31,7 @@ pub fn run() {
             characters::add_character,
             characters::delete_character,
             characters::get_available_characters,
+            characters::get_healer_characters,
             echo_stats::get_echo_stats_options,
             echoes::get_echo_available_sets,
             echoes::get_echo_build,

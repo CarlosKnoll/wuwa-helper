@@ -4,29 +4,31 @@ import { TroopMatrix, MatrixTeam } from '../types';
 import { safeInvoke, calculateStabilityAccordsAstrite, calculateSingularityExpansionAstrite } from '../utils';
 import CharacterPortrait from './CharacterPortrait';
 import { CurrencyIcon } from './CurrencyIcon';
+import ConfirmDialog from './ConfirmDialog';
 
 interface TroopMatrixDetailsViewProps {
   troopMatrix: TroopMatrix | null;
   matrixTeams: MatrixTeam[];
   onUpdate: () => void;
+  availableCharacters?: string[];
+  healerCharacters?: string[];
 }
 
 export default function TroopMatrixDetailsView({
   troopMatrix,
   matrixTeams,
-  onUpdate
+  onUpdate,
+  availableCharacters = [],
+  healerCharacters = [],
 }: TroopMatrixDetailsViewProps) {
   const [editing, setEditing] = useState(false);
   const [editingTeam, setEditingTeam] = useState<number | null>(null);
   const [stabilityCollapsed, setStabilityCollapsed] = useState(false);
   const [singularityCollapsed, setSingularityCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleteTeamDialog, setDeleteTeamDialog] = useState<number | null>(null);
 
   // Main edit states
-  const [editStabilityPoints, setEditStabilityPoints] = useState(0);
-  const [editSingularityPoints, setEditSingularityPoints] = useState(0);
-  const [editSingularityRound, setEditSingularityRound] = useState(0);
-  const [editLastReset, setEditLastReset] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
   // Team edit states
@@ -36,15 +38,178 @@ export default function TroopMatrixDetailsView({
   const [editPoints, setEditPoints] = useState(0);
   const [editRound, setEditRound] = useState<number | null>(null);
 
+  // Character search state for dropdowns
+  const [charSearch1, setCharSearch1] = useState('');
+  const [charSearch2, setCharSearch2] = useState('');
+  const [charSearch3, setCharSearch3] = useState('');
+  const [showCharDrop1, setShowCharDrop1] = useState(false);
+  const [showCharDrop2, setShowCharDrop2] = useState(false);
+  const [showCharDrop3, setShowCharDrop3] = useState(false);
+
   const stabilityTeams = matrixTeams.filter(t => t.mode === 'Stability Accords');
   const singularityTeams = matrixTeams.filter(t => t.mode === 'Singularity Expansion');
 
+  // Compute per-character vigor consumed across ALL matrix teams
+  // Each participation costs 1 vigor. Max vigor: 1 normally, 2 for healers.
+  const computeVigorMap = (): Record<string, number> => {
+    const consumed: Record<string, number> = {};
+    // Only count Singularity Expansion teams for vigor
+    const singularityTeams = matrixTeams.filter(t => t.mode === 'Singularity Expansion');
+    for (const team of singularityTeams) {
+      for (const char of [team.character1, team.character2, team.character3]) {
+        if (char && char !== 'None') {
+          consumed[char] = (consumed[char] || 0) + 1;
+        }
+      }
+    }
+    return consumed;
+  };
+
+  const vigorConsumedMap = computeVigorMap();
+
+  const healerSet = new Set(healerCharacters);
+
+  const getMaxVigor = (charName: string) => healerSet.has(charName) ? 2 : 1;
+  const getCharVigorRemaining = (charName: string) =>
+    getMaxVigor(charName) - (vigorConsumedMap[charName] || 0);
+
+  const renderCharDropdown = (
+    value: string,
+    search: string,
+    showDrop: boolean,
+    setVal: (v: string) => void,
+    setSearch: (v: string) => void,
+    setShow: (v: boolean) => void,
+    placeholder: string
+  ) => {
+    // Process characters: consolidate Rover variants
+    const roverVariants = availableCharacters.filter(c => c.startsWith('Rover'));
+    const nonRoverChars = availableCharacters.filter(c => !c.startsWith('Rover'));
+    
+    // Create display entries - deduplicate Rovers by element
+    const processedChars: Array<{display: string, actual: string, isRover: boolean}> = [];
+    const roverElements = new Set<string>();
+    
+    // Add non-Rover characters
+    nonRoverChars.forEach(char => {
+      processedChars.push({display: char, actual: char, isRover: false});
+    });
+    
+    // Add Rover variants - deduplicate by element
+    roverVariants.forEach(rover => {
+      const element = rover.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
+      const display = element ? `Rover (${element})` : 'Rover';
+      
+      if (!roverElements.has(display)) {
+        roverElements.add(display);
+        processedChars.push({display, actual: rover, isRover: true});
+      }
+    });
+    
+    const filtered = processedChars.filter(c =>
+      c.display.toLowerCase().includes(search.toLowerCase())
+    );
+    
+    // Get display value for the input
+    const getDisplayValue = () => {
+      if (!value) return '';
+      if (value.startsWith('Rover')) {
+        const element = value.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
+        return element ? `Rover (${element})` : 'Rover';
+      }
+      return value;
+    };
+    
+    return (
+      <div className="relative">
+        <input
+          type="text"
+          value={showDrop ? search : getDisplayValue()}
+          onChange={(e) => { 
+            const newSearch = e.target.value;
+            setSearch(newSearch);
+            setShow(true);
+            
+            // Update value in real-time as user types
+            if (newSearch.trim() === '' || newSearch.toLowerCase() === 'none') {
+              setVal(''); // Allow empty/none
+            } else {
+              const exactMatch = processedChars.find(c => 
+                c.display.toLowerCase() === newSearch.toLowerCase()
+              );
+              if (exactMatch) {
+                setVal(exactMatch.actual); // Exact match
+              } else {
+                setVal(newSearch.trim()); // Custom entry
+              }
+            }
+          }}
+          onFocus={() => { 
+            setSearch(value ? getDisplayValue() : '');
+            setShow(true); 
+          }}
+          onBlur={() => setTimeout(() => { 
+            setShow(false);
+            setSearch(''); // Clear search - input will show getDisplayValue() now
+          }, 200)}
+          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
+          placeholder={placeholder}
+        />
+        {showDrop && filtered.length > 0 && (
+          <div className="absolute z-[100] left-0 min-w-[220px] mt-1 bg-slate-800 border border-slate-600 rounded shadow-lg max-h-44 overflow-y-auto">
+            <button
+              onMouseDown={() => { setVal(''); setSearch(''); setShow(false); }}
+              className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-700 transition-colors"
+            >
+              — None —
+            </button>
+            {filtered.map(charObj => {
+              // For Rover, check all variants' vigor (they share)
+              let remaining, maxVigor, isHealer;
+              if (charObj.isRover) {
+                const allRoverVigor = roverVariants.reduce((sum, rv) => {
+                  return sum + (vigorConsumedMap[rv] || 0);
+                }, 0);
+                isHealer = roverVariants.some(rv => healerSet.has(rv));
+                maxVigor = isHealer ? 2 : 1;
+                remaining = maxVigor - allRoverVigor;
+              } else {
+                remaining = getCharVigorRemaining(charObj.actual);
+                maxVigor = getMaxVigor(charObj.actual);
+                isHealer = healerSet.has(charObj.actual);
+              }
+              const depleted = remaining <= 0;
+              return (
+                <button
+                  key={charObj.display}
+                  onMouseDown={depleted ? undefined : () => { setVal(charObj.actual); setSearch(''); setShow(false); }}
+                  disabled={depleted}
+                  className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between transition-colors ${
+                    depleted ? 'text-slate-600 cursor-not-allowed' : 'hover:bg-slate-700 text-slate-200'
+                  }`}
+                >
+                  <span className="truncate flex items-center gap-1">
+                    {charObj.display}
+                    {isHealer && <span className="text-[9px] text-green-400 bg-green-400/10 px-1 rounded">healer</span>}
+                  </span>
+                  <span className={`ml-2 flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                    remaining <= 0 ? 'bg-red-500/30 text-red-500' :
+                    remaining < maxVigor ? 'bg-orange-500/30 text-orange-400' :
+                    'bg-slate-600 text-slate-400'
+                  }`}>
+                    {remaining}/{maxVigor}⚡
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const startEdit = () => {
     if (troopMatrix) {
-      setEditStabilityPoints(troopMatrix.stability_accords_points);
-      setEditSingularityPoints(troopMatrix.singularity_expansion_points);
-      setEditSingularityRound(troopMatrix.singularity_expansion_highest_round);
-      setEditLastReset(troopMatrix.last_reset);
       setEditNotes(troopMatrix.notes || '');
       setEditing(true);
     }
@@ -53,15 +218,8 @@ export default function TroopMatrixDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {
-      // Update last reset date
-      await safeInvoke('update_matrix_last_reset', {
-        lastReset: editLastReset
-      });
-      
-      // Keep existing points (not editable)
       const calculatedStabilityAstrite = calculateStabilityAccordsAstrite(troopMatrix?.stability_accords_points || 0);
       
-      // Get all singularity team scores for proper calculation
       const singularityTeamScores = singularityTeams.map(t => t.points);
       const { astrite: calculatedSingularityAstrite } = calculateSingularityExpansionAstrite(
         troopMatrix?.singularity_expansion_points || 0,
@@ -73,7 +231,7 @@ export default function TroopMatrixDetailsView({
         stabilityAccordsAstrite: calculatedStabilityAstrite,
         singularityExpansionPoints: troopMatrix?.singularity_expansion_points || 0,
         singularityExpansionAstrite: calculatedSingularityAstrite,
-        singularityExpansionHighestRound: editSingularityRound,
+        singularityExpansionHighestRound: troopMatrix?.singularity_expansion_highest_round || 0,
         notes: editNotes || null
       });
       setEditing(false);
@@ -90,6 +248,9 @@ export default function TroopMatrixDetailsView({
     setEditChar1(team.character1);
     setEditChar2(team.character2);
     setEditChar3(team.character3);
+    setCharSearch1(team.character1);
+    setCharSearch2(team.character2);
+    setCharSearch3(team.character3);
     setEditPoints(team.points);
     setEditRound(team.round_number);
     setEditingTeam(team.id);
@@ -144,10 +305,14 @@ export default function TroopMatrixDetailsView({
   };
 
   const deleteTeam = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this team?')) return;
+    setDeleteTeamDialog(id);
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (deleteTeamDialog === null) return;
     
     try {
-      await safeInvoke('delete_matrix_team', { id });
+      await safeInvoke('delete_matrix_team', { id: deleteTeamDialog });
       
       // Recalculate total points and astrite after deleting team
       if (troopMatrix) {
@@ -179,21 +344,36 @@ export default function TroopMatrixDetailsView({
     } catch (error) {
       console.error('Failed to delete team:', error);
       alert('Failed to delete team');
+    } finally {
+      setDeleteTeamDialog(null);
     }
   };
 
   const addTeam = async (mode: string) => {
-    const teamCount = matrixTeams.filter(t => t.mode === mode).length;
+    const modeTeams = matrixTeams.filter(t => t.mode === mode);
+    
+    // Find the lowest available team_number for this mode
+    let newTeamNumber = 1;
+    const existingNumbers = new Set(modeTeams.map(t => t.team_number));
+    while (existingNumbers.has(newTeamNumber)) {
+      newTeamNumber++;
+    }
+    
+    // For Singularity Expansion, find the last round used
+    let defaultRound = 1;
+    if (mode === 'Singularity Expansion' && modeTeams.length > 0) {
+      defaultRound = Math.max(...modeTeams.map(t => t.round_number || 1));
+    }
     
     try {
       await safeInvoke('add_matrix_team', {
         mode,
-        teamNumber: teamCount + 1,
+        teamNumber: newTeamNumber,
         character1: 'None',
         character2: 'None',
         character3: 'None',
         points: 0,
-        roundNumber: mode === 'Singularity Expansion' ? 1 : null
+        roundNumber: mode === 'Singularity Expansion' ? defaultRound : null
       });
       
       // Recalculate total points and astrite after adding team
@@ -263,27 +443,9 @@ export default function TroopMatrixDetailsView({
         {isEditing ? (
           <>
             <div className="grid grid-cols-3 gap-2">
-              <input
-                type="text"
-                value={editChar1}
-                onChange={(e) => setEditChar1(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
-                placeholder="Char 1"
-              />
-              <input
-                type="text"
-                value={editChar2}
-                onChange={(e) => setEditChar2(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
-                placeholder="Char 2"
-              />
-              <input
-                type="text"
-                value={editChar3}
-                onChange={(e) => setEditChar3(e.target.value)}
-                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
-                placeholder="Char 3"
-              />
+              {renderCharDropdown(editChar1, charSearch1, showCharDrop1, setEditChar1, setCharSearch1, setShowCharDrop1, 'Char 1')}
+              {renderCharDropdown(editChar2, charSearch2, showCharDrop2, setEditChar2, setCharSearch2, setShowCharDrop2, 'Char 2')}
+              {renderCharDropdown(editChar3, charSearch3, showCharDrop3, setEditChar3, setCharSearch3, setShowCharDrop3, 'Char 3')}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -370,17 +532,6 @@ export default function TroopMatrixDetailsView({
 
         {editing ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-slate-400 block mb-1">Last Reset</label>
-                <input
-                  type="date"
-                  value={editLastReset}
-                  onChange={(e) => setEditLastReset(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                />
-              </div>
-            </div>
             <div>
               <label className="text-sm text-slate-400 block mb-1">Notes</label>
               <textarea
@@ -548,6 +699,17 @@ export default function TroopMatrixDetailsView({
             )}
           </div>
         </div>
+
+        <ConfirmDialog
+          isOpen={deleteTeamDialog !== null}
+          title="Delete Team"
+          message="Are you sure you want to delete this team? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={confirmDeleteTeam}
+          onCancel={() => setDeleteTeamDialog(null)}
+        />
     </div>
   );
 }

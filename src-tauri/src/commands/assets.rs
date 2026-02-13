@@ -45,34 +45,38 @@ pub async fn get_asset(
     }
     
     // Step 2: If cache failed and this is a weapon, resolve display name to filename and try subdirectory
-    if matches!(asset_type_enum, AssetType::Weapon) {
+    //if matches!(asset_type_enum, AssetType::Weapon) {
         // Try to resolve the display name to get the actual filename
-        let actual_filename = if let Ok(resolver_guard) = resolver_state.try_lock() {
-            if let Some(resolver) = resolver_guard.as_ref() {
-                if let Some(metadata) = resolver.resolve_by_name(&resolved_name) {
-                    Some(metadata.filename.clone())
-                } else {
-                    None
-                }
+    let actual_filename = if let Ok(resolver_guard) = resolver_state.try_lock() {
+        if let Some(resolver) = resolver_guard.as_ref() {
+            if let Some(metadata) = resolver.resolve_by_name(&resolved_name) {
+                Some(metadata.filename.clone())
             } else {
                 None
             }
         } else {
             None
-        };
-        
-        // Use the resolved filename if available, otherwise use the original name
-        let filename = actual_filename.unwrap_or_else(|| resolved_name.clone());
-        
-        if let Some(wtype) = &weapon_type {
-            let subdir_path = format!("{}/{}", wtype, filename);
-            if let Ok(result) = manager.get_asset_base64(asset_type_enum, &subdir_path) {
-                return Ok(result);
-            }
-        } else {
         }
-    }
+    } else {
+        None
+    };
     
+    // Use the resolved filename if available, otherwise use the original name
+    let filename = actual_filename.unwrap_or_else(|| resolved_name.clone());
+    let subdir_path = if matches!(asset_type_enum, AssetType::Weapon) {
+        if let Some(wtype) = &weapon_type {
+            format!("{}/{}", wtype, filename)
+        } else {
+            format!("{}", filename)
+        }
+    } else {
+        format!("{}", filename)
+    };
+
+    if let Ok(result) = manager.get_asset_base64(asset_type_enum, &subdir_path) {
+        return Ok(result);
+    }
+
     // Both attempts failed
     Err(format!("Failed to get asset: Asset not found: {}/{} (weapon_type: {:?})", asset_type, resolved_name, weapon_type))
 }

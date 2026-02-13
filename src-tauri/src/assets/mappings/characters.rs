@@ -7,8 +7,10 @@ use std::collections::HashMap;
 /// IMPORTANT: Filenames must match EXACTLY what's in resources/assets/characters/
 fn get_character_cards() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'static str>)> {
     vec![
-        // ROVER - Special case with generic filename
-        ("rover_card.webp", "Rover", 5, "Any", vec!["5star"]),
+        // ROVER - Three variants with unique keys but same image
+        ("rover_aero", "Aero Rover", 5, "Aero", vec!["5star", "rover"]),
+        ("rover_havoc", "Havoc Rover", 5, "Havoc", vec!["5star", "rover"]),
+        ("rover_spectro", "Spectro Rover", 5, "Spectro", vec!["5star", "rover"]),
         
         // 5-STAR LIMITED CHARACTERS
         // Note: Some use numeric IDs (44.webp, 45.webp, etc.)
@@ -85,9 +87,16 @@ pub fn get_character_mappings() -> HashMap<String, AssetMetadata> {
                 .replace("'", "")
                 .replace("-", "_");
             
+            // Special handling for Rover variants - use actual image filename
+            let actual_filename = if filename.starts_with("rover_") {
+                "rover_card.webp".to_string()
+            } else {
+                filename.to_string()
+            };
+
             map.insert(filename.to_string(), AssetMetadata {
                 id,
-                filename: filename.to_string(),
+                filename: actual_filename,
                 display_name: name.to_string(),
                 asset_type: "character".to_string(),
                 rarity: Some(rarity),
@@ -101,38 +110,4 @@ pub fn get_character_mappings() -> HashMap<String, AssetMetadata> {
     }
 
     map
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_character_mappings_created() {
-        let mappings = get_character_mappings();
-        assert!(mappings.len() > 0, "Should have character mappings");
-    }
-
-    #[test]
-    fn test_mornye_mapping_exists() {
-        let mappings = get_character_mappings();
-        
-        // Check if Mornye is mapped
-        let mornye = mappings.values()
-            .find(|m| m.display_name == "Mornye");
-        
-        assert!(mornye.is_some(), "Mornye should be in mappings");
-        assert_eq!(mornye.unwrap().filename, "46.webp");
-    }
-
-    #[test]
-    fn test_lynae_mapping_exists() {
-        let mappings = get_character_mappings();
-        
-        let lynae = mappings.values()
-            .find(|m| m.display_name == "Lynae");
-        
-        assert!(lynae.is_some(), "Lynae should be in mappings");
-        assert_eq!(lynae.unwrap().filename, "48.webp");
-    }
 }

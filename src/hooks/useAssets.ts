@@ -8,7 +8,7 @@ import { invoke } from '@tauri-apps/api/core'; // Tauri v2
 import { listen } from '@tauri-apps/api/event';
 import { useState, useEffect, useCallback } from 'react';
 
-export type AssetType = 'character' | 'weapon' | 'echo' | 'element' | 'misc';
+export type AssetType = 'characters' | 'weapon' | 'echo' | 'element' | 'misc';
 
 interface UpdateProgress {
   current: number;
@@ -159,7 +159,7 @@ export function useCharacterAsset(characterName: string) {
 
     const loadAsset = async () => {
       setIsLoading(true);
-      const path = await getAssetPath('character', characterName);
+      const path = await getAssetPath('characters', characterName);
       
       if (!cancelled) {
         if (path) {

@@ -52,9 +52,9 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
     - Success handles should be displayed in react component, not as OS alerts
     - Warnings should be displayed in react component, not as OS alerts
 
+- Standardize dropdown lists/alerts/errors/confirmation modals to use portal renders instead of relative positions.
+
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
-- **Endgame:** Move last reset date editing to parent gamemodes card
-- **Endgame - ToA:** Move Progress X/12 stars to header area, on the right side.
 
 ---
 
@@ -67,7 +67,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 
 - Migrate database entries to hardcoded regions and maps for exploration tab.
 
-- **Endgame:** Implement smart vigor system for ToA and Troop Matrix and dropdown menu for selectable characters for teams based on vigor avalable/consumed.
+-**Add Characters: ** Create a backend field in hardcoded map to weapon type for each character and make it populate automatically in the add modal when selected.
 
 ---
 
@@ -81,11 +81,11 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Character Modal Overview Tab:** Weapon swap warning does not clear if selecting the weapon currently equipped.
 - **Character Modal Overview Tab:** Max level display is wrong. It works as intended in Characters' Tab Info section.
 
-- **Endgame:** Removing a team goes through before confirmation dialog.
-- **Endgame - ToA:** If a team is set with less than 3 characters, don't render slate bg for empty slots.
-- **Endgame - ToA:** Implement logic check to prevent adding two teams to the same side.
+- **Endgame:** Adding a new team/Saving edits refreshes the whole page (which can be a bit disorientating)
+
+- **Endgame - WhiWa:** Implement logic check to prevent adding two teams to the same side.
 - **Endgame - WhiWa:** Adding a second team spawns the add form on the left instead of the right.
-- **Endgame - Troop Matrix:** Removing a team out of order and attempt to add it again errors with `Failed to add team: UNIQUE constraint failed: matrix_teams.mode, matrix_teams.team_number` (to replicate: Add a couple o teams on either stability/singularity accord, remove first team and attempt to add again).
+
 
 ---
 
