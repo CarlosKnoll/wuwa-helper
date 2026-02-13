@@ -7,8 +7,8 @@ import {
   getBuildStatusPriority,
   safeInvoke,
 } from '../utils';
-import CharacterModal from '../components/CharacterModal';
-import AddCharacterModal from '../components/AddCharacterModal';
+import CharacterModal from '../components/characters/CharacterModal';
+import AddCharacterModal from '../components/characters/AddCharacterModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ElementIcon from '../components/ElementIcon';
 import { useAssets } from '../hooks/useAssets';

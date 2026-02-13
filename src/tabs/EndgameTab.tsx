@@ -1,28 +1,17 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Trophy, Zap, Users, RotateCcw, Edit2, Save, X } from 'lucide-react';
 import { safeInvoke } from '../utils';
-import { 
-  TowerOfAdversity, 
-  TowerDetails,
-  TowerFloor,
-  TowerAreaEffect, 
-  TowerTeam, 
-  WhimperingWastes, 
-  TorrentsStage, 
-  TroopMatrix, 
-  MatrixTeam 
-} from '../types';
-import TowerDetailsView from '../components/TowerDetailsView';
-import WhimperingWastesDetailsView from '../components/WhimperingWastesDetailsView';
-import TroopMatrixDetailsView from '../components/TroopMatrixDetailsView';
+import { TowerOfAdversity, TowerDetails, TowerFloor, TowerAreaEffect, TowerTeam, 
+         WhimperingWastes, TorrentsStage, 
+         TroopMatrix, MatrixTeam, 
+         EndgameTabRef } from '../types';
+import TowerDetailsView from '../components/endgame/TowerDetailsView';
+import WhimperingWastesDetailsView from '../components/endgame/WhimperingWastesDetailsView';
+import TroopMatrixDetailsView from '../components/endgame/DoublePawnMatrixDetailsView';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { CurrencyIcon } from '../components/CurrencyIcon';
 
 type EndgameMode = 'tower' | 'wastes' | 'matrix' | null;
-
-export interface EndgameTabRef {
-  refresh: () => Promise<void>;
-}
 
 const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
   const [loading, setLoading] = useState(false);

@@ -1,5 +1,5 @@
 import { X, AlertTriangle, Info, AlertCircle } from 'lucide-react';
-import { ConfirmDialogProps } from '../types';
+import { ConfirmDialogProps } from '../props';
 
 export default function ConfirmDialog({
   isOpen,

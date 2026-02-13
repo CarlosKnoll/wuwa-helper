@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Edit2, Save, X, Zap, ChevronUp, ChevronDown } from 'lucide-react';
-import { CharacterTalents, CharacterTalentsSectionProps } from '../types';
-import { safeInvoke } from '../utils';
+import { Edit2, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { CharacterTalentsSectionProps } from '../../props';
+import { safeInvoke } from '../../utils';
 
 export default function CharacterTalentsSection({
   talents,
@@ -364,7 +364,6 @@ function TalentNode({
   level,
   onIncrease,
   onDecrease,
-  editing
 }: {
   label: string;
   icon: string;
@@ -418,7 +417,6 @@ function TalentNode({
 function MinorTrace({
   isUnlocked,
   onClick,
-  editing
 }: {
   isUnlocked: boolean;
   onClick: () => void;
@@ -447,7 +445,6 @@ function MinorTrace({
 function MajorTrace({
   isUnlocked,
   onClick,
-  editing
 }: {
   isUnlocked: boolean;
   onClick: () => void;

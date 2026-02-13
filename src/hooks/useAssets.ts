@@ -7,29 +7,9 @@
 import { invoke } from '@tauri-apps/api/core'; // Tauri v2
 import { listen } from '@tauri-apps/api/event';
 import { useState, useEffect, useCallback } from 'react';
+import { CacheStats, UpdateProgress, UpdateSummary } from '../types';
 
 export type AssetType = 'characters' | 'weapon' | 'echo' | 'element' | 'misc';
-
-interface UpdateProgress {
-  current: number;
-  total: number;
-  current_asset: string;
-  status: 'fetching' | 'downloading' | 'cached' | 'failed' | 'complete';
-}
-
-interface UpdateSummary {
-  downloaded: number;
-  cached: number;
-  failed: number;
-  total_assets: number;
-}
-
-interface CacheStats {
-  total_assets: number;
-  assets_by_type: Record<AssetType, number>;
-  last_update: string | null;
-  cache_size_mb: number;
-}
 
 export function useAssets() {
   const [isInitialized, setIsInitialized] = useState(false);

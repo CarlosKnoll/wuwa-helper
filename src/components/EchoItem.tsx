@@ -1,27 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { Edit2, Save, Plus, Trash2, X, ChevronDown } from 'lucide-react';
-import { EchoSubstat, EchoItemProps } from '../types';
+import { Edit2, Save, Plus, Trash2, X } from 'lucide-react';
+import { PortalDropdown } from './PortalDropdown';
+import { EchoSubstat, StatInfo, EchoStatsOptions, EchoListItem } from '../types';
+import { EchoItemProps } from '../props';
 import { safeInvoke, getRarityStars } from '../utils';
 import ConfirmDialog from './ConfirmDialog';
 import { invoke } from '@tauri-apps/api/core';
+import { createPortal } from 'react-dom';
 
-interface StatInfo {
-  name: string;
-  is_percentage: boolean;
-}
 
-interface EchoStatsOptions {
-  main_stats_by_cost: Record<number, StatInfo[]>;
-  substats: StatInfo[];
-}
-
-interface EchoListItem {
-  name: string;
-  cost: number;
-  echo_class: string;
-  available_sets: string[];
-}
 
 export default function EchoItem({ echo, substats = [], onUpdate, echoImage, echoSetImage, echoMetadata, allowedEchoSets = [] }: EchoItemProps & { allowedEchoSets?: string[] }) {
   const [editing, setEditing] = useState(false);
@@ -30,8 +17,6 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
   const [availableEchoSets, setAvailableEchoSets] = useState<string[]>([]);
   const [availableEchoes, setAvailableEchoes] = useState<EchoListItem[]>([]);
   const [loadingEchoes, setLoadingEchoes] = useState(true);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isPhantom, setIsPhantom] = useState(false);
   const [form, setForm] = useState({
     echo_name: '',
@@ -102,7 +87,6 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       main_stat_value: echo.main_stat_value || '',
       notes: echo.notes || '',
     });
-    setSearchTerm(echo.echo_name || '');
   }, [echo, editing]);
 
   // Sync substats whenever they change, but not while editing
@@ -111,9 +95,9 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     setSubstatForms([...substats]);
   }, [substats, editing]);
 
-  // Filter echoes based on search term and selected sonata effect
+  // Filter echoes based on current form name and selected sonata effect
   const filteredEchoes = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = (form.echo_name || '').trim().toLowerCase();
     let filtered = availableEchoes;
 
     // Filter out phantom variants from dropdown
@@ -137,7 +121,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
     }
 
     return filtered;
-  }, [searchTerm, availableEchoes, form.echo_set, allowedEchoSets]);
+  }, [form.echo_name, availableEchoes, form.echo_set, allowedEchoSets]);
 
   // Check if phantom variant exists for this echo
   const hasPhantomVariant = useMemo(() => {
@@ -184,15 +168,6 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       })
       .catch(err => console.error('Failed to load available sonata effects:', err));
     
-    setSearchTerm(echoItem.name);
-    setShowDropdown(false);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setForm({ ...form, echo_name: value });
-    setSearchTerm(value);
-    setShowDropdown(true);
   };
 
   const togglePhantomVariant = async () => {
@@ -223,7 +198,6 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       
       // Update local state
       setForm({ ...form, echo_name: newName });
-      setSearchTerm(newName);
       setIsPhantom(!isPhantom);
       
       // Trigger parent update to reload images
@@ -297,7 +271,6 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
       main_stat_value: echo.main_stat_value || '',
       notes: echo.notes || '',
     });
-    setSearchTerm(echo.echo_name || '');
     setSubstatForms([...substats]);
     setNewSubstats([]);
     setDeletedSubstatIds([]);
@@ -437,80 +410,44 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
             {/* Echo Name */}
             <div className="flex-1 min-w-0">
               {editing ? (
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={handleInputChange}
-                    onFocus={() => setShowDropdown(true)}
-                    onBlur={() => {
-                      // Delay hiding dropdown to allow click events to fire
-                      setTimeout(() => setShowDropdown(false), 200);
-                    }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 pr-8 text-sm font-medium focus:outline-none focus:border-yellow-500 mb-2"
-                    placeholder={loadingEchoes ? "Loading echoes..." : "Echo name"}
-                    disabled={loadingEchoes}
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowDropdown(!showDropdown)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors -mt-1"
-                    disabled={loadingEchoes}
-                  >
-                    <ChevronDown size={16} />
-                  </button>
-                  
-                  {/* Dropdown */}
-                  {showDropdown && !loadingEchoes && (
-                    <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto -translate-y-2">
-                      {filteredEchoes.length > 0 ? (
-                        filteredEchoes.map((echoItem, index) => {
-                          // Check if this echo is available in multiple sets from the filter criteria
-                          const filterSets = allowedEchoSets.length > 0 ? allowedEchoSets : (form.echo_set ? [form.echo_set] : []);
-                          const matchingSets = filterSets.length > 0 
-                            ? echoItem.available_sets.filter(set => filterSets.includes(set))
-                            : echoItem.available_sets;
-                          const isMultiSet = matchingSets.length > 1;
-                          
-                          return (
-                            <button
-                              key={`${echoItem.name}-${index}`}
-                              type="button"
-                              onMouseDown={(e) => {
-                                // Use onMouseDown instead of onClick to fire before onBlur
-                                e.preventDefault();
-                                handleEchoSelect(echoItem);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-slate-700 transition-colors text-white flex items-center justify-between text-xs"
-                            >
-                              <span className="flex items-center gap-1">
-                                {echoItem.name}
-                                {isMultiSet && (
-                                  <span className="text-[10px] text-yellow-400 font-semibold" title={`Available in: ${matchingSets.join(', ')}`}>
-                                    [{matchingSets.length} sets]
-                                  </span>
-                                )}
-                              </span>
-                              <span className="text-slate-400">
-                                {echoItem.cost}-Cost • {echoItem.echo_class}
-                              </span>
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className="px-3 py-2 text-slate-400 text-xs">
-                          {availableEchoes.length === 0 
-                            ? "No echoes loaded. You can still add a custom echo name."
-                            : form.echo_set
-                              ? `No echoes found matching "${searchTerm}" for the selected Sonata Effect "${form.echo_set}".`
-                              : `No matches found. You can still add "${form.echo_name}" as a custom echo.`
-                          }
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <PortalDropdown
+                  value={form.echo_name}
+                  onChange={(name) => {
+                    const echoItem = availableEchoes.find(e => e.name === name);
+                    if (echoItem) {
+                      handleEchoSelect(echoItem);
+                    } else {
+                      // Custom / typed name not in list
+                      setForm(prev => ({ ...prev, echo_name: name }));
+                    }
+                  }}
+                  options={filteredEchoes.map(echoItem => {
+                    const filterSets = allowedEchoSets.length > 0 ? allowedEchoSets : (form.echo_set ? [form.echo_set] : []);
+                    const matchingSets = filterSets.length > 0
+                      ? echoItem.available_sets.filter(s => filterSets.includes(s))
+                      : echoItem.available_sets;
+                    return {
+                      label: echoItem.name,
+                      value: echoItem.name,
+                      meta: `${echoItem.cost}-Cost • ${echoItem.echo_class}`,
+                      badge: matchingSets.length > 1 ? {
+                        text: `[${matchingSets.length} sets]`,
+                        className: 'text-yellow-400 font-semibold',
+                      } : undefined,
+                    };
+                  })}
+                  placeholder={loadingEchoes ? 'Loading echoes…' : 'Echo name'}
+                  emptyMessage={
+                    availableEchoes.length === 0
+                      ? 'No echoes loaded. You can still type a custom echo name.'
+                      : form.echo_set
+                        ? `No echoes found for sonata "${form.echo_set}".`
+                        : 'No matches found.'
+                  }
+                  loading={loadingEchoes}
+                  showChevron
+                  className="text-sm font-medium mb-2"
+                />
               ) : (
                 <div className="flex items-center gap-2">
                   <div className="font-semibold text-white text-base">{form.echo_name}</div>
@@ -653,35 +590,23 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
               </div>
             </div>
             
-            {/* Echo Set Dropdown - FIXED: Show even when availableEchoSets is empty initially */}
+            {/* Echo Set Dropdown */}
             <div>
               <label className="text-xs text-slate-500">Sonata Effect</label>
-              <select
+              <PortalDropdown
                 value={form.echo_set}
-                onChange={e => setForm({ ...form, echo_set: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
-              >
-                <option value="">Select sonata effect...</option>
-                {availableEchoSets
-                  .filter(setName => {
-                    // If build has selected sets, only show those sets
-                    // Otherwise, show all available sets for this echo
-                    if (allowedEchoSets.length > 0) {
-                      return allowedEchoSets.includes(setName);
-                    }
-                    return true;
-                  })
-                  .map(setName => (
-                    <option key={setName} value={setName}>
-                      {setName}
-                    </option>
-                  ))}
-              </select>
-              {availableEchoSets.length === 0 && form.echo_name && (
-                <div className="text-xs text-slate-400 mt-1">
-                  No sonata effects available for this echo
-                </div>
-              )}
+                onChange={v => setForm({ ...form, echo_set: v })}
+                options={availableEchoSets
+                  .filter(s => allowedEchoSets.length === 0 || allowedEchoSets.includes(s))
+                  .map(s => ({ label: s, value: s }))}
+                placeholder="Select sonata effect…"
+                clearLabel="— None —"
+                emptyMessage={
+                  availableEchoSets.length === 0 && form.echo_name
+                    ? 'No sonata effects available for this echo'
+                    : 'No options found.'
+                }
+              />
               {allowedEchoSets.length > 0 && availableEchoSets.length > 0 && (
                 <div className="text-xs text-slate-400 mt-1">
                   Only showing sets from your build configuration
@@ -689,23 +614,18 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
               )}
             </div>
             
-            {/* Main Stat: Dropdown for name, text input for value */}
+            {/* Main Stat */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-slate-500">Main Stat</label>
-                <select
+                <PortalDropdown
                   value={form.main_stat}
-                  onChange={e => setForm({ ...form, main_stat: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
+                  onChange={v => setForm({ ...form, main_stat: v })}
+                  options={getMainStatOptions().map(s => ({ label: s.name, value: s.name }))}
+                  placeholder="Select main stat…"
+                  clearLabel="— None —"
                   disabled={!echoStatsOptions || !form.cost}
-                >
-                  <option value="">Select main stat...</option>
-                  {getMainStatOptions().map(stat => (
-                    <option key={stat.name} value={stat.name}>
-                      {stat.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div>
                 <label className="text-xs text-slate-500">
@@ -752,26 +672,20 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                 {/* Existing substats: Dropdown for name, text input for value */}
                 {visibleSubstats.map((sub) => (
                   <div key={sub.id} className="flex gap-2">
-                    <select
-                      value={sub.stat_name}
-                      onChange={e => {
-                        const newSubstats = [...substatForms];
-                        const actualIdx = newSubstats.findIndex(s => s.id === sub.id);
-                        if (actualIdx >= 0) {
-                          newSubstats[actualIdx] = { ...sub, stat_name: e.target.value };
-                          setSubstatForms(newSubstats);
-                        }
-                      }}
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
-                      disabled={!echoStatsOptions}
-                    >
-                      <option value="">Select stat...</option>
-                      {echoStatsOptions?.substats.map(stat => (
-                        <option key={stat.name} value={stat.name}>
-                          {stat.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex-1">
+                      <PortalDropdown
+                        value={sub.stat_name}
+                        onChange={statName => {
+                          const updated = [...substatForms];
+                          const idx = updated.findIndex(s => s.id === sub.id);
+                          if (idx >= 0) { updated[idx] = { ...sub, stat_name: statName }; setSubstatForms(updated); }
+                        }}
+                        options={(echoStatsOptions?.substats ?? []).map(s => ({ label: s.name, value: s.name }))}
+                        placeholder="Select stat…"
+                        clearLabel="— None —"
+                        disabled={!echoStatsOptions}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={stripPercentage(sub.stat_value)}
@@ -810,23 +724,21 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                 {/* New substats: Dropdown for name, text input for value */}
                 {newSubstats.map((sub, idx) => (
                   <div key={`new-${idx}`} className="flex gap-2">
-                    <select
-                      value={sub.stat_name}
-                      onChange={e => {
-                        const updated = [...newSubstats];
-                        updated[idx] = { ...sub, stat_name: e.target.value };
-                        setNewSubstats(updated);
-                      }}
-                      className="flex-1 bg-slate-800 border border-yellow-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-500"
-                      disabled={!echoStatsOptions}
-                    >
-                      <option value="">Select stat...</option>
-                      {echoStatsOptions?.substats.map(stat => (
-                        <option key={stat.name} value={stat.name}>
-                          {stat.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex-1">
+                      <PortalDropdown
+                        value={sub.stat_name}
+                        onChange={statName => {
+                          const updated = [...newSubstats];
+                          updated[idx] = { ...sub, stat_name: statName };
+                          setNewSubstats(updated);
+                        }}
+                        options={(echoStatsOptions?.substats ?? []).map(s => ({ label: s.name, value: s.name }))}
+                        placeholder="Select stat…"
+                        clearLabel="— None —"
+                        disabled={!echoStatsOptions}
+                        className="border-yellow-700"
+                      />
+                    </div>
                     <input
                       type="text"
                       value={stripPercentage(sub.stat_value)}

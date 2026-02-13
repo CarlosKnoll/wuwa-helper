@@ -1,3 +1,5 @@
+import { AssetType } from "./hooks/useAssets";
+
 /* =======================
 Dashboard
 ======================= */
@@ -36,7 +38,7 @@ export interface Goal {
 
 
 /* =======================
-Character & Equipment
+Character
 ======================= */
 
 export type BuildStatus =
@@ -61,26 +63,14 @@ export interface Character {
   notes: string | null;
 }
 
-export interface CharacterModalProps {
-  character: Character;
-  onClose: () => void;
-  onUpdate: () => void;
-}
-
-export interface CharacterInfoProps {
-  character: Character;
-  form: {
-    level: number;
-    ascension: number;
-    waveband: number;
-    build_status: string;
-    notes: string;
-  };
-  editing: boolean;
-  onEdit: () => void;
-  onSave: () => Promise<void>;
-  onCancel: () => void;
-  onChange: (form: any) => void;
+export interface CharacterWeapon {
+  id: number;
+  character_id: number;
+  weapon_name: string;
+  rarity: number;
+  level: number;
+  rank: number;
+  notes: string | null;
 }
 
 export interface CharacterTalents {
@@ -106,38 +96,10 @@ export interface CharacterTalents {
   forte_major_2: number;
 }
 
-export interface CharacterTalentsSectionProps {
-  talents: CharacterTalents | null;
-  characterId: number;
-  onUpdate: () => void;
-}
-
-export interface CharacterWeapon {
-  id: number;
-  character_id: number;
-  weapon_name: string;
+export interface CharacterListItem {
+  name: string;
   rarity: number;
-  level: number;
-  rank: number;
-  notes: string | null;
-}
-
-export interface CharacterWeaponSectionProps {
-  weapon: CharacterWeapon | null;
-  characterId: number;
-  onUpdate: () => void;
-}
-
-export interface CharacterEchoBuildSectionProps {
-  echoBuild: EchoBuild | null;
-  echoes: Echo[];
-  echoSubstats: Record<number, EchoSubstat[]>;
-  onUpdate: () => void;
-}
-
-export interface AddCharacterModalProps {
-  onClose: () => void;
-  onSuccess: () => void;
+  element: string;
 }
 
 /* =======================
@@ -156,9 +118,10 @@ export interface Weapon {
   notes: string | null;
 }
 
-export interface AddWeaponModalProps {
-  onClose: () => void;
-  onSuccess: () => void;
+export interface WeaponListItem {
+  name: string;
+  weapon_type: string;
+  rarity: number;
 }
 
 /* =======================
@@ -215,17 +178,21 @@ export interface EchoListItem {
   available_sets: string[];
 }
 
-export interface EchoItemProps {
-  echo: Echo;
-  substats: EchoSubstat[];
-  onUpdate: () => void;
-  echoImage?: string; // Optional base64 image data for the echo
-  echoSetImage?: string; // Optional base64 image data for the echo's set
-  echoMetadata?: {
-    passive1: string;
-    passive2: string;
-    cooldown: number;
-  };
+export interface StatInfo {
+  name: string;
+  is_percentage: boolean;
+}
+
+export interface EchoStatsOptions {
+  main_stats_by_cost: Record<number, StatInfo[]>;
+  substats: StatInfo[];
+}
+
+export interface EchoListItem {
+  name: string;
+  cost: number;
+  echo_class: string;
+  available_sets: string[];
 }
 
 /* =======================
@@ -282,6 +249,11 @@ export interface WuwaTrackerExport {
   pulls: WuwaTrackerPull[];
 }
 
+export interface FiveStarPull {
+  pull: PullHistory;
+  pullsSinceLastFiveStar: number;
+}
+
 /* =======================
 Tower of Adversity
 ======================= */
@@ -326,17 +298,6 @@ export interface TowerTeam {
   character3: string;
 }
 
-export interface TowerSectionProps {
-  towerInfo: TowerOfAdversity | null;
-  towerDetails: TowerDetails[];
-  towerFloors: TowerFloor[];
-  towerEffects: TowerAreaEffect[];
-  towerTeams: TowerTeam[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
-}
-
 /* =======================
    Whimpering Wastes
    ======================= */
@@ -350,14 +311,6 @@ export interface WhimperingWastes {
   torrents_total_points: number;
   torrents_astrite: number;
   notes: string | null;
-}
-
-export interface WhimperingWastesSectionProps {
-  wastesInfo: WhimperingWastes | null;
-  torrentsStages: TorrentsStage[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
 }
 
 export interface TorrentsStage {
@@ -397,26 +350,63 @@ export interface MatrixTeam {
   round_number: number | null; // Only for Singularity Expansion
 }
 
-// Component Props Interfaces
-export interface TroopMatrixSectionProps {
-  troopMatrix: TroopMatrix | null;
-  matrixTeams: MatrixTeam[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUpdate: () => void;
-}
-
 /* =======================
 Utility
 ======================= */
 
-export interface ConfirmDialogProps {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  variant?: 'danger' | 'warning' | 'info';
+export interface DropPos { top: number; left: number; width: number }
+
+export interface PortalDropdownOption {
+  label: string;
+  value: string;
+  meta?: string;
+  disabled?: boolean;
+  dim?: boolean;
+  badge?: { text: string; className: string };
+}
+
+export interface AssetMetadata {
+  id: string;
+  filename: string;
+  display_name: string;
+  asset_type: string;
+  rarity?: number;
+  element?: string;
+  weapon_type?: string;
+  echo_class?: string;
+  cost?: number;
+  tags: string[];
+}
+
+export interface AssetFilters {
+  asset_type?: string;
+  rarity?: number;
+  element?: string;
+  weapon_type?: string;
+  tags?: string[];
+}
+
+export interface UpdateProgress {
+  current: number;
+  total: number;
+  current_asset: string;
+  status: 'fetching' | 'downloading' | 'cached' | 'failed' | 'complete';
+}
+
+export interface UpdateSummary {
+  downloaded: number;
+  cached: number;
+  failed: number;
+  total_assets: number;
+}
+
+export interface CacheStats {
+  total_assets: number;
+  assets_by_type: Record<AssetType, number>;
+  last_update: string | null;
+  cache_size_mb: number;
+}
+
+export interface EndgameTabRef {
+  refresh: () => Promise<void>;
 }

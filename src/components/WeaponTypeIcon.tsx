@@ -5,13 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAssets } from '../hooks/useAssets';
-
-interface WeaponTypeIconProps {
-  weaponType: string;
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  showLabel?: boolean;
-}
+import { WeaponTypeIconProps } from '../props';
 
 const sizeMap = {
   sm: 'w-4 h-4',

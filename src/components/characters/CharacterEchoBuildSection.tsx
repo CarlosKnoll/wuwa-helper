@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Edit2, Save, X, Shield, Plus, Info, AlertTriangle } from 'lucide-react';
-import { CharacterEchoBuildSectionProps, EchoSetData } from '../types';
-import { safeInvoke } from '../utils';
-import EchoItem from './EchoItem';
+import { EchoSetData } from '../../types';
+import { CharacterEchoBuildSectionProps } from '../../props';
+import { safeInvoke } from '../../utils';
+import EchoItem from '../EchoItem';
 import { invoke } from '@tauri-apps/api/core';
 
 export default function CharacterEchoBuildSection({
@@ -118,7 +119,6 @@ export default function CharacterEchoBuildSection({
       try {
         // Try multiple strategies to get the echo image
         let base64: string | null = null;
-        let successStrategy: string | null = null;
         
         // Strategy 1: Try using asset resolver to get filename
         try {
@@ -131,7 +131,6 @@ export default function CharacterEchoBuildSection({
               assetType: 'echo',
               name: cleanName,
             });
-            successStrategy = 'resolver';
           }
         } catch (resolverErr) {
         }
@@ -144,7 +143,6 @@ export default function CharacterEchoBuildSection({
               assetType: 'echo',
               name: nameId,
             });
-            successStrategy = 'name_to_id';
           } catch (directErr) {
           }
         }
@@ -156,7 +154,6 @@ export default function CharacterEchoBuildSection({
               assetType: 'echo',
               name: echo.echo_name,
             });
-            successStrategy = 'as_is';
           } catch (asIsErr) {
           }
         }
@@ -337,9 +334,6 @@ export default function CharacterEchoBuildSection({
     : null;
 
   const isMixedBuild = form.secondary_set_pieces > 0;
-  const configLabel = isMixedBuild 
-    ? `${form.primary_set_pieces}pc + ${form.secondary_set_pieces}pc`
-    : `${form.primary_set_pieces}pc`;
 
   // Calculate allowed echo set names based on build configuration
   const allowedEchoSetNames: string[] = [];

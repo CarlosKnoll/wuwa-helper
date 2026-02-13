@@ -4,13 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useAssets } from '../hooks/useAssets';
-
-interface CharacterPortraitProps {
-  characterName: string;
-  size?: 'xs' | 'sm' | 'md';
-  className?: string;
-}
+import { useAssets } from '../../hooks/useAssets';
+import { CharacterPortraitProps } from '../../props';
 
 const sizeMap = {
   xs: 'w-10 h-10',

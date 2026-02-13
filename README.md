@@ -52,7 +52,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
     - Success handles should be displayed in react component, not as OS alerts
     - Warnings should be displayed in react component, not as OS alerts
 
-- Standardize dropdown lists/alerts/errors/confirmation modals to use portal renders instead of relative positions.
+- Standardize alerts/errors/confirmation modals to use portal renders and module instead of relative positions and in-component spawn.
 
 - **Endgame:** Add subtle alerts for all gamemodes missing rewards.
 
@@ -74,10 +74,14 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 #### Minor changes and bugs:
 - Refresh button (should reload data from database) not working in pity tab (needs investigation on whether it works or not in other tabs)
 
+- Use the `SectionHeader.tsx` component wherever it fits.
+- Check dropdown from both Add Characters/Weapons modals and adapt to new global portal version.
+
 - **Dashboard:** Add account_info table data to dashboard.
 - **Dashboard:** Endgame data not refreshing whith database refresh.
 
 - **Character Info:** Display and allow edit of Resonance Date.
+- **Character Talents:** Upper nodes of minor traces should not be toggleable if lower nodes aren't activated.
 - **Character Modal Overview Tab:** Weapon swap warning does not clear if selecting the weapon currently equipped.
 - **Character Modal Overview Tab:** Max level display is wrong. It works as intended in Characters' Tab Info section.
 

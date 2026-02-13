@@ -13,7 +13,6 @@ export const AssetManager: React.FC = () => {
     updateProgress,
     updateAssets,
     shouldUpdate,
-    refreshStats,
   } = useAssets();
 
   const [needsUpdate, setNeedsUpdate] = useState(false);

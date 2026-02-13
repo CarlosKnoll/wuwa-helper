@@ -1,16 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, ChevronDown } from 'lucide-react';
-import { AddCharacterModalProps } from '../types';
-import { safeInvoke, getBuildStatusOptions } from '../utils';
+import { AddCharacterModalProps } from '../../props';
+import { CharacterListItem } from '../../types';
+import { safeInvoke, getBuildStatusOptions } from '../../utils';
 
 const elements = ['Spectro', 'Havoc', 'Aero', 'Electro', 'Fusion', 'Glacio'];
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
-
-interface CharacterListItem {
-  name: string;
-  rarity: number;
-  element: string;
-}
 
 export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterModalProps) {
   const buildStatusOptions = getBuildStatusOptions();

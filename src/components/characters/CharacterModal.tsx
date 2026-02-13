@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, User, Shield, Zap } from 'lucide-react';
-import { safeInvoke, getElementColor } from '../utils';
-import { CharacterTalents, CharacterWeapon, Echo, EchoBuild, EchoSubstat, CharacterModalProps } from '../types';
+import { safeInvoke, getElementColor } from '../../utils';
+import { CharacterTalents, CharacterWeapon, Echo, EchoBuild, EchoSubstat} from '../../types';
+import { CharacterModalProps } from '../../props';
 import CharacterInfo from './CharacterInfo';
 import CharacterTalentsSection from './CharacterTalentsSection';
 import CharacterEchoBuildSection from './CharacterEchoBuildSection';

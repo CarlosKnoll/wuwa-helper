@@ -5,18 +5,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { PullHistory } from '../types';
+import { FiveStarPull } from '../types';
+import { FiveStarHistoryProps, FiveStarPortraitProps } from '../props';
 import { invoke } from '@tauri-apps/api/core';
-
-interface FiveStarHistoryProps {
-  pulls: PullHistory[];
-  selectedBanner: string;
-}
-
-interface FiveStarPull {
-  pull: PullHistory;
-  pullsSinceLastFiveStar: number;
-}
 
 // Standard 5-star characters that indicate a 50/50 loss on featured banners
 const STANDARD_FIVE_STARS = ['Encore', 'Jianxin', 'Calcharo', 'Lingyang', 'Verina'];
@@ -154,12 +145,6 @@ export function FiveStarHistory({ pulls, selectedBanner }: FiveStarHistoryProps)
       </div>
     </div>
   );
-}
-
-interface FiveStarPortraitProps {
-  fiveStar: FiveStarPull;
-  loadAsset: (itemName: string, itemType: string) => Promise<string | null>;
-  isFeaturedBanner: boolean;
 }
 
 function FiveStarPortrait({ fiveStar, loadAsset, isFeaturedBanner }: FiveStarPortraitProps) {

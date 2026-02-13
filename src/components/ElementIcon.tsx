@@ -6,13 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useAssets } from '../hooks/useAssets';
 import { getElementColor } from '../utils';
-
-interface ElementIconProps {
-  element: string;
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-  showLabel?: boolean;
-}
+import { ElementIconProps } from '../props';
 
 const sizeMap = {
   sm: 'w-4 h-4',

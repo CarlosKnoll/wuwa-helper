@@ -1,27 +1,7 @@
 // src/hooks/useAssetResolver.ts
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-
-interface AssetMetadata {
-  id: string;
-  filename: string;
-  display_name: string;
-  asset_type: string;
-  rarity?: number;
-  element?: string;
-  weapon_type?: string;
-  echo_class?: string;
-  cost?: number;
-  tags: string[];
-}
-
-interface AssetFilters {
-  asset_type?: string;
-  rarity?: number;
-  element?: string;
-  weapon_type?: string;
-  tags?: string[];
-}
+import { AssetMetadata, AssetFilters } from '../types';
 
 export function useAssetResolver() {
   const [initialized, setInitialized] = useState(false);

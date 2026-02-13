@@ -1,10 +1,11 @@
 import { Edit2, Save, X, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { CharacterInfoProps, Weapon, Character } from '../types';
-import { getBuildStatusColor, getBuildStatusOptions, safeInvoke, getRarityStars } from '../utils';
-import { useAssets } from '../hooks/useAssets';
-import ElementIcon from './ElementIcon';
-import WeaponTypeIcon from './WeaponTypeIcon';
+import { Weapon, Character } from '../../types';
+import { CharacterInfoProps } from '../../props';
+import { getBuildStatusColor, getBuildStatusOptions, safeInvoke, getRarityStars } from '../../utils';
+import { useAssets } from '../../hooks/useAssets';
+import ElementIcon from '../ElementIcon';
+import WeaponTypeIcon from '../WeaponTypeIcon';
 
 export default function CharacterInfo({
   character,
@@ -39,7 +40,7 @@ export default function CharacterInfo({
   // Load character portrait
   useEffect(() => {
     if (!isInitialized) return;
-    getAsset('character', character.character_name).then((r) => {
+    getAsset('characters', character.character_name).then((r) => {
       if (r) setPortraitSrc(`data:image/webp;base64,${r}`);
     });
   }, [character.character_name, isInitialized, getAsset]);

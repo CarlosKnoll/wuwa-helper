@@ -1,15 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, ChevronDown } from 'lucide-react';
 import { safeInvoke } from '../utils';
-import { AddWeaponModalProps } from '../types';
+import { WeaponListItem } from '../types';
+import { AddWeaponModalProps } from '../props';
 
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
 
-interface WeaponListItem {
-  name: string;
-  weapon_type: string;
-  rarity: number;
-}
+
 
 export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalProps) {
   const [form, setForm] = useState({

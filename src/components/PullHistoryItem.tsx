@@ -6,15 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'lucide-react';
-import { PullHistory } from '../types';
-
-interface PullHistoryItemProps {
-  pull: PullHistory;
-  selectedBanner: string;
-  isStandardItem: (itemName: string, itemType: string) => boolean;
-  getRarityColor: (rarity: number) => string;
-  getRarityBadge: (rarity: number) => string;
-}
+import { PullHistoryItemProps } from '../props';
 
 export function PullHistoryItem({
   pull,

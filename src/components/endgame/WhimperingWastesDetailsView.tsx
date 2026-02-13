@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import { Zap, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
-import { WhimperingWastes, TorrentsStage } from '../types';
-import { safeInvoke, calculateChasmAstrite, calculateTorrentsAstrite } from '../utils';
-import CharacterPortrait from './CharacterPortrait';
-import { CurrencyIcon } from './CurrencyIcon';
-import ConfirmDialog from './ConfirmDialog';
-
-interface WhimperingWastesDetailsViewProps {
-  wastesInfo: WhimperingWastes | null;
-  torrentsStages: TorrentsStage[];
-  onUpdate: () => void;
-  availableCharacters?: string[];
-}
+import { Zap, Edit2, Plus, Trash2, Save, X } from 'lucide-react';
+import { TorrentsStage } from '../../types';
+import { WhimperingWastesDetailsViewProps } from '../../props';
+import { safeInvoke, calculateChasmAstrite, calculateTorrentsAstrite } from '../../utils';
+import { CurrencyIcon } from '../CurrencyIcon';
+import ConfirmDialog from '../ConfirmDialog';
+import { MatrixTeamDisplay, TeamEditor } from './TeamManager';
 
 export default function WhimperingWastesDetailsView({
   wastesInfo,
@@ -28,9 +22,6 @@ export default function WhimperingWastesDetailsView({
 
   // Main edit states
   const [editChasmStage, setEditChasmStage] = useState(0);
-  const [editChasmPoints, setEditChasmPoints] = useState(0);
-  const [editTorrentsPoints, setEditTorrentsPoints] = useState(0);
-  const [editLastReset, setEditLastReset] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
   // Stage edit states
@@ -41,129 +32,12 @@ export default function WhimperingWastesDetailsView({
   const [editPoints, setEditPoints] = useState(0);
   const [newStageNumber, setNewStageNumber] = useState(1);
 
-  // Character search state for dropdowns
-  const [charSearch1, setCharSearch1] = useState('');
-  const [charSearch2, setCharSearch2] = useState('');
-  const [charSearch3, setCharSearch3] = useState('');
-  const [showCharDrop1, setShowCharDrop1] = useState(false);
-  const [showCharDrop2, setShowCharDrop2] = useState(false);
-  const [showCharDrop3, setShowCharDrop3] = useState(false);
-
   const MAX_TEAMS = 2;
   const canAddTeam = torrentsStages.length < MAX_TEAMS;
-
-
-  const renderCharDropdown = (
-    value: string,
-    search: string,
-    showDrop: boolean,
-    setVal: (v: string) => void,
-    setSearch: (v: string) => void,
-    setShow: (v: boolean) => void,
-    placeholder: string
-  ) => {
-    // Process characters: consolidate Rover variants
-    const roverVariants = availableCharacters.filter(c => c.startsWith('Rover'));
-    const nonRoverChars = availableCharacters.filter(c => !c.startsWith('Rover'));
-    
-    // Create display entries - deduplicate Rovers by element
-    const processedChars: Array<{display: string, actual: string}> = [];
-    const roverElements = new Set<string>();
-    
-    // Add non-Rover characters
-    nonRoverChars.forEach(char => {
-      processedChars.push({display: char, actual: char});
-    });
-    
-    // Add Rover variants - deduplicate by element
-    roverVariants.forEach(rover => {
-      const element = rover.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
-      const display = element ? `Rover (${element})` : 'Rover';
-      
-      if (!roverElements.has(display)) {
-        roverElements.add(display);
-        processedChars.push({display, actual: rover});
-      }
-    });
-    
-    const filtered = processedChars.filter(c =>
-      c.display.toLowerCase().includes(search.toLowerCase())
-    );
-    
-    // Get display value for the input
-    const getDisplayValue = () => {
-      if (!value) return '';
-      if (value.startsWith('Rover')) {
-        const element = value.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
-        return element ? `Rover (${element})` : 'Rover';
-      }
-      return value;
-    };
-    
-    return (
-      <div className="relative">
-        <input
-          type="text"
-          value={showDrop ? search : getDisplayValue()}
-          onChange={(e) => { 
-            const newSearch = e.target.value;
-            setSearch(newSearch);
-            setShow(true);
-            
-            // Update value in real-time as user types
-            if (newSearch.trim() === '' || newSearch.toLowerCase() === 'none') {
-              setVal(''); // Allow empty/none
-            } else {
-              const exactMatch = processedChars.find(c => 
-                c.display.toLowerCase() === newSearch.toLowerCase()
-              );
-              if (exactMatch) {
-                setVal(exactMatch.actual); // Exact match
-              } else {
-                setVal(newSearch.trim()); // Custom entry
-              }
-            }
-          }}
-          onFocus={() => { 
-            setSearch(value ? getDisplayValue() : '');
-            setShow(true); 
-          }}
-          onBlur={() => setTimeout(() => { 
-            setShow(false);
-            setSearch(''); // Clear search - input will show getDisplayValue() now
-          }, 200)}
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
-          placeholder={placeholder}
-        />
-        {showDrop && filtered.length > 0 && (
-          <div className="absolute z-[100] left-0 min-w-[220px] mt-1 bg-slate-800 border border-slate-600 rounded shadow-lg max-h-44 overflow-y-auto">
-            <button
-              onMouseDown={() => { setVal(''); setSearch(''); setShow(false); }}
-              className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-700 transition-colors"
-            >
-              — None —
-            </button>
-            {filtered.map(charObj => (
-              <button
-                key={charObj.display}
-                onMouseDown={() => { setVal(charObj.actual); setSearch(''); setShow(false); }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-700 text-slate-200 transition-colors"
-              >
-                {charObj.display}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const startEdit = () => {
     if (wastesInfo) {
       setEditChasmStage(wastesInfo.chasm_highest_stage);
-      setEditChasmPoints(wastesInfo.chasm_total_points);
-      setEditTorrentsPoints(wastesInfo.torrents_total_points);
-      setEditLastReset(wastesInfo.last_reset);
       setEditNotes(wastesInfo.notes || '');
       setEditing(true);
     }
@@ -198,9 +72,6 @@ export default function WhimperingWastesDetailsView({
     setEditChar1(stage.character1);
     setEditChar2(stage.character2);
     setEditChar3(stage.character3);
-    setCharSearch1(stage.character1);
-    setCharSearch2(stage.character2);
-    setCharSearch3(stage.character3);
     setEditToken(stage.token);
     setEditPoints(stage.points);
     setEditingStage(stage.id);
@@ -308,9 +179,6 @@ export default function WhimperingWastesDetailsView({
     setEditChar1('');
     setEditChar2('');
     setEditChar3('');
-    setCharSearch1('');
-    setCharSearch2('');
-    setCharSearch3('');
     setEditToken('');
     setEditPoints(0);
     setNewStageNumber(availableSide);
@@ -405,7 +273,7 @@ export default function WhimperingWastesDetailsView({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Respawning Waters: Chasm */}
-            <div className="bg-slate-800/50 rounded-lg p-4">
+            <div className="bg-slate-700/50 rounded-lg p-4">
               <h4 className="text-lg font-bold text-yellow-400 mb-3">Respawning Waters: Chasm</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -429,7 +297,7 @@ export default function WhimperingWastesDetailsView({
             </div>
 
             {/* Respawning Waters: Torrents */}
-            <div className="bg-slate-800/50 rounded-lg p-4">
+            <div className="bg-slate-700/50 rounded-lg p-4">
               <h4 className="text-lg font-bold text-yellow-400 mb-3">Respawning Waters: Torrents</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -506,11 +374,20 @@ export default function WhimperingWastesDetailsView({
                         max="2"
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {renderCharDropdown(editChar1, charSearch1, showCharDrop1, setEditChar1, setCharSearch1, setShowCharDrop1, 'Char 1')}
-                      {renderCharDropdown(editChar2, charSearch2, showCharDrop2, setEditChar2, setCharSearch2, setShowCharDrop2, 'Char 2')}
-                      {renderCharDropdown(editChar3, charSearch3, showCharDrop3, setEditChar3, setCharSearch3, setShowCharDrop3, 'Char 3')}
-                    </div>
+                    <TeamEditor
+                      character1={editChar1}
+                      character2={editChar2}
+                      character3={editChar3}
+                      onChar1Change={setEditChar1}
+                      onChar2Change={setEditChar2}
+                      onChar3Change={setEditChar3}
+                      onSave={addNewStage}
+                      onCancel={() => setAddingStage(false)}
+                      availableCharacters={availableCharacters}
+                      saving={saving}
+                      saveButtonColor="bg-green-500/[0.5]"
+                      saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                    />
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-slate-400 block mb-1">Token</label>
@@ -531,23 +408,6 @@ export default function WhimperingWastesDetailsView({
                         />
                       </div>
                     </div>
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => setAddingStage(false)}
-                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                      >
-                        <X className="w-3 h-3" />
-                        Cancel
-                      </button>
-                      <button
-                        onClick={addNewStage}
-                        disabled={saving}
-                        className="px-2 py-1 bg-green-500/[0.5] hover:bg-green-500/[0.65] rounded text-xs flex items-center gap-1"
-                      >
-                        <Save className="w-3 h-3" />
-                        Add
-                      </button>
-                    </div>
                   </div>
                 )}
                 
@@ -559,11 +419,20 @@ export default function WhimperingWastesDetailsView({
                       {isEditingThis ? (
                         <>
                           <p className="text-sm font-semibold text-yellow-400">Side {stage.stage_number}</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {renderCharDropdown(editChar1, charSearch1, showCharDrop1, setEditChar1, setCharSearch1, setShowCharDrop1, 'Char 1')}
-                            {renderCharDropdown(editChar2, charSearch2, showCharDrop2, setEditChar2, setCharSearch2, setShowCharDrop2, 'Char 2')}
-                            {renderCharDropdown(editChar3, charSearch3, showCharDrop3, setEditChar3, setCharSearch3, setShowCharDrop3, 'Char 3')}
-                          </div>
+                          <TeamEditor
+                            character1={editChar1}
+                            character2={editChar2}
+                            character3={editChar3}
+                            onChar1Change={setEditChar1}
+                            onChar2Change={setEditChar2}
+                            onChar3Change={setEditChar3}
+                            onSave={() => saveStage(stage.id)}
+                            onCancel={() => setEditingStage(null)}
+                            availableCharacters={availableCharacters}
+                            saving={saving}
+                            saveButtonColor="bg-green-500/[0.5]"
+                            saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                          />
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="text-xs text-slate-400 block mb-1">Token</label>
@@ -583,23 +452,6 @@ export default function WhimperingWastesDetailsView({
                                 className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
                               />
                             </div>
-                          </div>
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => setEditingStage(null)}
-                              className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                            >
-                              <X className="w-3 h-3" />
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => saveStage(stage.id)}
-                              disabled={saving}
-                              className="px-2 py-1 bg-green-500/[0.5] hover:bg-green-500/[0.65] rounded text-xs flex items-center gap-1"
-                            >
-                              <Save className="w-3 h-3" />
-                              Save
-                            </button>
                           </div>
                         </>
                       ) : (
@@ -625,22 +477,13 @@ export default function WhimperingWastesDetailsView({
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{stage.token}</span>
-                            <span className="text-xs text-slate-400">{stage.points} pts</span>
+                            <span className="text-xs text-yellow-400">{stage.points} pts</span>
                           </div>
-                          <div className="flex gap-2 flex-wrap">
-                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-500/20 rounded">
-                              <CharacterPortrait characterName={stage.character1} size="md" />
-                              <span className="text-xs text-yellow-400">{stage.character1}</span>
-                            </div>
-                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-500/20 rounded">
-                              <CharacterPortrait characterName={stage.character2} size="md" />
-                              <span className="text-xs text-yellow-400">{stage.character2}</span>
-                            </div>
-                            <div className="flex items-center gap-2 px-2 py-1 bg-yellow-500/20 rounded">
-                              <CharacterPortrait characterName={stage.character3} size="md" />
-                              <span className="text-xs text-yellow-400">{stage.character3}</span>
-                            </div>
-                          </div>
+                          <MatrixTeamDisplay
+                            characters={[stage.character1, stage.character2, stage.character3]}
+                            size="md"
+                            showNames={true}
+                          />
                         </>
                       )}
                     </div>

@@ -1,236 +1,14 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { Trophy, Edit2, Save, X, Plus, Trash2, Star } from 'lucide-react';
-import { TowerOfAdversity, TowerDetails, TowerFloor, TowerAreaEffect, TowerTeam } from '../types';
-import { safeInvoke, calculateTowerAstrite } from '../utils';
-import CharacterPortrait from './CharacterPortrait';
-import { CurrencyIcon } from './CurrencyIcon';
-import ConfirmDialog from './ConfirmDialog';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
+import { Trophy, Edit2, Trash2, Star, X, Save, Plus } from 'lucide-react';
+import { TowerDetails, TowerAreaEffect, TowerTeam } from '../../types';
+import { TowerDetailsViewProps } from '../../props';
+import StarRating from './StarRating';
+import { safeInvoke, calculateTowerAstrite } from '../../utils';
+import { CurrencyIcon } from '../CurrencyIcon';
+import ConfirmDialog from '../ConfirmDialog';
+import TeamDisplay, { TeamEditor } from './TeamManager';
 
-// ─── CharDropdown ────────────────────────────────────────────────────────────
-// Self-contained: owns all its own state so nothing depends on a parent
-// render cycle. Position is measured synchronously in event handlers so the
-// portal jumps instantly when switching inputs.
-//
-// backdrop-filter (backdrop-blur) on ancestors breaks position:fixed by
-// creating a new containing block. We work around this by measuring the true
-// viewport rect via getBoundingClientRect and using position:fixed with the
-// 4px gap baked directly into `top`, so no CSS margin is needed.
-interface CharDropdownProps {
-  value: string;
-  onChange: (v: string) => void;
-  towerType: string;
-  floorNum: number;
-  placeholder: string;
-  config: { border_inactive: string; focus: string };
-  availableCharacters: string[];
-  vigorConsumedMap: Record<string, number>;
-}
-
-function CharDropdown({
-  value, onChange,
-  towerType, floorNum, placeholder, config,
-  availableCharacters, vigorConsumedMap,
-}: CharDropdownProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
-
-  const MAX_VIGOR = 10;
-  const cost = towerType === 'hazard' ? 5 : floorNum;
-
-  // Process characters: consolidate Rover variants.
-  const roverVariants = availableCharacters.filter(c => c.startsWith('Rover'));
-  const nonRoverChars  = availableCharacters.filter(c => !c.startsWith('Rover'));
-  const processedChars: Array<{ display: string; actual: string; isRover: boolean }> = [];
-  const seenRover = new Set<string>();
-  nonRoverChars.forEach(c => processedChars.push({ display: c, actual: c, isRover: false }));
-  roverVariants.forEach(rover => {
-    const el = rover.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
-    const display = el ? `Rover (${el})` : 'Rover';
-    if (!seenRover.has(display)) { seenRover.add(display); processedChars.push({ display, actual: rover, isRover: true }); }
-  });
-
-  const filtered = processedChars.filter(c => c.display.toLowerCase().includes(search.toLowerCase()));
-
-  // Measure and determine if dropdown should flip up
-  const measurePosition = () => {
-    if (!inputRef.current) return null;
-    const r = inputRef.current.getBoundingClientRect();
-    const width = Math.max(r.width, 220);
-    const gap = 4;
-    
-    // Calculate dropdown height
-    let dropdownHeight: number;
-    if (dropdownRef.current && dropdownRef.current.offsetHeight > 0) {
-      // Use actual measured height if available
-      dropdownHeight = dropdownRef.current.offsetHeight;
-    } else {
-      // Estimate based on number of items
-      const itemHeight = 28; // py-1.5 + text height
-      const itemCount = filtered.length + 1; // +1 for "None" option
-      const maxHeight = 176; // max-h-44 in pixels
-      dropdownHeight = Math.min(itemCount * itemHeight, maxHeight);
-    }
-    
-    // Check if there's enough space below
-    const spaceBelow = window.innerHeight - r.bottom;
-    const spaceAbove = r.top;
-    
-    // Flip up if not enough space below AND there's more space above
-    const flipUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
-    
-    return {
-      top: flipUp ? r.top - dropdownHeight - gap : r.bottom + gap,
-      left: r.left,
-      width
-    };
-  };
-
-  // Initial position calculation when opening
-  useLayoutEffect(() => {
-    if (open && inputRef.current) {
-      const newPos = measurePosition();
-      if (newPos) setPos(newPos);
-    }
-  }, [open]);
-
-  // Update position when content changes
-  useLayoutEffect(() => {
-    if (open && inputRef.current) {
-      const newPos = measurePosition();
-      if (newPos) setPos(newPos);
-    }
-  }, [open, filtered.length]);
-
-  // Keep position fresh while open (scroll / resize).
-  useEffect(() => {
-    if (!open) return;
-    const update = () => {
-      const newPos = measurePosition();
-      if (newPos) setPos(newPos);
-    };
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
-    };
-  }, [open]);
-
-  const displayValue = () => {
-    if (!value) return '';
-    if (value.startsWith('Rover')) {
-      const el = value.replace('Rover', '').trim().replace(/^-\s*/, '').replace(/^\(\s*/, '').replace(/\s*\)$/, '');
-      return el ? `Rover (${el})` : 'Rover';
-    }
-    return value;
-  };
-
-  const vigorOf = (charObj: { actual: string; isRover: boolean }) => {
-    if (charObj.isRover) {
-      const consumed = roverVariants.reduce((s, rv) => s + (vigorConsumedMap[rv] || 0), 0);
-      return MAX_VIGOR - consumed;
-    }
-    return MAX_VIGOR - (vigorConsumedMap[charObj.actual] || 0);
-  };
-
-  const close = () => { setOpen(false); setSearch(''); };
-
-  return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        value={open ? search : displayValue()}
-        onChange={(e) => {
-          const v = e.target.value;
-          setSearch(v);
-          if (!open) setOpen(true);
-          if (!v.trim() || v.toLowerCase() === 'none') {
-            onChange('');
-          } else {
-            const exact = processedChars.find(c => c.display.toLowerCase() === v.toLowerCase());
-            onChange(exact ? exact.actual : v.trim());
-          }
-        }}
-        onFocus={() => {
-          setSearch(value ? displayValue() : '');
-          setOpen(true);
-        }}
-        onBlur={(e) => {
-          const relatedTarget = e.relatedTarget as HTMLElement;
-          if (!relatedTarget || relatedTarget.tagName !== 'INPUT') {
-            setTimeout(close, 200);
-          } else {
-            close();
-          }
-        }}
-        className={`w-full bg-slate-700 border ${config.border_inactive} rounded px-2 py-1 text-sm focus:outline-none ${config.focus}`}
-        placeholder={placeholder}
-      />
-      {open && filtered.length > 0 && pos && createPortal(
-        <div
-          ref={dropdownRef}
-          style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
-          className="bg-slate-800 border border-slate-600 rounded shadow-lg max-h-44 overflow-y-auto"
-        >
-          <button
-            onMouseDown={() => { onChange(''); close(); }}
-            className="w-full text-left px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-700 transition-colors"
-          >
-            — None —
-          </button>
-          {filtered.map(charObj => {
-            const remaining = vigorOf(charObj);
-            const canUse    = remaining >= cost;
-            const depleted  = remaining <= 0;
-            return (
-              <button
-                key={charObj.display}
-                onMouseDown={depleted ? undefined : () => { onChange(charObj.actual); close(); }}
-                disabled={depleted}
-                className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between transition-colors ${
-                  depleted   ? 'text-slate-600 cursor-not-allowed'
-                  : canUse  ? 'hover:bg-slate-700 text-slate-200'
-                  :            'hover:bg-slate-700/50 text-slate-400'
-                }`}
-              >
-                <span className="truncate">{charObj.display}</span>
-                <span className={`ml-2 flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                  remaining <= 0 ? 'bg-red-500/30 text-red-500'
-                  : remaining < cost ? 'bg-orange-500/30 text-orange-400'
-                  : 'bg-slate-600 text-slate-400'
-                }`}>
-                  {remaining}/{MAX_VIGOR}
-                </span>
-              </button>
-            );
-          })}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
 // ─────────────────────────────────────────────────────────────────────────────
-
-interface TowerDetailsViewProps {
-  towerInfo: TowerOfAdversity | null;
-  towerDetails: TowerDetails[];
-  towerFloors: Record<string, TowerFloor[]>;
-  towerEffects: TowerAreaEffect[];
-  towerTeams: TowerTeam[];
-  selectedTower: string | null;
-  onTowerSelect: (tower: string | null) => void;
-  onUpdate: () => void;
-  onInitializeFloors?: () => void;
-  availableCharacters?: string[];
-}
-
-type TowerType = 'echoing' | 'resonant' | 'hazard' | null;
 
 export default function TowerDetailsView({
   towerInfo,
@@ -241,7 +19,6 @@ export default function TowerDetailsView({
   selectedTower,
   onTowerSelect,
   onUpdate,
-  onInitializeFloors,
   availableCharacters = []
 }: TowerDetailsViewProps) {
   const [editingOverview, setEditingOverview] = useState(false);
@@ -269,8 +46,6 @@ export default function TowerDetailsView({
   const [editChar2, setEditChar2] = useState('');
   const [editChar3, setEditChar3] = useState('');
   const [newTeamFloor, setNewTeamFloor] = useState(1);
-
-
 
   // Compute per-character vigor consumed across ALL towers
   // Echoing/Resonant: vigor consumed = floor number used on. Hazard: 5 per floor used on.
@@ -545,27 +320,6 @@ export default function TowerDetailsView({
   };
 
   if (!towerInfo) return null;
-
-  const renderStarSelector = (floor: TowerFloor) => {
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3].map((starNum) => (
-          <button
-            key={starNum}
-            onClick={() => updateFloorStars(floor.id, starNum === floor.stars ? 0 : starNum)}
-            className={`transition-colors ${
-              starNum <= floor.stars 
-                ? 'text-yellow-400 hover:text-yellow-300' 
-                : 'text-slate-600 hover:text-slate-500'
-            }`}
-            title={`${starNum} star${starNum !== 1 ? 's' : ''}`}
-          >
-            <Star className="w-4 h-4" fill={starNum <= floor.stars ? 'currentColor' : 'none'} />
-          </button>
-        ))}
-      </div>
-    );
-  };
 
   // Reordered tower types: Resonant, Hazard, Echoing
   const orderedTowerTypes = ['resonant', 'hazard', 'echoing'];
@@ -865,34 +619,31 @@ export default function TowerDetailsView({
                           max="4"
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <CharDropdown value={editChar1} onChange={setEditChar1} towerType={selectedTower!} floorNum={newTeamFloor} placeholder="Char 1" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
-                        <CharDropdown value={editChar2} onChange={setEditChar2} towerType={selectedTower!} floorNum={newTeamFloor} placeholder="Char 2" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
-                        <CharDropdown value={editChar3} onChange={setEditChar3} towerType={selectedTower!} floorNum={newTeamFloor} placeholder="Char 3" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
-                      </div>
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => {
-                            setAddingTeam(false);
-                            setEditChar1('');
-                            setEditChar2('');
-                            setEditChar3('');
-                            setNewTeamFloor(1);
-                          }}
-                          className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          Cancel
-                        </button>
-                        <button
-                          onClick={addTeam}
-                          disabled={saving}
-                          className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
-                        >
-                          <Plus className="w-3 h-3" />
-                          Add
-                        </button>
-                      </div>
+                      <TeamEditor
+                        character1={editChar1}
+                        character2={editChar2}
+                        character3={editChar3}
+                        onChar1Change={setEditChar1}
+                        onChar2Change={setEditChar2}
+                        onChar3Change={setEditChar3}
+                        onSave={addTeam}
+                        onCancel={() => {
+                          setAddingTeam(false);
+                          setEditChar1('');
+                          setEditChar2('');
+                          setEditChar3('');
+                          setNewTeamFloor(1);
+                        }}
+                        availableCharacters={availableCharacters}
+                        saving={saving}
+                        vigorConfig={{
+                          vigorConsumedMap,
+                          getMaxVigor: () => 10,
+                          vigorCost: selectedTower === 'hazard' ? 5 : newTeamFloor
+                        }}
+                        saveButtonColor={config.bg}
+                        saveButtonHoverColor="hover:opacity-80"
+                      />
                     </div>
                   )}
 
@@ -913,7 +664,10 @@ export default function TowerDetailsView({
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {renderStarSelector(floor)}
+                            <StarRating
+                              stars={floor.stars}
+                              onChange={(s) => updateFloorStars(floor.id, s)}
+                            />
                             {floorTeam && !isEditingThisTeam && (
                               <>
                                 <button
@@ -937,42 +691,32 @@ export default function TowerDetailsView({
 
                         {floorTeam ? (
                           isEditingThisTeam ? (
-                            <div className="space-y-2">
-                              <div className="grid grid-cols-3 gap-2">
-                                <CharDropdown value={editChar1} onChange={setEditChar1} towerType={selectedTower!} floorNum={floor.floor_number} placeholder="Char 1" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
-                                <CharDropdown value={editChar2} onChange={setEditChar2} towerType={selectedTower!} floorNum={floor.floor_number} placeholder="Char 2" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
-                                <CharDropdown value={editChar3} onChange={setEditChar3} towerType={selectedTower!} floorNum={floor.floor_number} placeholder="Char 3" config={config} availableCharacters={availableCharacters} vigorConsumedMap={vigorConsumedMap} />
-                              </div>
-                              <div className="flex gap-2 justify-end">
-                                <button
-                                  onClick={() => setEditingTeam(null)}
-                                  className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs flex items-center gap-1"
-                                >
-                                  <X className="w-3 h-3" />
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => saveTeam(floorTeam.id)}
-                                  disabled={saving}
-                                  className={`px-2 py-1 ${config.bg} hover:opacity-80 rounded text-xs flex items-center gap-1 ${config.color}`}
-                                >
-                                  <Save className="w-3 h-3" />
-                                  Save
-                                </button>
-                              </div>
-                            </div>
+                            <TeamEditor
+                              character1={editChar1}
+                              character2={editChar2}
+                              character3={editChar3}
+                              onChar1Change={setEditChar1}
+                              onChar2Change={setEditChar2}
+                              onChar3Change={setEditChar3}
+                              onSave={() => saveTeam(floorTeam.id)}
+                              onCancel={() => setEditingTeam(null)}
+                              availableCharacters={availableCharacters}
+                              saving={saving}
+                              vigorConfig={{
+                                vigorConsumedMap,
+                                getMaxVigor: () => 10,
+                                vigorCost: selectedTower === 'hazard' ? 5 : floor.floor_number
+                              }}
+                              saveButtonColor={config.bg}
+                              saveButtonHoverColor="hover:opacity-80"
+                            />
                           ) : (
-                            <div className="flex gap-2 flex-1 min-w-0">
-                              {[floorTeam.character1, floorTeam.character2, floorTeam.character3]
-                                .filter(char => char && char !== 'None')
-                                .map((char, idx) => (
-                                  <div key={idx} className="flex items-center gap-2 px-2 py-1 bg-slate-700/50 rounded min-w-0 flex-1">
-                                    <CharacterPortrait characterName={char} size="md" className="flex-shrink-0" />
-                                    <span className="text-xs text-slate-300 truncate">{char}</span>
-                                  </div>
-                                ))
-                              }
-                            </div>
+                            <TeamDisplay
+                              characters={[floorTeam.character1, floorTeam.character2, floorTeam.character3]}
+                              size="md"
+                              showNames={true}
+                              className="flex-1"
+                            />
                           )
                         ) : (
                           canAddTeam && (
