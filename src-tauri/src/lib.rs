@@ -106,17 +106,6 @@ pub fn run() {
             commands::assets::init_assets,
             commands::assets::get_asset,
             commands::assets::get_asset_path,
-            commands::assets::get_asset_stats,
-            commands::assets::rebuild_asset_cache ,
-            commands::assets::should_update_assets,
-            commands::assets::update_assets,
-            commands::asset_resolver::init_asset_resolver,
-            commands::asset_resolver::resolve_asset_by_name,
-            commands::asset_resolver::get_asset_filename,
-            commands::asset_resolver::search_assets,
-            commands::asset_resolver::get_assets_by_type,
-            commands::asset_resolver::filter_assets,
-            commands::asset_resolver::categorize_asset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

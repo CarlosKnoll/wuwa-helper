@@ -207,6 +207,13 @@ export interface TeamEditorProps {
 Utility
 ======================= */
 
+export interface SearchHeaderProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  actions?: React.ReactNode;
+}
+
 export interface ElementIconProps {
   element: string;
   size?: 'sm' | 'md' | 'lg';
@@ -260,3 +267,4 @@ export interface AddWeaponModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+

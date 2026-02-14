@@ -12,16 +12,13 @@ pub mod mapper;
 pub mod resolver;
 pub mod mappings;
 
-pub use mapper::{AssetMapper, AssetMetadata};
-pub use resolver::{AssetResolver, AssetFilters};
+pub use mapper::{AssetMapper};
+pub use resolver::{AssetResolver};
 pub use cache::AssetCache;
-pub use downloader::AssetDownloader;
 pub use models::*;
 
 pub struct AssetManager {
-    app_handle: AppHandle,
     cache: AssetCache,
-    downloader: AssetDownloader,
     resolver: AssetResolver,
     base_path: PathBuf,
 }
@@ -47,16 +44,13 @@ impl AssetManager {
         }
 
         let cache = AssetCache::load(&base_path)?;
-        let downloader = AssetDownloader::new();
         
         // Initialize mapper and resolver with hardcoded mappings
         let mapper = AssetMapper::new();
         let resolver = AssetResolver::new(mapper);
 
         Ok(Self {
-            app_handle,
             cache,
-            downloader,
             resolver,
             base_path,
         })
@@ -330,41 +324,6 @@ impl AssetManager {
         let bytes = fs::read(&path)?;
         use base64::Engine;
         Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
-    }
-
-    pub async fn update_assets(&mut self, progress_callback: Option<Box<dyn Fn(UpdateProgress) + Send + Sync>>) -> Result<UpdateSummary, AssetError> {
-        // Note: In production, the resources folder is read-only
-        // This function is primarily for development or if you implement
-        // a writable cache location (e.g., app_data_dir)
-        let summary = self.downloader.download_all(&self.base_path, &mut self.cache, progress_callback).await?;
-        self.cache.save(&self.base_path)?;
-        Ok(summary)
-    }
-
-    pub fn should_update(&self) -> bool {
-        self.cache.should_update()
-    }
-
-    pub fn get_stats(&self) -> CacheStats {
-        self.cache.get_stats()
-    }
-
-   /// Rebuild the asset cache by clearing it and rescanning all files
-    pub fn rebuild_cache(&mut self) -> Result<UpdateSummary, AssetError> {
-        eprintln!("DEBUG [rebuild_cache]: Starting cache rebuild");
-        
-        // Clear the existing cache
-        self.cache = AssetCache::new();
-        
-        // Scan all asset directories and rebuild the cache
-        let summary = self.scan_and_cache_assets()?;
-        
-        // Save the new cache to disk
-        self.cache.save(&self.base_path)?;
-        
-        eprintln!("DEBUG [rebuild_cache]: Cache rebuilt with {} assets", summary.total_assets);
-        
-        Ok(summary)
     }
 
     /// Scan all asset files in the base directory and add them to cache

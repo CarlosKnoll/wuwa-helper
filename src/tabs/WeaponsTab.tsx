@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Edit2, Save, Plus, Trash2, Search, X, AlertCircle } from 'lucide-react';
+import { Save, Plus, Trash2, X, AlertCircle } from 'lucide-react';
 import { Weapon } from '../types';
 import { getRarityStars, safeInvoke } from '../utils';
+import { SearchHeader } from '../components/SectionHeader';
 import AddWeaponModal from '../components/AddWeaponModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useAssets } from '../hooks/useAssets';
@@ -195,27 +196,20 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
       />
 
       {/* Search and Add */}
-      <div className="flex gap-3 items-center">
-        <div className="flex-1 p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search weapons..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-white/[0.4] rounded-lg focus:outline-none focus:border-yellow-400"
-            />
-          </div>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="h-10 px-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg rounded-lg font-semibold flex items-center gap-2 transition-colors text-sm whitespace-nowrap"
-        >
-          <Plus size={18} />
-          Add
-        </button>
-      </div>
+      <SearchHeader
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search weapons..."
+        actions={
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="h-10 px-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg font-semibold flex items-center gap-2 transition-colors text-sm whitespace-nowrap"
+          >
+            <Plus size={18} />
+            Add
+          </button>
+        }
+      />
 
       {/* Filters */}
       <div className="p-4">

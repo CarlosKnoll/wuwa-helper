@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Users, Sword, Package, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
-import { Character, Weapon, Resources, PityStatus, ExplorationRegion } from './types';
+import { Users, Sword, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
+import { Character, Weapon, Resources, PityStatus, ExplorationRegion, EndgameTabRef } from './types';
 import { safeInvoke } from './utils';
 import DashboardTab from './tabs/DashboardTab';
 import CharactersTab from './tabs/CharactersTab';
 import WeaponsTab from './tabs/WeaponsTab';
 import PityTab from './tabs/PityTab';
 import ExplorationTab from './tabs/ExplorationTab';
-import EndgameTab, { EndgameTabRef } from './tabs/EndgameTab';
+import EndgameTab from './tabs/EndgameTab';
 import SettingsTab from './tabs/SettingsTab';
 
 export default function WuwaHelper() {

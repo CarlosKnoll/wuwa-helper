@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Character } from '../types';
 import {
   getRarityStars,
@@ -7,8 +7,9 @@ import {
   getBuildStatusPriority,
   safeInvoke,
 } from '../utils';
-import CharacterModal from '../components/characters/CharacterModal';
+import { SearchHeader } from '../components/SectionHeader';
 import AddCharacterModal from '../components/characters/AddCharacterModal';
+import CharacterModal from '../components/characters/CharacterModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ElementIcon from '../components/ElementIcon';
 import { useAssets } from '../hooks/useAssets';
@@ -98,26 +99,20 @@ export default function CharactersTab({
         variant="danger"
       />
 
-      <div className="flex gap-3 items-center">
-        <div className="flex-1 p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search characters..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-white/[0.4] rounded-lg focus:outline-none focus:border-yellow-400"
-            />
-          </div>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="h-10 px-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg font-semibold flex items-center gap-2 text-sm transition-all"
-        >
-          <Plus size={18} />
-          Add
-        </button>
-      </div>
+      <SearchHeader
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Search characters..."
+        actions={
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="h-10 px-4 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 rounded-lg font-semibold flex items-center gap-2 text-sm transition-all"
+          >
+            <Plus size={18} />
+            Add
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredCharacters.map((char) => (
@@ -159,7 +154,6 @@ function CharacterCard({
   onSelect,
   onDelete,
   isDeleting,
-  isRoverVariant,
   displayName,
   maxLevel,
 }: any) {
@@ -168,7 +162,7 @@ function CharacterCard({
 
   useEffect(() => {
     if (!isInitialized) return;
-    getAsset('character', character.character_name).then((r) => {
+    getAsset('characters', character.character_name).then((r) => {
       if (r) setPortraitSrc(`data:image/webp;base64,${r}`);
     });
   }, [character.character_name, isInitialized, getAsset]);
