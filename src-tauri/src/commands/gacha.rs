@@ -280,7 +280,7 @@ pub async fn import_pulls_from_url(app: tauri::AppHandle, url: String) -> Result
             }
 
             // Second pass: process each timestamp group
-            for (normalized_date, mut group_records) in timestamp_groups {
+            for (normalized_date, group_records) in timestamp_groups {
                 let is_multi_pull = group_records.len() > 1;
                 
                 // For multi-pulls: assign group_order from 10 down to 1 (newest to oldest)

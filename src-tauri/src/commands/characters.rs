@@ -7,6 +7,7 @@ pub struct CharacterListItem {
     pub name: String,
     pub rarity: u8,
     pub element: String,
+    pub weapon_type: Option<String>,
 }
 
 /// Get list of all available characters from backend mappings
@@ -28,6 +29,9 @@ pub fn get_available_characters(app: tauri::AppHandle) -> Result<Vec<CharacterLi
         .collect::<Result<_, _>>()
         .map_err(|e| e.to_string())?;
     
+    // ADDED: Weapon types to search for in tags
+    let weapon_types = vec!["sword", "broadblade", "pistols", "gauntlets", "rectifier"];
+    
     let mut characters: Vec<CharacterListItem> = mappings
         .values()
         .filter(|meta| {
@@ -38,10 +42,25 @@ pub fn get_available_characters(app: tauri::AppHandle) -> Result<Vec<CharacterLi
             // Otherwise, exclude if already added
             !existing_names.contains(&meta.display_name)
         })
-        .map(|meta| CharacterListItem {
-            name: meta.display_name.clone(),
-            rarity: meta.rarity.unwrap_or(4),
-            element: meta.element.clone().unwrap_or_else(|| "Unknown".to_string()),
+        .map(|meta| {
+            // ADDED: Extract weapon type from tags
+            let weapon_type = meta.tags.iter()
+                .find(|tag| weapon_types.contains(&tag.to_lowercase().as_str()))
+                .map(|tag| {
+                    // Capitalize first letter
+                    let mut chars = tag.chars();
+                    match chars.next() {
+                        None => String::new(),
+                        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                    }
+                });
+
+            CharacterListItem {
+                name: meta.display_name.clone(),
+                rarity: meta.rarity.unwrap_or(4),
+                element: meta.element.clone().unwrap_or_else(|| "Unknown".to_string()),
+                weapon_type, // ADDED: Include weapon type
+            }
         })
         .collect();
     

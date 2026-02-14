@@ -1,11 +1,17 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, ChevronDown } from 'lucide-react';
 import { AddCharacterModalProps } from '../../props';
-import { CharacterListItem } from '../../types';
 import { safeInvoke, getBuildStatusOptions } from '../../utils';
 
 const elements = ['Spectro', 'Havoc', 'Aero', 'Electro', 'Fusion', 'Glacio'];
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
+
+interface CharacterWithWeaponType {
+  name: string;
+  rarity: number;
+  element: string;
+  weapon_type?: string;
+}
 
 export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterModalProps) {
   const buildStatusOptions = getBuildStatusOptions();
@@ -26,14 +32,14 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
-  const [availableCharacters, setAvailableCharacters] = useState<CharacterListItem[]>([]);
+  const [availableCharacters, setAvailableCharacters] = useState<CharacterWithWeaponType[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
 
-  // Load available characters from backend on mount
+  // Load available characters with weapon types from backend on mount
   useEffect(() => {
     const loadCharacters = async () => {
       try {
-        const chars = await safeInvoke('get_available_characters') as CharacterListItem[];
+        const chars = await safeInvoke('get_available_characters') as CharacterWithWeaponType[];
         setAvailableCharacters(chars);
       } catch (err) {
         console.error('Failed to load character list:', err);
@@ -58,13 +64,19 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
     );
   }, [form.character_name, availableCharacters]);
 
-  const handleCharacterSelect = (character: CharacterListItem) => {
-    setForm({ 
-      ...form, 
+  const handleCharacterSelect = (character: CharacterWithWeaponType) => {
+    const updates: any = {
       character_name: character.name,
       rarity: character.rarity,
       element: character.element !== 'Unknown' ? character.element : form.element,
-    });
+    };
+
+    // Auto-populate weapon type if available
+    if (character.weapon_type) {
+      updates.weapon_type = character.weapon_type;
+    }
+
+    setForm({ ...form, ...updates });
     setShowDropdown(false);
   };
 
@@ -146,7 +158,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                     // Delay hiding dropdown to allow click events to fire
                     setTimeout(() => setShowDropdown(false), 200);
                   }}
-                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 pr-10 mt-1 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 pr-10 mt-1 focus:outline-none focus:border-yellow-500"
                   placeholder={loadingCharacters ? "Loading characters..." : "Select or type character name..."}
                   required
                   autoComplete="off"
@@ -174,8 +186,11 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                         className="w-full text-left px-4 py-2 hover:bg-slate-700 transition-colors text-white flex items-center justify-between"
                       >
                         <span>{char.name}</span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-400 flex items-center gap-2">
                           {char.rarity}★ {char.element !== 'Unknown' ? char.element : ''}
+                          {char.weapon_type && (
+                            <span className="text-yellow-400">• {char.weapon_type}</span>
+                          )}
                         </span>
                       </button>
                     ))
@@ -197,7 +212,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                 type="date"
                 value={form.resonance_date}
                 onChange={e => setForm({ ...form, resonance_date: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
               />
             </div>
 
@@ -206,7 +221,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
               <select
                 value={form.rarity}
                 onChange={e => setForm({ ...form, rarity: parseInt(e.target.value) })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
               >
                 <option value={5}>5 Star</option>
                 <option value={4}>4 Star</option>
@@ -218,7 +233,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
               <select
                 value={form.element}
                 onChange={e => setForm({ ...form, element: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
               >
                 {elements.map(el => (
                   <option key={el} value={el}>{el}</option>
@@ -231,7 +246,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
               <select
                 value={form.weapon_type}
                 onChange={e => setForm({ ...form, weapon_type: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
               >
                 {weaponTypes.map(wt => (
                   <option key={wt} value={wt}>{wt}</option>
@@ -245,7 +260,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                 type="number"
                 value={form.level}
                 onChange={e => setForm({ ...form, level: parseInt(e.target.value) || 1 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
                 min="1"
                 max="90"
               />
@@ -257,7 +272,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                 type="number"
                 value={form.ascension}
                 onChange={e => setForm({ ...form, ascension: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
                 min="0"
                 max="6"
               />
@@ -269,7 +284,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                 type="number"
                 value={form.waveband}
                 onChange={e => setForm({ ...form, waveband: parseInt(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
                 min="0"
                 max="6"
               />
@@ -280,7 +295,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
               <select
                 value={form.build_status}
                 onChange={e => setForm({ ...form, build_status: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
               >
                 {buildStatusOptions.map(status => (
                   <option key={status} value={status}>{status}</option>
@@ -293,7 +308,7 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
               <textarea
                 value={form.notes}
                 onChange={e => setForm({ ...form, notes: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-yellow-500"
                 placeholder="Add any notes about this character..."
                 rows={3}
               />

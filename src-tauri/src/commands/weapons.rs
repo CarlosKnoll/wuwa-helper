@@ -11,7 +11,7 @@ pub struct WeaponListItem {
 
 /// Get list of all available weapons from backend mappings
 #[tauri::command]
-pub fn get_available_weapons(app: tauri::AppHandle) -> Result<Vec<WeaponListItem>, String> {
+pub fn get_available_weapons(_app: tauri::AppHandle) -> Result<Vec<WeaponListItem>, String> {
     let mappings = crate::assets::mappings::weapons::get_weapon_mappings();
     
     // Map has dual indexing (filename + display_name), so deduplicate by display_name

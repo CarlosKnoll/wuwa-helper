@@ -100,6 +100,7 @@ export interface CharacterListItem {
   name: string;
   rarity: number;
   element: string;
+  weapon_type?: string;
 }
 
 /* =======================

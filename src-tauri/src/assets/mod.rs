@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 pub mod cache;
-pub mod downloader;
 pub mod models;
 pub mod mapper;
 pub mod resolver;
@@ -325,116 +324,7 @@ impl AssetManager {
         use base64::Engine;
         Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
     }
-
-    /// Scan all asset files in the base directory and add them to cache
-    fn scan_and_cache_assets(&mut self) -> Result<UpdateSummary, AssetError> {
-        use std::fs;
-        
-        let mut summary = UpdateSummary {
-            downloaded: 0,
-            cached: 0,
-            failed: 0,
-            total_assets: 0,
-        };
-
-        // Asset types to scan
-        let asset_types = vec![
-            ("characters", AssetType::Character),
-            ("weapons", AssetType::Weapon),
-            ("echoes", AssetType::Echo),
-            ("echo_sets", AssetType::EchoSet),
-            ("elements", AssetType::Element),
-            ("misc", AssetType::Misc),
-        ];
-
-        for (dir_name, asset_type) in asset_types {
-            let asset_dir = self.base_path.join(dir_name);
-            
-            if !asset_dir.exists() {
-                eprintln!("DEBUG [scan_and_cache]: Directory does not exist: {:?}", asset_dir);
-                continue;
-            }
-
-            // For weapons, we need to scan subdirectories
-            if matches!(asset_type, AssetType::Weapon) {
-                // Scan weapon type icons in root weapons folder
-                if let Ok(entries) = fs::read_dir(&asset_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_file() {
-                            if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                                self.add_to_cache(&path, filename, asset_type, &mut summary)?;
-                            }
-                        }
-                    }
-                }
-
-                // Scan weapon subdirectories
-                for weapon_type in &["broadblade", "sword", "pistol", "gauntlet", "rectifier"] {
-                    let subdir = asset_dir.join(weapon_type);
-                    if subdir.exists() {
-                        if let Ok(entries) = fs::read_dir(&subdir) {
-                            for entry in entries.flatten() {
-                                let path = entry.path();
-                                if path.is_file() {
-                                    if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                                        self.add_to_cache(&path, filename, asset_type, &mut summary)?;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Regular directory scan for other asset types
-                if let Ok(entries) = fs::read_dir(&asset_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_file() {
-                            if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                                self.add_to_cache(&path, filename, asset_type, &mut summary)?;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(summary)
-    }
-
-    /// Add a single file to the cache
-    fn add_to_cache(
-        &mut self,
-        path: &std::path::Path,
-        filename: &str,
-        asset_type: AssetType,
-        summary: &mut UpdateSummary,
-    ) -> Result<(), AssetError> {
-        use chrono::Utc;
-        
-        // Get file metadata
-        let metadata = std::fs::metadata(path)?;
-        let size_bytes = metadata.len();
-
-        // Create cache entry
-        let entry = AssetEntry {
-            url: format!("file://{}", path.display()), // Fake URL for local files
-            filename: filename.to_string(),
-            local_path: path.to_string_lossy().to_string(),
-            asset_type,
-            size_bytes,
-            downloaded_at: Utc::now(),
-        };
-
-        self.cache.add_asset(entry);
-        summary.cached += 1;
-        summary.total_assets += 1;
-
-        Ok(())
-    }
 }
-
 
 #[derive(Debug, thiserror::Error)]
 pub enum AssetError {
