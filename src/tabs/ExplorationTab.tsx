@@ -64,7 +64,7 @@ export default function ExplorationTab({ regions, onUpdate }: { regions: Explora
           >
             <Map className="w-8 h-8 text-yellow-400 mb-3" />
             <h3 className="font-bold text-lg">{region.region_name}</h3>
-            {region.notes && <p className="text-sm text-slate-400 mt-2">{region.notes}</p>}
+            {region.description && <p className="text-sm text-slate-400 mt-2">{region.description}</p>}
           </button>
         ))}
       </div>

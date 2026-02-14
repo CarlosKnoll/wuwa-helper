@@ -283,5 +283,46 @@ pub fn migrate_to_v2(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    // ========================================
+    // 7. Migrate exploration tables to new schema
+    // ========================================
+    
+    // Create new tables for user progress only
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS exploration_progress (
+            map_id INTEGER PRIMARY KEY,
+            exploration_percent REAL NOT NULL DEFAULT 0.0,
+            notes TEXT
+        )",
+        [],
+    )?;
+
+    // Migrate existing data from old tables to new tables
+    // Check if old tables exist before migrating
+    let old_exploration_tables_exist: bool = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master 
+             WHERE type='table' AND (name='exploration_regions' OR name='exploration_maps')",
+            [],
+            |row| {
+                let count: i64 = row.get(0)?;
+                Ok(count > 0)
+            },
+        )
+        .unwrap_or(false);
+
+    if old_exploration_tables_exist {
+        // Migrate map progress
+        conn.execute(
+            "INSERT OR IGNORE INTO exploration_progress (map_id, exploration_percent, notes)
+             SELECT id, exploration_percent, notes FROM exploration_maps",
+            [],
+        )?;
+
+        // Drop old tables
+        conn.execute("DROP TABLE IF EXISTS exploration_maps", [])?;
+        conn.execute("DROP TABLE IF EXISTS exploration_regions", [])?;
+    }
+
     Ok(())
 }

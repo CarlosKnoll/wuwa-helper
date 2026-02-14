@@ -200,19 +200,23 @@ export interface EchoListItem {
 Exploration
 ======================= */
 
+export interface ExplorationRegion {
+  id: number;
+  region_name: string;
+  display_order: number;
+  description: string | null;
+  notes: string | null;
+}
+
 export interface ExplorationMap {
   id: number;
   region_id: number;
   map_name: string;
+  display_order: number;
   exploration_percent: number;
   notes: string | null;
 }
 
-export interface ExplorationRegion {
-  id: number;
-  region_name: string;
-  notes: string | null;
-}
 
 /* =======================
    Pull History - WuwaTracker Compatible Format

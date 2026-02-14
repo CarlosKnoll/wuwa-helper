@@ -10,6 +10,7 @@ pub mod echoes;
 pub mod echo_sets;
 pub mod elements;
 pub mod materials;
+pub mod exploration;
 
 /// Get all hardcoded mappings combined
 pub fn get_all_mappings() -> HashMap<String, AssetMetadata> {

@@ -70,6 +70,7 @@ pub fn run() {
             exploration::get_exploration_regions,
             exploration::get_exploration_maps,
             exploration::update_exploration_map,
+            exploration::update_exploration_region_notes,
             endgame::get_tower_of_adversity,
             endgame::get_tower_details,
             endgame::get_tower_floors,
