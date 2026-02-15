@@ -355,140 +355,273 @@ export default function WhimperingWastesDetailsView({
           <>
             {torrentsStages.length > 0 || addingStage ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {newStageNumber === 2 && !torrentsStages.some(s => s.stage_number === 1) && (
-                  <div></div>
-                )}
-                {addingStage && (
-                  <div className="bg-slate-700/50 rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-yellow-400">New Team</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 block mb-1">Side (1 or 2)</label>
-                      <input
-                        type="number"
-                        value={newStageNumber}
-                        onChange={(e) => setNewStageNumber(parseInt(e.target.value) || 1)}
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                        min="1"
-                        max="2"
-                      />
-                    </div>
-                    <TeamEditor
-                      character1={editChar1}
-                      character2={editChar2}
-                      character3={editChar3}
-                      onChar1Change={setEditChar1}
-                      onChar2Change={setEditChar2}
-                      onChar3Change={setEditChar3}
-                      onSave={addNewStage}
-                      onCancel={() => setAddingStage(false)}
-                      availableCharacters={availableCharacters}
-                      saving={saving}
-                      saveButtonColor="bg-green-500/[0.5]"
-                      saveButtonHoverColor="hover:bg-green-500/[0.65]"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-slate-400 block mb-1">Token</label>
-                        <input
-                          type="text"
-                          value={editToken}
-                          onChange={(e) => setEditToken(e.target.value)}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                {/* Render Side 1 (left column) */}
+                {(() => {
+                  const side1Team = torrentsStages.find(s => s.stage_number === 1);
+                  const isEditingSide1 = side1Team && editingStage === side1Team.id;
+                  const showAddFormSide1 = addingStage && newStageNumber === 1;
+                  
+                  if (showAddFormSide1) {
+                    return (
+                      <div className="md:col-start-1 bg-slate-700/50 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-yellow-400">New Team</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Side (auto-assigned)</label>
+                          <input
+                            type="number"
+                            value={newStageNumber}
+                            className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-slate-300 text-sm cursor-not-allowed"
+                            readOnly
+                          />
+                        </div>
+                        <TeamEditor
+                          character1={editChar1}
+                          character2={editChar2}
+                          character3={editChar3}
+                          onChar1Change={setEditChar1}
+                          onChar2Change={setEditChar2}
+                          onChar3Change={setEditChar3}
+                          onSave={addNewStage}
+                          onCancel={() => setAddingStage(false)}
+                          availableCharacters={availableCharacters}
+                          saving={saving}
+                          saveButtonColor="bg-green-500/[0.5]"
+                          saveButtonHoverColor="hover:bg-green-500/[0.65]"
                         />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Token</label>
+                            <input
+                              type="text"
+                              value={editToken}
+                              onChange={(e) => setEditToken(e.target.value)}
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Points</label>
+                            <input
+                              type="number"
+                              value={editPoints}
+                              onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-xs text-slate-400 block mb-1">Points</label>
-                        <input
-                          type="number"
-                          value={editPoints}
-                          onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                        />
+                    );
+                  } else if (side1Team) {
+                    return (
+                      <div key={side1Team.id} className="md:col-start-1 bg-slate-700/50 rounded-lg p-3 space-y-2">
+                        {isEditingSide1 ? (
+                          <>
+                            <p className="text-sm font-semibold text-yellow-400">Side 1</p>
+                            <TeamEditor
+                              character1={editChar1}
+                              character2={editChar2}
+                              character3={editChar3}
+                              onChar1Change={setEditChar1}
+                              onChar2Change={setEditChar2}
+                              onChar3Change={setEditChar3}
+                              onSave={() => saveStage(side1Team.id)}
+                              onCancel={() => setEditingStage(null)}
+                              availableCharacters={availableCharacters}
+                              saving={saving}
+                              saveButtonColor="bg-green-500/[0.5]"
+                              saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Token</label>
+                                <input
+                                  type="text"
+                                  value={editToken}
+                                  onChange={(e) => setEditToken(e.target.value)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Points</label>
+                                <input
+                                  type="number"
+                                  value={editPoints}
+                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-yellow-400">Side 1</span>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => startEditStage(side1Team)}
+                                  className="p-1 hover:bg-slate-600 rounded transition-colors"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => deleteStage(side1Team.id)}
+                                  className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{side1Team.token}</span>
+                              <span className="text-xs text-yellow-400">{side1Team.points} pts</span>
+                            </div>
+                            <MatrixTeamDisplay
+                              characters={[side1Team.character1, side1Team.character2, side1Team.character3]}
+                              size="md"
+                              showNames={true}
+                            />
+                          </>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                )}
-                
-                {torrentsStages.map((stage) => {
-                  const isEditingThis = editingStage === stage.id;
+                    );
+                  }
+                  return null;
+                })()}
 
-                  return (
-                    <div key={stage.id} className="bg-slate-700/50 rounded-lg p-3 space-y-2">
-                      {isEditingThis ? (
-                        <>
-                          <p className="text-sm font-semibold text-yellow-400">Side {stage.stage_number}</p>
-                          <TeamEditor
-                            character1={editChar1}
-                            character2={editChar2}
-                            character3={editChar3}
-                            onChar1Change={setEditChar1}
-                            onChar2Change={setEditChar2}
-                            onChar3Change={setEditChar3}
-                            onSave={() => saveStage(stage.id)}
-                            onCancel={() => setEditingStage(null)}
-                            availableCharacters={availableCharacters}
-                            saving={saving}
-                            saveButtonColor="bg-green-500/[0.5]"
-                            saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                {/* Render Side 2 (right column) */}
+                {(() => {
+                  const side2Team = torrentsStages.find(s => s.stage_number === 2);
+                  const isEditingSide2 = side2Team && editingStage === side2Team.id;
+                  const showAddFormSide2 = addingStage && newStageNumber === 2;
+                  
+                  if (showAddFormSide2) {
+                    return (
+                      <div className="md:col-start-2 bg-slate-700/50 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-yellow-400">New Team</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Side (auto-assigned)</label>
+                          <input
+                            type="number"
+                            value={newStageNumber}
+                            className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-slate-300 text-sm cursor-not-allowed"
+                            readOnly
                           />
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-xs text-slate-400 block mb-1">Token</label>
-                              <input
-                                type="text"
-                                value={editToken}
-                                onChange={(e) => setEditToken(e.target.value)}
-                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-slate-400 block mb-1">Points</label>
-                              <input
-                                type="number"
-                                value={editPoints}
-                                onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                              />
-                            </div>
+                        </div>
+                        <TeamEditor
+                          character1={editChar1}
+                          character2={editChar2}
+                          character3={editChar3}
+                          onChar1Change={setEditChar1}
+                          onChar2Change={setEditChar2}
+                          onChar3Change={setEditChar3}
+                          onSave={addNewStage}
+                          onCancel={() => setAddingStage(false)}
+                          availableCharacters={availableCharacters}
+                          saving={saving}
+                          saveButtonColor="bg-green-500/[0.5]"
+                          saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Token</label>
+                            <input
+                              type="text"
+                              value={editToken}
+                              onChange={(e) => setEditToken(e.target.value)}
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                            />
                           </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-yellow-400">
-                              Side {stage.stage_number}
-                            </span>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => startEditStage(stage)}
-                                className="p-1 hover:bg-slate-600 rounded transition-colors"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => deleteStage(stage.id)}
-                                className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Points</label>
+                            <input
+                              type="number"
+                              value={editPoints}
+                              onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else if (side2Team) {
+                    return (
+                      <div key={side2Team.id} className="md:col-start-2 bg-slate-700/50 rounded-lg p-3 space-y-2">
+                        {isEditingSide2 ? (
+                          <>
+                            <p className="text-sm font-semibold text-yellow-400">Side 2</p>
+                            <TeamEditor
+                              character1={editChar1}
+                              character2={editChar2}
+                              character3={editChar3}
+                              onChar1Change={setEditChar1}
+                              onChar2Change={setEditChar2}
+                              onChar3Change={setEditChar3}
+                              onSave={() => saveStage(side2Team.id)}
+                              onCancel={() => setEditingStage(null)}
+                              availableCharacters={availableCharacters}
+                              saving={saving}
+                              saveButtonColor="bg-green-500/[0.5]"
+                              saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Token</label>
+                                <input
+                                  type="text"
+                                  value={editToken}
+                                  onChange={(e) => setEditToken(e.target.value)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Points</label>
+                                <input
+                                  type="number"
+                                  value={editPoints}
+                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{stage.token}</span>
-                            <span className="text-xs text-yellow-400">{stage.points} pts</span>
-                          </div>
-                          <MatrixTeamDisplay
-                            characters={[stage.character1, stage.character2, stage.character3]}
-                            size="md"
-                            showNames={true}
-                          />
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-yellow-400">Side 2</span>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => startEditStage(side2Team)}
+                                  className="p-1 hover:bg-slate-600 rounded transition-colors"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => deleteStage(side2Team.id)}
+                                  className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{side2Team.token}</span>
+                              <span className="text-xs text-yellow-400">{side2Team.points} pts</span>
+                            </div>
+                            <MatrixTeamDisplay
+                              characters={[side2Team.character1, side2Team.character2, side2Team.character3]}
+                              size="md"
+                              showNames={true}
+                            />
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             ) : (
               <div className="text-center py-8 text-slate-500">
