@@ -191,14 +191,15 @@ pub fn update_character(
     ascension: i64,
     waveband: i64,
     rarity: i64,
+    resonance_date: String,
     build_status: String,
     notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
     
     conn.execute(
-        "UPDATE characters SET level = ?, ascension = ?, waveband = ?, rarity = ?, build_status = ?, notes = ? WHERE id = ?",
-        (level, ascension, waveband, rarity, build_status, notes, id),
+        "UPDATE characters SET level = ?, ascension = ?, waveband = ?, rarity = ?, resonance_date = ?, build_status = ?, notes = ? WHERE id = ?",
+        (level, ascension, waveband, rarity, resonance_date, build_status, notes, id),
     )
     .map_err(|e| e.to_string())?;
     
@@ -268,7 +269,9 @@ pub fn update_character_weapon(
     // Get the old weapon name for this character
     let old_weapon_name: String = conn
         .query_row("SELECT weapon_name FROM character_weapons WHERE character_id = ?", [character_id], |row| row.get(0))
-        .map_err(|e| e.to_string())?;
+        .optional()
+        .map_err(|e| e.to_string())?
+        .unwrap_or_else(|| "None".to_string());
     
     // If the new weapon is not "None", check if it's equipped on another character
     if weapon_name != "None" {
@@ -299,8 +302,15 @@ pub fn update_character_weapon(
     
     // Update character_weapons table
     conn.execute(
-        "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ?, notes = ? WHERE character_id = ?",
-        (&weapon_name, rarity, level, rank, &notes, character_id),
+        "INSERT INTO character_weapons (character_id, weapon_name, rarity, level, rank, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(character_id) DO UPDATE SET
+            weapon_name = excluded.weapon_name,
+            rarity = excluded.rarity,
+            level = excluded.level,
+            rank = excluded.rank,
+            notes = excluded.notes",
+        (&character_id, &weapon_name, rarity, level, rank, &notes),
     )
     .map_err(|e| e.to_string())?;
     

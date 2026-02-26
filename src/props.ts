@@ -29,6 +29,7 @@ export interface CharacterInfoProps {
     level: number;
     ascension: number;
     waveband: number;
+    resonance_date: string;
     build_status: string;
     notes: string;
   };

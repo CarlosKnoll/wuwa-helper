@@ -1,17 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, ChevronDown } from 'lucide-react';
 import { AddCharacterModalProps } from '../../props';
+import { CharacterWithWeaponType } from '../../types';
 import { safeInvoke, getBuildStatusOptions } from '../../utils';
 
 const elements = ['Spectro', 'Havoc', 'Aero', 'Electro', 'Fusion', 'Glacio'];
 const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
-
-interface CharacterWithWeaponType {
-  name: string;
-  rarity: number;
-  element: string;
-  weapon_type?: string;
-}
 
 export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterModalProps) {
   const buildStatusOptions = getBuildStatusOptions();

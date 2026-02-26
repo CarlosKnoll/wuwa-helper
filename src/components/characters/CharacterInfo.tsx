@@ -36,6 +36,7 @@ export default function CharacterInfo({
     rank: 1,
     notes: '',
   });
+  const getMaxLevel = (ascension: number) => [20, 40, 50, 60, 70, 80, 90][ascension] ?? 20;
 
   // Load character portrait
   useEffect(() => {
@@ -237,7 +238,7 @@ export default function CharacterInfo({
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-3">
                 {/* Level */}
                 <div>
                   <label className="text-xs text-slate-400 mb-1 block">Level</label>
@@ -251,7 +252,7 @@ export default function CharacterInfo({
                       max="90"
                     />
                   ) : (
-                    <div className="text-white font-semibold text-sm">{character.level}/90</div>
+                    <div className="text-white font-semibold text-sm">{character.level}/{getMaxLevel(character.ascension)}</div>
                   )}
                 </div>
 
@@ -268,7 +269,7 @@ export default function CharacterInfo({
                       max="6"
                     />
                   ) : (
-                    <div className="text-purple-400 font-semibold text-sm">{character.ascension}/6</div>
+                    <div className="text-yellow-400 font-semibold text-sm">{character.ascension}/6</div>
                   )}
                 </div>
 
@@ -286,6 +287,23 @@ export default function CharacterInfo({
                     />
                   ) : (
                     <div className="text-yellow-400 font-semibold text-sm">S{character.waveband}</div>
+                  )}
+                </div>
+
+                {/* Resonance Date */}
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Resonance Date</label>
+                  {editing ? (
+                    <input
+                      type="date"
+                      value={form.resonance_date ?? ''}
+                      onChange={e => onChange({ ...form, resonance_date: e.target.value })}
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-white"
+                    />
+                  ) : (
+                    <div className="text-yellow-400 font-semibold text-sm">
+                      {character.resonance_date ?? '—'}
+                    </div>
                   )}
                 </div>
 

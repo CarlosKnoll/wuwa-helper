@@ -106,7 +106,7 @@ pub fn migrate_to_v1(conn: &Connection) -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS character_weapons (
             id INTEGER PRIMARY KEY,
-            character_id INTEGER,
+            character_id INTEGER UNIQUE,
             weapon_name TEXT,
             rarity INTEGER,
             level INTEGER,

@@ -20,6 +20,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
     ascension: character.ascension,
     waveband: character.waveband,
     rarity: character.rarity,
+    resonance_date: character.resonance_date,
     build_status: character.build_status,
     notes: character.notes || ''
   });
@@ -46,6 +47,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
       ascension: character.ascension,
       waveband: character.waveband,
       rarity: character.rarity,
+      resonance_date: character.resonance_date,
       build_status: character.build_status,
       notes: character.notes || ''
     });
@@ -101,6 +103,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
         ascension: ascension,
         waveband: waveband,
         rarity: rarity,
+        resonanceDate: form.resonance_date,
         buildStatus: form.build_status,
         notes: form.notes || null
       });
@@ -111,6 +114,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
         ascension: ascension,
         waveband: waveband,
         rarity: rarity,
+        resonance_date: form.resonance_date,
         build_status: form.build_status,
         notes: form.notes
       });
@@ -196,6 +200,7 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
                     ascension: character.ascension,
                     waveband: character.waveband,
                     rarity: character.rarity,
+                    resonance_date: character.resonance_date,
                     build_status: character.build_status,
                     notes: character.notes || ''
                   });

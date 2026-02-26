@@ -103,6 +103,13 @@ export interface CharacterListItem {
   weapon_type?: string;
 }
 
+export interface CharacterWithWeaponType {
+  name: string;
+  rarity: number;
+  element: string;
+  weapon_type?: string;
+}
+
 /* =======================
    Weapon
    ======================= */
