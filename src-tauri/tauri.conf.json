@@ -24,7 +24,7 @@
         "enable": true,
         "scope": {
           "allow": [
-            "$RESOURCE/wuwa-helper-assets/assets/**"
+            "$RESOURCE/assets/**"
           ]
         }
       },
