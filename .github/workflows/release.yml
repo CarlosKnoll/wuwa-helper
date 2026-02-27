@@ -29,6 +29,13 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup assets
+        uses: actions/checkout@v4
+        with:
+          repository: CarlosKnoll/wuwa-helper-assets
+          token: ${{ secrets.ASSETS_REPO_TOKEN }}
+          path: src-tauri/wuwa-helper-assets/assets
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:

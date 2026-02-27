@@ -43,7 +43,7 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "resources/assets/**/*"
+      "wuwa-helper-assets/assets/**/*"
     ]
   },
   "plugins": {
