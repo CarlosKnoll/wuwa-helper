@@ -25,7 +25,7 @@ export function FiveStarHistory({ pulls, selectedBanner }: FiveStarHistoryProps)
         const dateCompare = new Date(a.pull_date).getTime() - new Date(b.pull_date).getTime();
         if (dateCompare !== 0) return dateCompare;
         // Within same timestamp, lower group_order came earlier (1 is oldest, 10 is newest)
-        return a.group_order - b.group_order;
+        return (a.group_order ?? 0) - (b.group_order ?? 0);
       });
 
     // Extract 5-star pulls in chronological order
@@ -134,7 +134,7 @@ export function FiveStarHistory({ pulls, selectedBanner }: FiveStarHistoryProps)
       </div>
       
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {fiveStarPulls.map((fiveStar, index) => (
+        {fiveStarPulls.map((fiveStar) => (
           <FiveStarPortrait
             key={fiveStar.pull.id}
             fiveStar={fiveStar}

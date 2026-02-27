@@ -86,7 +86,7 @@ export default function CharacterEchoBuildSection({
 
   const loadEchoSets = async () => {
     try {
-      const sets = await safeInvoke<EchoSetData[]>('get_all_echo_sets');
+      const sets = await safeInvoke('get_all_echo_sets') as EchoSetData[];
       setEchoSets(sets);
       
       // Load images for all echo sets using the echo_set asset type

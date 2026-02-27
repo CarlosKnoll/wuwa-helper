@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Download, Upload, FileText, Filter, Calendar, Star, Copy, Check, Play } from 'lucide-react';
-import { PityStatus, PullHistory, WuwaTrackerExport } from '../types';
-import { safeInvoke, formatBannerType } from '../utils';
+import { Download, Upload, FileText, Filter, Copy, Check, Play } from 'lucide-react';
+import { PityStatus, PullHistory } from '../types';
+import { safeInvoke, formatBannerType, importFromWuwaTrackerFormat, exportToWuwaTrackerFormat } from '../utils';
 import { PullHistoryItem } from '../components/PullHistoryItem';
 import { FiveStarHistory } from '../components/FiveStarHistory';
 import { open, Command } from '@tauri-apps/plugin-shell';
@@ -194,7 +194,6 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
     try {
       const pulls = await safeInvoke('get_pull_history') as PullHistory[];
       
-      const { exportToWuwaTrackerFormat } = await import('../utils');
       const exportData = exportToWuwaTrackerFormat(pulls, 'user');
 
       // FIXED: Use Tauri's save dialog to let user choose save location
@@ -228,8 +227,6 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      
-      const { importFromWuwaTrackerFormat } = await import('../utils');
       
       if (data.version && data.pulls && Array.isArray(data.pulls)) {
         // Clean import: delete all existing pulls first
@@ -621,7 +618,6 @@ export default function PityTab({ pityStatus, onUpdate }: { pityStatus: PityStat
           const currentPity = pityStatus.find(p => p.banner_type === selectedBanner);
           if (!currentPity) return null;
 
-          const isFeatured = selectedBanner === 'featuredCharacter' || selectedBanner === 'featuredWeapon';
           const nextIsGuaranteed = isNextGuaranteed(selectedBanner);
           
           return (

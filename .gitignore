@@ -27,3 +27,4 @@ dist-ssr
 /src-tauri/icons
 /__pycache__
 /src-tauri/resources
+/ww_assets

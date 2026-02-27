@@ -13,11 +13,10 @@ import { CurrencyIcon } from '../components/CurrencyIcon';
 
 type EndgameMode = 'tower' | 'wastes' | 'matrix' | null;
 
-const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
+const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement => {
   const [loading, setLoading] = useState(false);
   const [selectedMode, setSelectedMode] = useState<EndgameMode>(null);
   const [showResetDialog, setShowResetDialog] = useState<{mode: string, name: string} | null>(null);
-  const [resetting, setResetting] = useState(false);
 
   // Inline last-reset editing per card
   const [editingLastReset, setEditingLastReset] = useState<'tower' | 'wastes' | 'matrix' | null>(null);
@@ -119,7 +118,6 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
   const handleResetConfirm = async () => {
     if (!showResetDialog) return;
 
-    setResetting(true);
     try {
       const { mode } = showResetDialog;
       
@@ -136,8 +134,6 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
     } catch (error) {
       console.error('Failed to reset endgame mode:', error);
       alert('Failed to reset: ' + error);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -239,8 +235,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((props, ref) => {
         onCancel={() => setShowResetDialog(null)}
         confirmText="Reset"
         cancelText="Cancel"
-        isDestructive
-        isLoading={resetting}
+        variant="danger"
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

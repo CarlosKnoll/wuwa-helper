@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, User, Shield, Zap } from 'lucide-react';
 import { safeInvoke, getElementColor } from '../../utils';
-import { CharacterTalents, CharacterWeapon, Echo, EchoBuild, EchoSubstat} from '../../types';
+import { CharacterTalents, Echo, EchoBuild, EchoSubstat} from '../../types';
 import { CharacterModalProps } from '../../props';
 import CharacterInfo from './CharacterInfo';
 import CharacterTalentsSection from './CharacterTalentsSection';
@@ -27,7 +27,6 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
 
   // Related data state
   const [talents, setTalents] = useState<CharacterTalents | null>(null);
-  const [weapon, setWeapon] = useState<CharacterWeapon | null>(null);
   const [echoBuild, setEchoBuild] = useState<EchoBuild | null>(null);
   const [echoes, setEchoes] = useState<Echo[]>([]);
   const [echoSubstats, setEchoSubstats] = useState<Record<number, EchoSubstat[]>>({});
@@ -59,14 +58,12 @@ export default function CharacterModal({ character, onClose, onUpdate }: Charact
 
   const loadDetails = async () => {
     try {
-      const [t, w, b] = await Promise.all([
+      const [t, b] = await Promise.all([
         safeInvoke('get_character_talents', { characterId: character.id }),
-        safeInvoke('get_character_weapon', { characterId: character.id }),
         safeInvoke('get_echo_build', { characterId: character.id }),
       ]);
 
       setTalents(t as CharacterTalents | null);
-      setWeapon(w as CharacterWeapon | null);
       setEchoBuild(b as EchoBuild | null);
 
       if (b) {

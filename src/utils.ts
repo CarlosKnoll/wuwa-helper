@@ -103,17 +103,17 @@ export function formatBannerType(bannerType: string): string {
  * 6 = Selector (IGNORE - not tracked)
  * 7 = Standard Permanent (IGNORE - invalid/unknown type)
  */
-export function cardPoolTypeToBannerType(cardPoolType: number): string | null {
-  const mapping: Record<number, string | null> = {
+export function cardPoolTypeToBannerType(cardPoolType: number): string {
+  const mapping: Record<number, string> = {
     1: 'featuredCharacter',
     2: 'featuredWeapon',
     3: 'standardCharacter',
     4: 'standardWeapon',
-    5: null, // Beginner banner - ignore
-    6: null, // Selector banner - ignore
-    7: null, // Standard permanent - ignore
+    5: '', // Beginner banner - ignore
+    6: '', // Selector banner - ignore
+    7: '', // Standard permanent - ignore
   };
-  return mapping[cardPoolType] ?? null;
+  return mapping[cardPoolType];
 }
 
 /**
@@ -240,7 +240,7 @@ export function importFromWuwaTrackerFormat(
 
 
   // Group by banner type and calculate pull numbers
-  sortedPulls.forEach((pull, index) => {
+  sortedPulls.forEach((pull) => {
     const bannerType = cardPoolTypeToBannerType(pull.cardPoolType);
     
     // Skip beginner, selector, and other ignored banner types

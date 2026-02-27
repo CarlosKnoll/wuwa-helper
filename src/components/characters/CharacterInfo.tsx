@@ -66,7 +66,7 @@ export default function CharacterInfo({
 
   const loadWeaponData = async () => {
     try {
-      const w = await safeInvoke('get_character_weapon', { characterId: character.id });
+      const w = await safeInvoke('get_character_weapon', { characterId: character.id }) as any;
       setWeapon(w);
       if (w) {
         setWeaponForm({

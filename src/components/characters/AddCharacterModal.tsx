@@ -25,7 +25,6 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
 
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
   const [availableCharacters, setAvailableCharacters] = useState<CharacterWithWeaponType[]>([]);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
 
@@ -144,11 +143,9 @@ export default function AddCharacterModal({ onClose, onSuccess }: AddCharacterMo
                     setShowDropdown(true);
                   }}
                   onFocus={() => {
-                    setInputFocused(true);
                     setShowDropdown(true);
                   }}
                   onBlur={() => {
-                    setInputFocused(false);
                     // Delay hiding dropdown to allow click events to fire
                     setTimeout(() => setShowDropdown(false), 200);
                   }}
