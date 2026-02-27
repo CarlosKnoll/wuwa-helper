@@ -51,6 +51,23 @@ pub fn get_resources(app: tauri::AppHandle) -> Result<Resources, String> {
 }
 
 #[tauri::command]
+pub fn update_account_info(
+    app: tauri::AppHandle,
+    union_level: Option<i64>,
+    notes: Option<String>,
+) -> Result<String, String> {
+    let conn = init_db(&app)?;
+    
+    conn.execute(
+        "UPDATE account_info SET union_level = ?, notes = ?, last_updated = datetime('now') WHERE id = 1",
+        (union_level, notes),
+    )
+    .map_err(|e| e.to_string())?;
+    
+    Ok("Account info updated successfully".to_string())
+}
+
+#[tauri::command]
 pub fn update_resources(
     app: tauri::AppHandle,
     astrite: i64,

@@ -50,6 +50,7 @@ pub fn run() {
             echoes::get_available_echoes,
             account::get_account_info,
             account::get_resources,
+            account::update_account_info,
             account::update_resources,
             gacha::get_pity_status,
             gacha::get_pull_count,

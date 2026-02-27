@@ -20,6 +20,23 @@ export default function DashboardTab({ resources, pityStatus, onUpdate }: any) {
     estimated_banner: '',
   });
 
+const [accountInfo, setAccountInfo] = useState<{ union_level: number | null; last_updated: string | null; notes: string | null } | null>(null);
+const [editingAccount, setEditingAccount] = useState(false);
+const [accountForm, setAccountForm] = useState({ union_level: 0, notes: '' });
+
+const loadAccountInfo = async () => {
+  try {
+    const data = await safeInvoke('get_account_info') as any;
+    setAccountInfo(data);
+    setAccountForm({
+      union_level: data?.union_level || 0,
+      notes: data?.notes || '',
+    });
+  } catch (err) {
+    console.error('Failed to load account info:', err);
+  }
+};
+
   // Resources editing
   const [editingResources, setEditingResources] = useState(false);
   const [resourcesForm, setResourcesForm] = useState({
@@ -45,6 +62,7 @@ export default function DashboardTab({ resources, pityStatus, onUpdate }: any) {
   const [localPityStatus, setLocalPityStatus] = useState(pityStatus);
 
   useEffect(() => {
+    loadAccountInfo();
     loadGoals();
     loadEndgameData();
     loadPityStatus();
@@ -117,6 +135,19 @@ export default function DashboardTab({ resources, pityStatus, onUpdate }: any) {
       });
     } catch (err) {
       console.error('Failed to load endgame data:', err);
+    }
+  };
+
+  const handleSaveAccount = async () => {
+    try {
+      await safeInvoke('update_account_info', {
+        unionLevel: accountForm.union_level,
+        notes: accountForm.notes || null,
+      });
+      setEditingAccount(false);
+      await loadAccountInfo();
+    } catch (err) {
+      alert('Failed to update account info: ' + err);
     }
   };
 
@@ -250,6 +281,70 @@ export default function DashboardTab({ resources, pityStatus, onUpdate }: any) {
         onCancel={() => setDeleteConfirm(null)}
         variant="danger"
       />
+
+      {/* 0. Account Info */}
+      <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 text-yellow-400" />
+            Account
+          </h2>
+          {!editingAccount ? (
+            <button onClick={() => setEditingAccount(true)} className="p-2 hover:bg-slate-700 rounded transition-colors">
+              <Edit2 className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={() => setEditingAccount(false)} className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Cancel</button>
+              <button onClick={handleSaveAccount} className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded-lg text-sm">Save</button>
+            </div>
+          )}
+        </div>
+
+        {editingAccount ? (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Union Level</label>
+                <input
+                  type="number"
+                  value={accountForm.union_level}
+                  onChange={e => setAccountForm({ ...accountForm, union_level: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm font-bold text-yellow-400 focus:outline-none focus:border-yellow-400"
+                  min="1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Notes</label>
+              <input
+                type="text"
+                value={accountForm.notes}
+                onChange={e => setAccountForm({ ...accountForm, notes: e.target.value })}
+                className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-yellow-400"
+                placeholder="Optional notes..."
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400">Union Level</span>
+                <span className="text-sm font-bold text-yellow-400">{accountInfo?.union_level ?? '—'}</span>
+              </div>
+              {accountInfo?.last_updated && (
+                <div className="text-xs text-slate-500">
+                  Updated: {new Date(accountInfo.last_updated).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+            {accountInfo?.notes && (
+              <p className="text-xs text-slate-500 italic">{accountInfo.notes}</p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 1. Resources - Editable */}
       <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
