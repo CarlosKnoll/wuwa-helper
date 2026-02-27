@@ -1,5 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 import { WuwaTrackerPull, PullHistory, WuwaTrackerExport, EchoSetData, EchoBuild } from './types';
+
+export const checkForUpdates = async () => {
+  const update = await check();
+  if (update) {
+    await update.downloadAndInstall();
+    await relaunch();
+  }
+};
 
 export async function safeInvoke(cmd: string, args?: Record<string, any>) {
   try {

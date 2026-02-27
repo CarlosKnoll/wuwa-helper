@@ -24,7 +24,7 @@
         "enable": true,
         "scope": {
           "allow": [
-            "$RESOURCE/assets/**"
+            "$RESOURCE/wuwa-helper-assets/assets/**"
           ]
         }
       },
@@ -32,6 +32,7 @@
     }
   },
   "bundle": {
+    "createUpdaterArtifacts": true,
     "active": true,
     "targets": "all",
     "icon": [
@@ -42,7 +43,18 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "resources/assets/**/*"
+      "wuwa-helper-assets/assets/**/*"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhCODcwMDg3MUZCN0I5NzkKUldSNXViY2Zod0NIaXl4ZGtCTUdVRCtFMlppcTVUcGZJeTBqSGszajFyb0xxMTd6L2hCZWZxaDcK",
+      "endpoints": [
+        "https://github.com/CarlosKnoll/wuwa-helper/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

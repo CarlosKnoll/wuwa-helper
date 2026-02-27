@@ -31,7 +31,7 @@ impl AssetManager {
             .path()
             .resource_dir()
             .map_err(|e| AssetError::PathError(format!("Failed to get resource dir: {}", e)))?
-            .join("resources")
+            .join("wuwa-helper-assets")
             .join("assets");
 
         // Verify the base path exists
