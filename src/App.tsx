@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Users, Sword, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
 import { Character, Weapon, Resources, PityStatus, ExplorationRegion, EndgameTabRef } from './types';
-import { safeInvoke } from './utils';
+import { safeInvoke, checkForUpdates } from './utils';
 import DashboardTab from './tabs/DashboardTab';
 import CharactersTab from './tabs/CharactersTab';
 import WeaponsTab from './tabs/WeaponsTab';
@@ -28,6 +28,7 @@ export default function WuwaHelper() {
   useEffect(() => { loadAllData(true); }, []);
 
   const loadAllData = async (isInitial = false) => {
+    checkForUpdates();
     setLoading(true);
     setError(null);
     try {

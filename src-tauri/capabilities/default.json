@@ -16,9 +16,9 @@
     "fs:allow-appdata-write-recursive",
     "shell:default",
     "shell:allow-open",
-      {
-      "identifier": "shell:allow-execute",
-      "allow": [
+    {
+    "identifier": "shell:allow-execute",
+    "allow": [
         {
           "name": "powershell",
           "cmd": "powershell",
@@ -26,6 +26,9 @@
           "sidecar": false
         }
       ]
-    }
+    },
+    "updater:default",
+    "process:default",
+    "process:allow-restart"
   ]
 }

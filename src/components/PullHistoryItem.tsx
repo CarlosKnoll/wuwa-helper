@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'lucide-react';
 import { PullHistoryItemProps } from '../props';
+import { invoke } from '@tauri-apps/api/core';
 
 export function PullHistoryItem({
   pull,
@@ -56,7 +57,6 @@ export function PullHistoryItem({
 
     const loadAsset = async () => {
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
         
         // Determine asset type and name
         const primaryAssetType = pull.item_type === 'character' ? 'character' : 'weapon';
