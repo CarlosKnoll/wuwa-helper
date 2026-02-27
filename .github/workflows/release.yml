@@ -34,7 +34,7 @@ jobs:
         with:
           repository: CarlosKnoll/wuwa-helper-assets
           token: ${{ secrets.ASSETS_REPO_TOKEN }}
-          path: src-tauri/wuwa-helper-assets/assets
+          path: src-tauri/wuwa-helper-assets/
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
