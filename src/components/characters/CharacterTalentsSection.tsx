@@ -81,8 +81,36 @@ export default function CharacterTalentsSection({
   };
 
   const toggleTrace = async (key: keyof typeof form) => {
+    const prerequisites: Partial<Record<keyof typeof form, keyof typeof form>> = {
+      basic_minor_1: 'basic_minor_2',
+      skill_minor_1: 'skill_minor_2',
+      forte_major_1: 'forte_major_2',
+      liberation_minor_1: 'liberation_minor_2',
+      intro_minor_1: 'intro_minor_2',
+    };
+
+    const dependents: Partial<Record<keyof typeof form, keyof typeof form>> = {
+      basic_minor_2: 'basic_minor_1',
+      skill_minor_2: 'skill_minor_1',
+      forte_major_2: 'forte_major_1',
+      liberation_minor_2: 'liberation_minor_1',
+      intro_minor_2: 'intro_minor_1',
+    };
+
     const newValue = form[key] === 1 ? 0 : 1;
-    setForm({ ...form, [key]: newValue });
+    
+    // Block activating an upper node if its lower node isn't active
+    const prereq = prerequisites[key];
+    if (newValue === 1 && prereq && form[prereq] !== 1) return;
+
+    // If deactivating a lower node, also deactivate the upper node
+    let updatedForm = { ...form, [key]: newValue };
+    const dependent = dependents[key];
+    if (newValue === 0 && dependent && form[dependent] === 1) {
+      updatedForm = { ...updatedForm, [dependent]: 0 };
+    }
+
+    setForm(updatedForm);
     
     // Immediately save to database
     try {
@@ -94,16 +122,16 @@ export default function CharacterTalentsSection({
         forteLevel: form.forte_level || null,
         introLevel: form.intro_level || null,
         notes: form.notes || null,
-        basicMinor1: key === 'basic_minor_1' ? newValue : form.basic_minor_1,
-        basicMinor2: key === 'basic_minor_2' ? newValue : form.basic_minor_2,
-        skillMinor1: key === 'skill_minor_1' ? newValue : form.skill_minor_1,
-        skillMinor2: key === 'skill_minor_2' ? newValue : form.skill_minor_2,
-        liberationMinor1: key === 'liberation_minor_1' ? newValue : form.liberation_minor_1,
-        liberationMinor2: key === 'liberation_minor_2' ? newValue : form.liberation_minor_2,
-        introMinor1: key === 'intro_minor_1' ? newValue : form.intro_minor_1,
-        introMinor2: key === 'intro_minor_2' ? newValue : form.intro_minor_2,
-        forteMajor1: key === 'forte_major_1' ? newValue : form.forte_major_1,
-        forteMajor2: key === 'forte_major_2' ? newValue : form.forte_major_2,
+        basicMinor1: updatedForm.basic_minor_1,
+        basicMinor2: updatedForm.basic_minor_2,
+        skillMinor1: updatedForm.skill_minor_1,
+        skillMinor2: updatedForm.skill_minor_2,
+        liberationMinor1: updatedForm.liberation_minor_1,
+        liberationMinor2: updatedForm.liberation_minor_2,
+        introMinor1: updatedForm.intro_minor_1,
+        introMinor2: updatedForm.intro_minor_2,
+        forteMajor1: updatedForm.forte_major_1,
+        forteMajor2: updatedForm.forte_major_2,
       });
       await onUpdate();
     } catch (err) {
@@ -224,6 +252,7 @@ export default function CharacterTalentsSection({
               <MinorTrace
                 isUnlocked={form.basic_minor_1 === 1}
                 onClick={() => toggleTrace('basic_minor_1')}
+                disabled={form.basic_minor_2 !== 1}
                 editing={true}
               />
             </div>
@@ -231,6 +260,7 @@ export default function CharacterTalentsSection({
               <MinorTrace
                 isUnlocked={form.skill_minor_1 === 1}
                 onClick={() => toggleTrace('skill_minor_1')}
+                disabled={form.skill_minor_2 !== 1}
                 editing={true}
               />
             </div>
@@ -238,6 +268,7 @@ export default function CharacterTalentsSection({
               <MajorTrace
                 isUnlocked={form.forte_major_1 === 1}
                 onClick={() => toggleTrace('forte_major_1')}
+                disabled={form.forte_major_2 !== 1}
                 editing={true}
               />
             </div>
@@ -245,6 +276,7 @@ export default function CharacterTalentsSection({
               <MinorTrace
                 isUnlocked={form.liberation_minor_1 === 1}
                 onClick={() => toggleTrace('liberation_minor_1')}
+                disabled={form.liberation_minor_2 !== 1}
                 editing={true}
               />
             </div>
@@ -252,6 +284,7 @@ export default function CharacterTalentsSection({
               <MinorTrace
                 isUnlocked={form.intro_minor_1 === 1}
                 onClick={() => toggleTrace('intro_minor_1')}
+                disabled={form.intro_minor_2 !== 1}
                 editing={true}
               />
             </div>
@@ -413,30 +446,21 @@ function TalentNode({
   );
 }
 
-// Minor Trace Component (Small circle) - Cream/beige design like in-game
-function MinorTrace({
-  isUnlocked,
-  onClick,
-}: {
-  isUnlocked: boolean;
-  onClick: () => void;
-  editing: boolean;
-}) {
+// Update MinorTrace and MajorTrace to accept disabled
+function MinorTrace({ isUnlocked, onClick, disabled }: { isUnlocked: boolean; onClick: () => void; disabled?: boolean; editing: boolean }) {
   return (
     <button
       onClick={onClick}
-      className={`relative w-11 h-11 rounded-full border-[3px] transition-all hover:scale-110 cursor-pointer ${
+      disabled={disabled}
+      className={`relative w-11 h-11 rounded-full border-[3px] transition-all ${
+        disabled ? 'opacity-25 cursor-not-allowed' : 'hover:scale-110 cursor-pointer'
+      } ${
         isUnlocked
           ? 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-300 border-slate-400/50 shadow-[0_0_12px_rgba(203,213,225,0.3)] opacity-100'
           : 'bg-slate-800/50 border-slate-600 opacity-50 hover:opacity-65'
       }`}
     >
-      {isUnlocked && (
-        <>
-          {/* Outer glow when unlocked - much more reduced */}
-          <div className="absolute inset-[-3px] bg-slate-300/15 rounded-full blur-sm"></div>
-        </>
-      )}
+      {isUnlocked && <div className="absolute inset-[-3px] bg-slate-300/15 rounded-full blur-sm"></div>}
     </button>
   );
 }
@@ -445,15 +469,19 @@ function MinorTrace({
 function MajorTrace({
   isUnlocked,
   onClick,
+  disabled
 }: {
   isUnlocked: boolean;
   onClick: () => void;
+  disabled?: boolean;
   editing: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="relative w-16 h-16 transition-all hover:scale-110 cursor-pointer"
+      disabled={disabled}
+      className={`relative w-16 h-16 transition-all hover:scale-110 ${
+        disabled ? 'opacity-25 cursor-not-allowed' : 'hover:scale-110 cursor-pointer'}`}
     >
       {isUnlocked && (
         <>

@@ -78,8 +78,6 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - **Dashboard:** Add account_info table data to dashboard.
 - **Dashboard:** Endgame data not refreshing whith database refresh.
 
-- **Character Talents:** Upper nodes of minor traces should not be toggleable if lower nodes aren't activated.
-
 - **TeamManager:** Correctly handle different endgames edit styles (Works fine for ToA, but WhiWa and Matrix have save/cancel button rendering before they should.)
 - **Endgame - WhiWa:** Add edit fields for Respawning Waters: Chasm progress.
 - **Endgame - WhiWa:** Remove obsolete Side field input that is now automatically determined.
@@ -91,3 +89,4 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - Remove debug statments.
 
 ---
+
