@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
 import { Users, Sword, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
 import { Character, Weapon, Resources, PityStatus, ExplorationRegion, EndgameTabRef } from './types';
 import { safeInvoke, checkForUpdates } from './utils';
@@ -11,6 +12,8 @@ import EndgameTab from './tabs/EndgameTab';
 import SettingsTab from './tabs/SettingsTab';
 
 export default function WuwaHelper() {
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -25,7 +28,7 @@ export default function WuwaHelper() {
   // Ref for EndgameTab to trigger refresh
   const endgameTabRef = useRef<EndgameTabRef>(null);
 
-  useEffect(() => { loadAllData(true); }, []);
+  useEffect(() => { getVersion().then(setAppVersion); loadAllData(true); }, []);
 
   const loadAllData = async (isInitial = false) => {
     checkForUpdates();
@@ -85,7 +88,7 @@ export default function WuwaHelper() {
     <div className="h-screen bg-black text-white flex overflow-hidden">
       <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 transition-all duration-300 flex flex-col`}>
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          {sidebarOpen && <div><h1 className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent">WuWa Assistant</h1><p className="text-xs text-slate-400 mt-1">Wuthering Waves</p></div>}
+          {sidebarOpen && <div><h1 className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent">WuWa Assistant</h1><p className="text-xs text-slate-400 mt-1">Wuthering Waves</p>{appVersion && <p className="text-xs text-slate-500">v{appVersion}</p>}</div>}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors"><Menu className="w-5 h-5" /></button>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -99,7 +102,7 @@ export default function WuwaHelper() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-slate-900/30 backdrop-blur-xl border-b border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div><h2 className="text-2xl font-bold">{navigation.find(n => n.id === activeTab)?.name}</h2></div>
+            <div><h2 className="text-2xl fon-bold">{navigation.find(n => n.id === activeTab)?.name}</h2></div>
             <button onClick={handleRefresh} disabled={loading} className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 disabled:bg-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"><Database className="w-4 h-4" />{loading ? 'Refreshing...' : 'Refresh'}</button>
           </div>
         </header>
