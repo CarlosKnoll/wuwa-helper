@@ -24,9 +24,7 @@ dist-ssr
 *.sw?
 /.utilities
 /.deploy
-/src-tauri/icons
 /__pycache__
-/src-tauri/resources
 /ww_assets
 /~
 /src-tauri/wuwa-helper-assets
