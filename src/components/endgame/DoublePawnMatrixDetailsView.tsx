@@ -353,7 +353,7 @@ export default function TroopMatrixDetailsView({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold flex items-center gap-2">
             <Users className="w-6 h-6 text-orange-400" />
-            Doubled Pawns Matrix Overview
+            Endstate Matrix Overview
           </h3>
           {!editing && (
             <button

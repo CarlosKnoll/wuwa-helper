@@ -121,7 +121,7 @@ export default function SettingsTab() {
 
       <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]">
         <h3 className="text-xl font-bold mb-2">About</h3>
-        <p className="text-slate-400">Wuthering Waves Assistant v0.2.0</p>
+        <p className="text-slate-400">Wuthering Waves Assistant v1.0.0</p>
         <p className="text-sm text-slate-500 mt-2">A comprehensive tool for managing your Wuthering Waves game data</p>
       </div>
     </div>

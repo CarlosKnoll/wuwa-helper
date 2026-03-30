@@ -443,7 +443,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
                     <Edit2 className="w-4 h-4 text-slate-400 group-hover:text-orange-400" />
                   </button>
                   <button
-                    onClick={(e) => openResetDialog('matrix', 'Doubled Pawns Matrix', e)}
+                    onClick={(e) => openResetDialog('matrix', 'Endstate Matrix', e)}
                     className="p-2 hover:bg-red-500/20 rounded-lg transition-colors group"
                     title="Reset matrix progress"
                   >
@@ -452,7 +452,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
                 </div>
               )}
             </div>
-            <h3 className="font-bold text-xl mb-2">Doubled Pawns Matrix</h3>
+            <h3 className="font-bold text-xl mb-2">Endstate Matrix</h3>
             {troopMatrix && (
               <>
                 <div className="mb-3" >
