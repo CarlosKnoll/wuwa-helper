@@ -135,7 +135,7 @@ fn get_gauntlets() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'s
         ("21040036.webp", "Blazing Justice", 5, "Gauntlet", vec!["5stars"]),
         ("21040046.webp", "Moongazer's Sigil", 5, "Gauntlet", vec!["5stars"]),
         ("T_IconWeapon_21040056_UI.webp", "Daybreakers's Spine", 5, "Gauntlet", vec!["5stars"]),
-        ("T_IconWeapon21040066_UI", "Solsworn Ciphers", 5, "Gauntlet", vec!["5stars"]),
+        ("T_IconWeapon21040066_UI.png", "Solsworn Ciphers", 5, "Gauntlet", vec!["5stars"]),
 
         //5-STARS STANDARD WEAPONS
         ("21040015.webp", "Abyss Surges", 5, "Gauntlet", vec!["5stars"]),

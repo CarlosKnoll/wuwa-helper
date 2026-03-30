@@ -4,7 +4,14 @@ import { safeInvoke } from '../utils';
 import { WeaponListItem } from '../types';
 import { AddWeaponModalProps } from '../props';
 
-const weaponTypes = ['Sword', 'Broadblade', 'Pistols', 'Gauntlets', 'Rectifier'];
+// label: shown in the UI  |  value: canonical string returned by the backend mappings
+const weaponTypes = [
+  { label: 'Sword',       value: 'Sword'      },
+  { label: 'Broadblade',  value: 'Broadblade' },
+  { label: 'Pistols',     value: 'Pistol'     },
+  { label: 'Gauntlets',   value: 'Gauntlet'   },
+  { label: 'Rectifier',   value: 'Rectifier'  },
+];
 
 
 
@@ -188,7 +195,7 @@ export default function AddWeaponModal({ onClose, onSuccess }: AddWeaponModalPro
                 className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mt-1 focus:outline-none focus:border-cyan-500"
               >
                 {weaponTypes.map(wt => (
-                  <option key={wt} value={wt}>{wt}</option>
+                  <option key={wt.value} value={wt.value}>{wt.label}</option>
                 ))}
               </select>
             </div>
