@@ -115,6 +115,36 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
     setTowerFloors(newFloors);
   };
 
+  // Silent refresh — does NOT set loading state so the UI doesn't flash/reset.
+  // Used by child detail views after add/edit/delete operations.
+  const refreshData = async () => {
+    try {
+      const results = await Promise.allSettled([
+        safeInvoke('get_tower_of_adversity'),
+        safeInvoke('get_tower_details'),
+        safeInvoke('get_tower_area_effects'),
+        safeInvoke('get_tower_teams'),
+        safeInvoke('get_whimpering_wastes'),
+        safeInvoke('get_torrents_stages'),
+        safeInvoke('get_troop_matrix'),
+        safeInvoke('get_matrix_teams')
+      ]);
+
+      if (results[0].status === 'fulfilled') setTowerInfo(results[0].value as TowerOfAdversity);
+      if (results[1].status === 'fulfilled') setTowerDetails(results[1].value as TowerDetails[]);
+      if (results[2].status === 'fulfilled') setTowerEffects(results[2].value as TowerAreaEffect[]);
+      if (results[3].status === 'fulfilled') setTowerTeams(results[3].value as TowerTeam[]);
+      if (results[4].status === 'fulfilled') setWastesInfo(results[4].value as WhimperingWastes);
+      if (results[5].status === 'fulfilled') setTorrentsStages(results[5].value as TorrentsStage[]);
+      if (results[6].status === 'fulfilled') setTroopMatrix(results[6].value as TroopMatrix);
+      if (results[7].status === 'fulfilled') setMatrixTeams(results[7].value as MatrixTeam[]);
+
+      await loadTowerFloors();
+    } catch (error) {
+      console.error('Failed to refresh endgame data:', error);
+    }
+  };
+
   const handleResetConfirm = async () => {
     if (!showResetDialog) return;
 
@@ -206,7 +236,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
         await safeInvoke('update_matrix_last_reset', { lastReset: editLastResetValue });
       }
       setEditingLastReset(null);
-      await loadAllEndgameData();
+      await refreshData();
     } catch (error) {
       console.error('Failed to update last reset:', error);
       alert('Failed to update last reset');
@@ -478,7 +508,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
           towerTeams={towerTeams}
           selectedTower={selectedTower}
           onTowerSelect={setSelectedTower}
-          onUpdate={loadAllEndgameData}
+          onUpdate={refreshData}
           onInitializeFloors={initializeTowerFloors}
           availableCharacters={availableCharacters}
         />
@@ -488,7 +518,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
         <WhimperingWastesDetailsView
           wastesInfo={wastesInfo}
           torrentsStages={torrentsStages}
-          onUpdate={loadAllEndgameData}
+          onUpdate={refreshData}
           availableCharacters={availableCharacters}
         />
       )}
@@ -497,7 +527,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
         <TroopMatrixDetailsView
           troopMatrix={troopMatrix}
           matrixTeams={matrixTeams}
-          onUpdate={loadAllEndgameData}
+          onUpdate={refreshData}
           availableCharacters={availableCharacters}
           healerCharacters={healerCharacters}
         />
