@@ -88,6 +88,7 @@ export function TeamEditor({
   vigorConfig,
   saveButtonColor = 'bg-gradient-to-r from-purple-600 to-purple-700',
   saveButtonHoverColor = 'hover:from-purple-500 hover:to-purple-600',
+  extraFields,
 }: TeamEditorProps) {
   return (
     <div className="space-y-2">
@@ -114,6 +115,7 @@ export function TeamEditor({
           vigorConfig={vigorConfig}
         />
       </div>
+      {extraFields}
       <div className="flex gap-2 justify-end">
         <button
           onClick={onCancel}

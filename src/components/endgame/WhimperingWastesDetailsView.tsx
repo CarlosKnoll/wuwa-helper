@@ -21,7 +21,7 @@ export default function WhimperingWastesDetailsView({
   const [deleteStageDialog, setDeleteStageDialog] = useState<number | null>(null);
 
   // Main edit states
-  const [editChasmStage, setEditChasmStage] = useState(0);
+  const [editChasmPoints, setEditChasmPoints] = useState(0);
   const [editNotes, setEditNotes] = useState('');
 
   // Stage edit states
@@ -37,7 +37,7 @@ export default function WhimperingWastesDetailsView({
 
   const startEdit = () => {
     if (wastesInfo) {
-      setEditChasmStage(wastesInfo.chasm_highest_stage);
+      setEditChasmPoints(wastesInfo.chasm_total_points);
       setEditNotes(wastesInfo.notes || '');
       setEditing(true);
     }
@@ -46,13 +46,12 @@ export default function WhimperingWastesDetailsView({
   const saveChanges = async () => {
     setSaving(true);
     try {      
-      // Keep existing points (not editable)
-      const calculatedChasmAstrite = calculateChasmAstrite(wastesInfo?.chasm_total_points || 0);
+      const calculatedChasmAstrite = calculateChasmAstrite(editChasmPoints);
       const calculatedTorrentsAstrite = calculateTorrentsAstrite(wastesInfo?.torrents_total_points || 0);
       
       await safeInvoke('update_whimpering_wastes', {
-        chasmHighestStage: editChasmStage,
-        chasmTotalPoints: wastesInfo?.chasm_total_points || 0,
+        chasmHighestStage: wastesInfo?.chasm_highest_stage || 0,
+        chasmTotalPoints: editChasmPoints,
         chasmAstrite: calculatedChasmAstrite,
         torrentsTotalPoints: wastesInfo?.torrents_total_points || 0,
         torrentsAstrite: calculatedTorrentsAstrite,
@@ -244,6 +243,16 @@ export default function WhimperingWastesDetailsView({
         {editing ? (
           <div className="space-y-4">
             <div>
+              <label className="text-sm text-slate-400 block mb-1">Respawning Waters: Chasm - Points</label>
+              <input
+                type="number"
+                value={editChasmPoints}
+                onChange={(e) => setEditChasmPoints(parseInt(e.target.value) || 0)}
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-400"
+                min={0}
+              />
+            </div>
+            <div>
               <label className="text-sm text-slate-400 block mb-1">Notes</label>
               <textarea
                 value={editNotes}
@@ -367,15 +376,6 @@ export default function WhimperingWastesDetailsView({
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-yellow-400">New Team</p>
                         </div>
-                        <div>
-                          <label className="text-xs text-slate-400 block mb-1">Side (auto-assigned)</label>
-                          <input
-                            type="number"
-                            value={newStageNumber}
-                            className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-slate-300 text-sm cursor-not-allowed"
-                            readOnly
-                          />
-                        </div>
                         <TeamEditor
                           character1={editChar1}
                           character2={editChar2}
@@ -389,27 +389,29 @@ export default function WhimperingWastesDetailsView({
                           saving={saving}
                           saveButtonColor="bg-green-500/[0.5]"
                           saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                          extraFields={
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Token</label>
+                                <input
+                                  type="text"
+                                  value={editToken}
+                                  onChange={(e) => setEditToken(e.target.value)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Points</label>
+                                <input
+                                  type="number"
+                                  value={editPoints}
+                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                            </div>
+                          }
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-slate-400 block mb-1">Token</label>
-                            <input
-                              type="text"
-                              value={editToken}
-                              onChange={(e) => setEditToken(e.target.value)}
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400 block mb-1">Points</label>
-                            <input
-                              type="number"
-                              value={editPoints}
-                              onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                            />
-                          </div>
-                        </div>
                       </div>
                     );
                   } else if (side1Team) {
@@ -431,27 +433,29 @@ export default function WhimperingWastesDetailsView({
                               saving={saving}
                               saveButtonColor="bg-green-500/[0.5]"
                               saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                              extraFields={
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Token</label>
+                                    <input
+                                      type="text"
+                                      value={editToken}
+                                      onChange={(e) => setEditToken(e.target.value)}
+                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Points</label>
+                                    <input
+                                      type="number"
+                                      value={editPoints}
+                                      onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                    />
+                                  </div>
+                                </div>
+                              }
                             />
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Token</label>
-                                <input
-                                  type="text"
-                                  value={editToken}
-                                  onChange={(e) => setEditToken(e.target.value)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Points</label>
-                                <input
-                                  type="number"
-                                  value={editPoints}
-                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                            </div>
                           </>
                         ) : (
                           <>
@@ -501,15 +505,6 @@ export default function WhimperingWastesDetailsView({
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-yellow-400">New Team</p>
                         </div>
-                        <div>
-                          <label className="text-xs text-slate-400 block mb-1">Side (auto-assigned)</label>
-                          <input
-                            type="number"
-                            value={newStageNumber}
-                            className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-slate-300 text-sm cursor-not-allowed"
-                            readOnly
-                          />
-                        </div>
                         <TeamEditor
                           character1={editChar1}
                           character2={editChar2}
@@ -523,27 +518,29 @@ export default function WhimperingWastesDetailsView({
                           saving={saving}
                           saveButtonColor="bg-green-500/[0.5]"
                           saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                          extraFields={
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Token</label>
+                                <input
+                                  type="text"
+                                  value={editToken}
+                                  onChange={(e) => setEditToken(e.target.value)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-slate-400 block mb-1">Points</label>
+                                <input
+                                  type="number"
+                                  value={editPoints}
+                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                />
+                              </div>
+                            </div>
+                          }
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-slate-400 block mb-1">Token</label>
-                            <input
-                              type="text"
-                              value={editToken}
-                              onChange={(e) => setEditToken(e.target.value)}
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400 block mb-1">Points</label>
-                            <input
-                              type="number"
-                              value={editPoints}
-                              onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                            />
-                          </div>
-                        </div>
                       </div>
                     );
                   } else if (side2Team) {
@@ -565,27 +562,29 @@ export default function WhimperingWastesDetailsView({
                               saving={saving}
                               saveButtonColor="bg-green-500/[0.5]"
                               saveButtonHoverColor="hover:bg-green-500/[0.65]"
+                              extraFields={
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Token</label>
+                                    <input
+                                      type="text"
+                                      value={editToken}
+                                      onChange={(e) => setEditToken(e.target.value)}
+                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Points</label>
+                                    <input
+                                      type="number"
+                                      value={editPoints}
+                                      onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
+                                    />
+                                  </div>
+                                </div>
+                              }
                             />
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Token</label>
-                                <input
-                                  type="text"
-                                  value={editToken}
-                                  onChange={(e) => setEditToken(e.target.value)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Points</label>
-                                <input
-                                  type="number"
-                                  value={editPoints}
-                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                            </div>
                           </>
                         ) : (
                           <>

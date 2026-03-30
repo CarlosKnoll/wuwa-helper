@@ -305,29 +305,31 @@ export default function TroopMatrixDetailsView({
               })}
               saveButtonColor="bg-green-600"
               saveButtonHoverColor="hover:bg-green-500"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">Points</label>
-                <input
-                  type="number"
-                  value={editPoints}
-                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
-                />
-              </div>
-              {!isStability && (
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Round</label>
-                  <input
-                    type="number"
-                    value={editRound || ''}
-                    onChange={(e) => setEditRound(parseInt(e.target.value) || null)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
-                  />
+              extraFields={
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Points</label>
+                    <input
+                      type="number"
+                      value={editPoints}
+                      onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+                  {!isStability && (
+                    <div>
+                      <label className="text-xs text-slate-400 block mb-1">Round</label>
+                      <input
+                        type="number"
+                        value={editRound || ''}
+                        onChange={(e) => setEditRound(parseInt(e.target.value) || null)}
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              }
+            />
           </>
         ) : (
           <>

@@ -202,6 +202,7 @@ export interface TeamEditorProps {
   };
   saveButtonColor?: string;
   saveButtonHoverColor?: string;
+  extraFields?: ReactNode;
 }
 
 /* =======================
@@ -268,4 +269,3 @@ export interface AddWeaponModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
-
