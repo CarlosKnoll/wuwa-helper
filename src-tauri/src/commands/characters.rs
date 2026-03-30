@@ -301,18 +301,21 @@ pub fn update_character_weapon(
     }
     
     // Update character_weapons table
-    conn.execute(
-        "INSERT INTO character_weapons (character_id, weapon_name, rarity, level, rank, notes)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(character_id) DO UPDATE SET
-            weapon_name = excluded.weapon_name,
-            rarity = excluded.rarity,
-            level = excluded.level,
-            rank = excluded.rank,
-            notes = excluded.notes",
-        (&character_id, &weapon_name, rarity, level, rank, &notes),
+    // Use explicit UPDATE first, INSERT only if no row exists yet.
+    // This avoids ON CONFLICT upsert syntax which requires a named index/constraint.
+    let rows_updated = conn.execute(
+        "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ?, notes = ? WHERE character_id = ?",
+        (&weapon_name, rarity, level, rank, &notes, &character_id),
     )
     .map_err(|e| e.to_string())?;
+
+    if rows_updated == 0 {
+        conn.execute(
+            "INSERT INTO character_weapons (character_id, weapon_name, rarity, level, rank, notes) VALUES (?, ?, ?, ?, ?, ?)",
+            (&character_id, &weapon_name, rarity, level, rank, &notes),
+        )
+        .map_err(|e| e.to_string())?;
+    }
     
     // Sync with weapons_inventory table
     // First, unequip the old weapon if it exists in inventory
