@@ -61,6 +61,7 @@ fn get_swords() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'stat
         ("21020056.webp", "Defier's Thorn", 5, "Sword", vec!["5stars"]),
         ("21020066.webp", "Emerald Sentence", 5, "Sword", vec!["5stars"]),
         ("T_IconWeapon21020076_UI.webp", "Everbright Polestar", 5, "Sword", vec!["5stars"]),
+        ("T_IconWeapon21020086_UI.webp", "Frostburn", 5, "Sword", vec!["5stars"]),
 
         //5-STARS STANDARD WEAPONS
         ("21020015.webp", "Emerald of Genesis", 5, "Sword", vec!["5stars"]),
@@ -174,6 +175,7 @@ fn get_rectifiers() -> Vec<(&'static str, &'static str, u8, &'static str, Vec<&'
         ("21050046.webp", "Luminous Hymn", 5, "Rectifier", vec!["5stars"]),
         ("21050056.webp", "Whispers of Sirens", 5, "Rectifier", vec!["5stars"]),
         ("21050066.webp", "Lethean Elegy", 5, "Rectifier", vec!["5stars"]),
+        ("T_IconWeapon21050076_UI.webp", "Forged Dwarf Star", 5, "Rectifier", vec!["5stars"]),
 
         //5-STARS STANDARD WEAPONS
         ("21050015.webp", "Cosmic Ripples", 5, "Rectifier", vec!["5stars"]),

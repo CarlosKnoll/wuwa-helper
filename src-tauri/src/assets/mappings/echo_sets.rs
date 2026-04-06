@@ -42,6 +42,9 @@ pub fn get_echo_sets() -> Vec<(&'static str, &'static str, &'static str, &'stati
         ("set_26.webp", "Trailblazing Star", "2 Set: Fusion DMG +10%.", "5 Set: Inflicting Fusion Burst or Tune Rupture - Shifting increases the Resonator's Crit. Rate by 20% and grants 20% Fusion DMG Bonus for 8s."),
         ("set_27.webp", "Chromatic Foam", "2 Set: Fusion DMG +10%.", "5 Set: When the Resonator inflicts Fusion Burst on the enemies, they gain the following effects: Gain 10% Fusion DMG Bonus for 15 s. While this effect is active, casting an Outro Skill grants the incoming Resonator 25% Fusion DMG Bonus for 15s."),
         ("set_28.webp", "Sound of True Name", "2 Set: Aero DMG +10%.", "5 Set: Dealing Echo Skill DMG to enemies increases the Resonator's Echo Skill Crit. Rate by 20%, and grants 15% Aero DMG Bonus for 5s."),
+
+        ("set_29.webp", "Wishes of Quiet Snowfall", "2 Set: Glacio DMG +10%.", "5 Set: Inflicting Glacio Chafe on enemies increases Glacio DMG dealt by 10% for 15s. The Resonator gains the Snowfall effect, which can be triggered once every 25s. While Snowfall is active: Dealing Resonance Liberation DMG removes Snowfall and increases the Resonator's Crit. Rate by 25% for 30s; Casting Outro Skill removes Snowfall and grants 25% Glacio DMG Bonus to the incoming Resonator for 30s. When Snowfall is removed, only one of the effects above can be triggered."),
+        ("set_30.webp", "Reel of Spliced Memories", "2 Set: ATK +10%.", "5 Set: Inflicting Tune Rupture - Shifting or Tune Strain - Shifting on enemies increases the Tune Break Boost of Resonators in the team by 15 for 30s. Effects of the same name do not stack."),
     ]
 }
 

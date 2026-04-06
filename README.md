@@ -11,7 +11,7 @@ Wuthering Waves Assistant is a cross-platform desktop companion for Wuthering Wa
 - Echo management with detailed build sections
 - Gacha & pity tracking
 - Exploration progress tracking
-- Endgame tools (Tower, Troop Matrix, Whimpering Wastes)
+- Endgame tools (Tower of Adversity, Whimpering Wastes, Endstate Matrix)
 - Resource and goal tracking
 - Local backups & data persistence
 - Offline design with assets bundled
