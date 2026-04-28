@@ -19,7 +19,6 @@ export default function CharacterEchoBuildSection({
   const [echoImages, setEchoImages] = useState<Record<number, string>>({}); // echo_id -> image
   const [echoSpecificSetImages, setEchoSpecificSetImages] = useState<Record<number, string>>({}); // echo_id -> its set image
   const [echoMetadata, setEchoMetadata] = useState<Record<number, { passive1: string; passive2: string; cooldown: number }>>({});
-  const [assetResolverReady, setAssetResolverReady] = useState(false);
   const [form, setForm] = useState({
     primary_set_key: null as string | null,
     secondary_set_key: null as string | null,
@@ -29,27 +28,11 @@ export default function CharacterEchoBuildSection({
     notes: '',
   });
 
-  // Initialize asset resolver first (non-blocking)
-  useEffect(() => {
-    const initAssetResolver = async () => {
-      try {
-        await invoke('init_asset_resolver');
-        setAssetResolverReady(true);
-      } catch (err) {
-        // If initialization fails, still try to load assets without resolver
-        console.warn('Asset resolver initialization failed, will try loading assets directly:', err);
-        setAssetResolverReady(true);
-      }
-    };
-    initAssetResolver();
-  }, []);
-
   // Load echo sets from backend asset mappings
   useEffect(() => {
-    if (assetResolverReady) {
-      loadEchoSets();
-    }
-  }, [assetResolverReady]);
+    loadEchoSets();
+  }, []);
+
 
   // Update form when echoBuild changes
   useEffect(() => {
@@ -78,28 +61,27 @@ export default function CharacterEchoBuildSection({
 
   // Load echo images when echoes change AND when echoSets/echoSetImages are available
   useEffect(() => {
-    if (assetResolverReady && echoes.length > 0 && echoSets.length > 0 && Object.keys(echoSetImages).length > 0) {
+    if (echoes.length > 0 && echoSets.length > 0 && Object.keys(echoSetImages).length > 0) {
       loadEchoImages();
-    } else {
     }
-  }, [echoes, assetResolverReady, echoSets, echoSetImages]);
+  }, [echoes, echoSets, echoSetImages]);
 
   const loadEchoSets = async () => {
     try {
       const sets = await safeInvoke('get_all_echo_sets') as EchoSetData[];
       setEchoSets(sets);
       
-      // Load images for all echo sets using the echo_set asset type
+      // Load images for all echo sets using the actual asset filename
       const images: Record<string, string> = {};
       for (const set of sets) {
         try {
           const base64 = await invoke<string>('get_asset', {
             assetType: 'echo_set',
-            name: set.key,
+            name: set.filename,
           });
           images[set.key] = `data:image/webp;base64,${base64}`;
         } catch (err) {
-          console.error(`Failed to load sonata effect image for ${set.key}:`, err);
+          console.error(`Failed to load sonata effect image for ${set.filename}:`, err);
         }
       }
       setEchoSetImages(images);
@@ -120,22 +102,7 @@ export default function CharacterEchoBuildSection({
         // Try multiple strategies to get the echo image
         let base64: string | null = null;
         
-        // Strategy 1: Try using asset resolver to get filename
-        try {
-          const filename = await invoke<string | null>('get_asset_filename', {
-            identifier: echo.echo_name,
-          });
-          if (filename) {
-            const cleanName = filename.replace('.webp', '').replace('.png', '');
-            base64 = await invoke<string>('get_asset', {
-              assetType: 'echo',
-              name: cleanName,
-            });
-          }
-        } catch (resolverErr) {
-        }
-        
-        // Strategy 2: Try direct lookup by converting name to ID format
+        // Strategy 1: Try direct lookup by converting name to ID format
         if (!base64) {
           try {
             const nameId = echo.echo_name.toLowerCase().replace(/\s+/g, '_').replace(/'/g, '');
@@ -147,7 +114,7 @@ export default function CharacterEchoBuildSection({
           }
         }
         
-        // Strategy 3: Try using the echo name directly as-is
+        // Strategy 2: Try using the echo name directly as-is
         if (!base64) {
           try {
             base64 = await invoke<string>('get_asset', {
@@ -332,6 +299,23 @@ export default function CharacterEchoBuildSection({
   const secondarySet = form.secondary_set_key 
     ? echoSets.find(s => s.key === form.secondary_set_key)
     : null;
+
+console.log('Echo build form keys:', {
+  primary_set_key: form.primary_set_key,
+  secondary_set_key: form.secondary_set_key,
+});
+
+console.log('Available echo set keys sample:', echoSets.slice(0, 5).map(s => ({
+  key: s.key,
+  name: s.name,
+  filename: s.filename,
+})));
+
+console.log('Resolved sets:', {
+  primarySet,
+  secondarySet,
+});
+
 
   const isMixedBuild = form.secondary_set_pieces > 0;
 

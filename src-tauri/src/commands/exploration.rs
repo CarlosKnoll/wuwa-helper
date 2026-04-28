@@ -1,9 +1,8 @@
 // src-tauri/src/commands/exploration.rs
 use crate::db::init_db;
-use crate::assets::mappings::exploration::{
+use crate::assets::mappings_exploration::{
     get_exploration_regions as get_regions_metadata,
     get_exploration_maps as get_maps_metadata,
-    RegionMetadata, MapMetadata
 };
 use rusqlite::Result;
 use serde::{Deserialize, Serialize};

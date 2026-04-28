@@ -12,6 +12,7 @@ import EndgameTab from './tabs/EndgameTab';
 import SettingsTab from './tabs/SettingsTab';
 
 export default function WuwaHelper() {
+  const isSplashRoute = window.location.pathname === "/splash";
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -28,7 +29,12 @@ export default function WuwaHelper() {
   // Ref for EndgameTab to trigger refresh
   const endgameTabRef = useRef<EndgameTabRef>(null);
 
-  useEffect(() => { getVersion().then(setAppVersion); loadAllData(true); }, []);
+  useEffect(() => {
+    if (isSplashRoute) return;
+    getVersion().then(setAppVersion);
+    loadAllData(true);
+  }, [isSplashRoute]);
+
 
   const loadAllData = async (isInitial = false) => {
     checkForUpdates();
@@ -83,6 +89,20 @@ export default function WuwaHelper() {
     { id: 'endgame', name: 'Endgame', icon: Trophy },
     { id: 'settings', name: 'Settings', icon: Settings },
   ];
+
+  if (isSplashRoute) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 text-slate-50 flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-[420px] px-8 text-center">
+          <div className="w-14 h-14 mx-auto mb-5 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-700 shadow-[0_12px_35px_rgba(245,158,11,0.28)]" />
+          <h1 className="text-2xl font-bold text-slate-100">Wuwa Helper</h1>
+          <p className="mt-2 text-sm text-slate-400">Checking and preparing asset data...</p>
+          <div className="mt-6 mx-auto h-11 w-11 rounded-full border-4 border-slate-700 border-t-yellow-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="h-screen bg-black text-white flex overflow-hidden">

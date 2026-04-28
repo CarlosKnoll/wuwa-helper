@@ -41,13 +41,6 @@ export function CurrencyIcon({
           return;
         }
 
-        // Initialize AssetManager
-        try {
-          await invoke('init_assets');
-        } catch (err) {
-          // Already initialized, ignore
-        }
-
         // Get the asset (without .png extension - mod.rs will add it)
         const assetData = await invoke<string>('get_asset', {
           assetType: 'misc',

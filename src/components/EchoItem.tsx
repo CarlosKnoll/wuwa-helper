@@ -533,7 +533,7 @@ export default function EchoItem({ echo, substats = [], onUpdate, echoImage, ech
                 <div>{echoMetadata.passive2}</div>
               )}
               {echoMetadata.cooldown > 0 && (
-                <div className="text-white">
+                <div className="font-bold text-amber-400">
                   Cooldown: {echoMetadata.cooldown}s
                 </div>
               )}

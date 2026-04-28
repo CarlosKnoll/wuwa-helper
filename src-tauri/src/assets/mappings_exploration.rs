@@ -314,11 +314,3 @@ pub fn get_exploration_regions() -> Vec<RegionMetadata> {
 
     ]
 }
-
-/// Get maps for a specific region
-pub fn get_maps_by_region(region_id: i64) -> Vec<MapMetadata> {
-    get_exploration_maps()
-        .into_iter()
-        .filter(|map| map.region_id == region_id)
-        .collect()
-}

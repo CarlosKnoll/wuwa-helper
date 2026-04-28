@@ -2,7 +2,6 @@
 //! Unified asset resolver with enhanced element support
 
 use super::mapper::{AssetMapper, AssetMetadata};
-use super::mappings;
 use std::collections::HashMap;
 
 pub struct AssetResolver {
@@ -11,18 +10,14 @@ pub struct AssetResolver {
 }
 
 impl AssetResolver {
-    /// Create a new resolver with combined mappings
-    pub fn new(mapper: AssetMapper) -> Self {
-        let hardcoded = mappings::get_all_mappings();      
-        Self {
-            mapper,
-            hardcoded,
-        }
+    /// Create a new resolver with externally-provided mappings (loaded from mappings.json).
+    pub fn new_with_mappings(mapper: AssetMapper, hardcoded: HashMap<String, AssetMetadata>) -> Self {
+        Self { mapper, hardcoded }
     }
 
     /// Resolve asset by display name with flexible element matching
     pub fn resolve_by_name(&self, name: &str) -> Option<&AssetMetadata> {
-        
+
         // Try exact match first
         if let Some(meta) = self.mapper.get_by_name(name) {
             return Some(meta);
@@ -66,9 +61,8 @@ impl AssetResolver {
     }
 
     /// Get asset filename for use in the frontend
-    /// Enhanced to handle element lookups better
     pub fn get_asset_filename(&self, identifier: &str) -> Option<String> {
-        
+
         // Try direct filename first
         if self.resolve_by_filename(identifier).is_some() {
             return Some(identifier.to_string());

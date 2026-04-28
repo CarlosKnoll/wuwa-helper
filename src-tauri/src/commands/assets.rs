@@ -1,31 +1,18 @@
 // src-tauri/src/commands/assets.rs
 //! Tauri commands for asset management
 
-use tauri::{AppHandle, Manager, State};
-use tokio::sync::RwLock;
+use tauri::State;
 use crate::assets::{AssetManager, AssetType};
 
-pub type AssetManagerState = RwLock<AssetManager>;
-
-/// Initialize the asset manager
-#[tauri::command]
-pub async fn init_assets(app: AppHandle) -> Result<(), String> {
-    let manager = AssetManager::new(app.clone())
-        .map_err(|e| format!("Failed to initialize asset manager: {}", e))?;
-    
-    app.manage(RwLock::new(manager));
-    Ok(())
-}
 
 /// Get asset as base64 encoded string
 #[tauri::command]
-pub async fn get_asset(
+pub fn get_asset(
     asset_type: String,
     name: String,
     weapon_type: Option<String>,
-    state: State<'_, AssetManagerState>,
+    manager: State<'_, AssetManager>,
 ) -> Result<String, String> {
-    let manager = state.read().await;
     let asset_type_enum = parse_asset_type(&asset_type)?;
     
     // For elements, resolve the display name to the actual filename
@@ -65,14 +52,14 @@ pub async fn get_asset(
 
 /// Get local path to an asset
 #[tauri::command]
-pub async fn get_asset_path(
+pub fn get_asset_path(
     asset_type: String,
     name: String,
     weapon_type: Option<String>,
-    state: State<'_, AssetManagerState>,
+    manager: State<'_, AssetManager>,
 ) -> Result<String, String> {
-    let manager = state.read().await;
     let asset_type_enum = parse_asset_type(&asset_type)?;
+
     
     let resolved_name = if matches!(asset_type_enum, AssetType::Element) {
         resolve_element_filename(&name)

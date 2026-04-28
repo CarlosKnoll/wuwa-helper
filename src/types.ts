@@ -398,27 +398,6 @@ export interface AssetFilters {
   tags?: string[];
 }
 
-export interface UpdateProgress {
-  current: number;
-  total: number;
-  current_asset: string;
-  status: 'fetching' | 'downloading' | 'cached' | 'failed' | 'complete';
-}
-
-export interface UpdateSummary {
-  downloaded: number;
-  cached: number;
-  failed: number;
-  total_assets: number;
-}
-
-export interface CacheStats {
-  total_assets: number;
-  assets_by_type: Record<AssetType, number>;
-  last_update: string | null;
-  cache_size_mb: number;
-}
-
 export interface EndgameTabRef {
   refresh: () => Promise<void>;
 }

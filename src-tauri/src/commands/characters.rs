@@ -1,6 +1,7 @@
 use crate::db::{init_db, Character, CharacterTalents, CharacterWeapon};
 use rusqlite::{OptionalExtension, Result};
 use serde::Serialize;
+use crate::assets::AssetManager;
 
 #[derive(Debug, Serialize)]
 pub struct CharacterListItem {
@@ -14,40 +15,40 @@ pub struct CharacterListItem {
 /// Excludes characters that have already been added to the database
 /// Exception: Rover is always shown (users can have multiple Rover variants)
 #[tauri::command]
-pub fn get_available_characters(app: tauri::AppHandle) -> Result<Vec<CharacterListItem>, String> {
+pub fn get_available_characters(
+    app: tauri::AppHandle,
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Vec<CharacterListItem>, String> {
+
     let conn = init_db(&app)?;
-    let mappings = crate::assets::mappings::characters::get_character_mappings();
-    
-    // Get all character names already in the database
+    let mappings = manager.inner().get_all_mappings();
+
     let mut stmt = conn
         .prepare("SELECT character_name FROM characters")
         .map_err(|e| e.to_string())?;
-    
+
     let existing_names: std::collections::HashSet<String> = stmt
         .query_map([], |row| row.get::<_, String>(0))
         .map_err(|e| e.to_string())?
         .collect::<Result<_, _>>()
         .map_err(|e| e.to_string())?;
-    
-    // ADDED: Weapon types to search for in tags
-    let weapon_types = vec!["sword", "broadblade", "pistols", "gauntlets", "rectifier"];
-    
+
+    let weapon_types = ["sword", "broadblade", "pistols", "gauntlets", "rectifier"];
+
     let mut characters: Vec<CharacterListItem> = mappings
         .values()
+        // ✅ IMPORTANT: filter only characters
+        .filter(|meta| meta.asset_type == "character")
         .filter(|meta| {
-            // Always show Rover (users can have multiple variants)
             if meta.display_name == "Rover" {
                 return true;
             }
-            // Otherwise, exclude if already added
             !existing_names.contains(&meta.display_name)
         })
         .map(|meta| {
-            // ADDED: Extract weapon type from tags
             let weapon_type = meta.tags.iter()
                 .find(|tag| weapon_types.contains(&tag.to_lowercase().as_str()))
                 .map(|tag| {
-                    // Capitalize first letter
                     let mut chars = tag.chars();
                     match chars.next() {
                         None => String::new(),
@@ -57,19 +58,18 @@ pub fn get_available_characters(app: tauri::AppHandle) -> Result<Vec<CharacterLi
 
             CharacterListItem {
                 name: meta.display_name.clone(),
-                rarity: meta.rarity.unwrap_or(4),
+                rarity: meta.rarity.unwrap_or(4) as u8,
                 element: meta.element.clone().unwrap_or_else(|| "Unknown".to_string()),
-                weapon_type, // ADDED: Include weapon type
+                weapon_type,
             }
         })
         .collect();
-    
-    // Sort by rarity (5-star first), then by name
+
     characters.sort_by(|a, b| {
         b.rarity.cmp(&a.rarity)
             .then_with(|| a.name.cmp(&b.name))
     });
-    
+
     Ok(characters)
 }
 
@@ -475,15 +475,22 @@ pub fn delete_character(app: tauri::AppHandle, id: i64) -> Result<String, String
 
 /// Get display names of all characters tagged as "healer" in the asset mappings.
 /// Used by the Troop Matrix vigor system — healers start with 2 vigor instead of 1.
-/// Update the tag in assets/mappings/characters.rs to keep this in sync.
+/// Tags come from the centralized metadata.json asset file.
+
 #[tauri::command]
-pub fn get_healer_characters() -> Result<Vec<String>, String> {
-    let mappings = crate::assets::mappings::characters::get_character_mappings();
+pub fn get_healer_characters(
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Vec<String>, String> {
+
+    let mappings = manager.inner().get_all_mappings();
+
     let mut healers: Vec<String> = mappings
         .values()
+        .filter(|m| m.asset_type == "character")
         .filter(|m| m.tags.iter().any(|t| t == "healer"))
         .map(|m| m.display_name.clone())
         .collect();
+
     healers.sort();
     Ok(healers)
 }

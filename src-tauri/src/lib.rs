@@ -3,21 +3,80 @@ mod commands;
 mod assets;
 
 use commands::*;
-use tauri::Manager; // Add this import for .manage() method
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            // Initialize AssetManager
-            let asset_manager = crate::assets::AssetManager::new(app.handle().clone())
-                .expect("Failed to initialize AssetManager");
-            app.manage(std::sync::Mutex::new(asset_manager));
-            
-            // Initialize asset resolver state
-            app.manage(tokio::sync::Mutex::new(None::<crate::assets::AssetResolver>));
+            let app_handle = app.handle().clone();
+
+            WebviewWindowBuilder::new(
+                app,
+                "splash",
+                WebviewUrl::App("splash".into()),
+            )
+            .title("Launching Wuwa Helper")
+            .inner_size(420.0, 220.0)
+            .resizable(false)
+            .decorations(false)
+            .always_on_top(true)
+            .build()?;
+
+            tauri::async_runtime::spawn(async move {
+                if let Err(err) = crate::assets::mappings_loader::ensure_runtime_assets_current(&app_handle).await {
+                    eprintln!("Runtime asset update skipped: {}", err);
+                }
+
+                let asset_manager = match crate::assets::AssetManager::new(app_handle.clone()).await {
+                    Ok(manager) => manager,
+                    Err(err) => {
+                        eprintln!("Failed to initialize AssetManager: {}", err);
+
+                        if let Some(splash_window) = app_handle.get_webview_window("splash") {
+                            let _ = splash_window.close();
+                        }
+
+                        return;
+                    }
+                };
+
+                app_handle.manage(asset_manager);
+
+                let main_window = match WebviewWindowBuilder::new(
+                    &app_handle,
+                    "main",
+                    WebviewUrl::App("index.html".into()),
+                )
+                .title("Wuthering Waves Assistant")
+                .inner_size(1200.0, 800.0)
+                .min_inner_size(800.0, 600.0)
+                .build()
+                {
+                    Ok(window) => window,
+                    Err(err) => {
+                        eprintln!("Failed to create main window: {}", err);
+
+                        if let Some(splash_window) = app_handle.get_webview_window("splash") {
+                            let _ = splash_window.close();
+                        }
+
+                        return;
+                    }
+                };
+
+                let _ = main_window.show();
+                let _ = main_window.set_focus();
+
+                if let Some(splash_window) = app_handle.get_webview_window("splash") {
+                    let _ = splash_window.close();
+                }
+            });
+
             Ok(())
         })
+
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -107,7 +166,6 @@ pub fn run() {
             endgame::initialize_tower_floors,
             database::import_database,
             database::export_database,
-            commands::assets::init_assets,
             commands::assets::get_asset,
             commands::assets::get_asset_path,
         ])

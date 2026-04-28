@@ -1,7 +1,7 @@
 // Updated echoes.rs - Replace the EchoBuild-related parts with this code
 
 use crate::db::init_db;
-use crate::assets::mappings::echo_sets::get_echo_set_mappings;
+use crate::assets::AssetManager;
 use rusqlite::{Result, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
@@ -64,68 +64,76 @@ pub struct EchoListItem {
 /// Returns all echo set definitions from the asset mappings
 /// Includes information about available piece counts (2pc, 3pc, 5pc)
 #[tauri::command]
-pub fn get_all_echo_sets() -> Result<Vec<serde_json::Value>, String> {
-    let mappings = get_echo_set_mappings();
-    
-    let mut sets: Vec<_> = mappings
-        .iter()
-        .map(|(filename, metadata)| {
-            let set_key = filename.replace(".webp", "");
-            let two_piece = metadata.tags.get(0).cloned().unwrap_or_default();
-            let five_piece = metadata.tags.get(1).cloned().unwrap_or_default();
-            
-            // Determine if this is a 3pc-only set (no 5pc effect)
-            let is_three_piece_only = five_piece.is_empty();
-            
+pub fn get_all_echo_sets(
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Vec<serde_json::Value>, String> {
+
+    let mut sets: Vec<_> = manager
+        .get_all_mappings()
+        .values()
+        .filter(|m| m.asset_type == "echo_set")
+        .map(|m| {
+            let two = m.tags.get(0).cloned().unwrap_or_default();
+            let five = m.tags.get(1).cloned().unwrap_or_default();
+            let is_three_piece_only = five.is_empty();
+
             serde_json::json!({
-                "key": set_key,
-                "name": metadata.display_name,
-                "filename": metadata.filename,
-                "two_piece_bonus": two_piece,
-                "five_piece_bonus": five_piece,
-                "has_2pc": !two_piece.is_empty() && two_piece.contains("2 Set:"),
-                "has_3pc": is_three_piece_only && two_piece.contains("3 Set:"),
-                "has_5pc": !five_piece.is_empty(),
-                "asset_type": metadata.asset_type,
+                "key": m.id,
+                "name": m.display_name,
+                "filename": m.filename,
+                "two_piece_bonus": two,
+                "five_piece_bonus": five,
+                "has_2pc": two.contains("2 Set:"),
+                "has_3pc": is_three_piece_only && two.contains("3 Set:"),
+                "has_5pc": !five.is_empty(),
+                "asset_type": m.asset_type,
             })
         })
         .collect();
-    
-    // Sort by key (set_1, set_2, etc.)
-    sets.sort_by(|a, b| {
-        let key_a = a["key"].as_str().unwrap_or("");
-        let key_b = b["key"].as_str().unwrap_or("");
-        
-        let num_a: i32 = key_a.replace("set_", "").parse().unwrap_or(999);
-        let num_b: i32 = key_b.replace("set_", "").parse().unwrap_or(999);
-        
-        num_a.cmp(&num_b)
-    });
-    
+
+        sets.sort_by(|a, b| {
+            let extract_num = |v: &serde_json::Value| -> u32 {
+                v["filename"]
+                    .as_str()
+                    .and_then(|s| s.trim_start_matches("set_").split('.').next())
+                    .and_then(|n| n.parse().ok())
+                    .unwrap_or(0)
+            };
+            extract_num(a).cmp(&extract_num(b))
+        });
+
     Ok(sets)
 }
 
+
 /// Get a specific echo set by key
 #[tauri::command]
-pub fn get_echo_set_by_key(set_key: String) -> Result<Option<serde_json::Value>, String> {
-    let mappings = get_echo_set_mappings();
-    let filename = format!("{}.webp", set_key);
-    
-    if let Some(metadata) = mappings.get(&filename) {
-        let two_piece = metadata.tags.get(0).cloned().unwrap_or_default();
-        let five_piece = metadata.tags.get(1).cloned().unwrap_or_default();
-        let is_three_piece_only = five_piece.is_empty();
-        
+pub fn get_echo_set_by_key(
+    set_key: String,
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Option<serde_json::Value>, String> {
+
+    let metadata = manager
+        .get_all_mappings()
+        .values()
+        .find(|m| m.asset_type == "echo_set" && m.id == set_key);
+
+    if let Some(m) = metadata {
+        let two = m.tags.get(0).cloned().unwrap_or_default();
+        let five = m.tags.get(1).cloned().unwrap_or_default();
+
+        let is_three_piece_only = five.is_empty();
+
         Ok(Some(serde_json::json!({
-            "key": set_key,
-            "name": metadata.display_name,
-            "filename": metadata.filename,
-            "two_piece_bonus": two_piece,
-            "five_piece_bonus": five_piece,
-            "has_2pc": !two_piece.is_empty() && two_piece.contains("2 Set:"),
-            "has_3pc": is_three_piece_only && two_piece.contains("3 Set:"),
-            "has_5pc": !five_piece.is_empty(),
-            "asset_type": metadata.asset_type,
+            "key": m.id,
+            "name": m.display_name,
+            "filename": m.filename,
+            "two_piece_bonus": two,
+            "five_piece_bonus": five,
+            "has_2pc": two.contains("2 Set:"),
+            "has_3pc": is_three_piece_only && two.contains("3 Set:"),
+            "has_5pc": !five.is_empty(),
+            "asset_type": m.asset_type,
         })))
     } else {
         Ok(None)
@@ -414,107 +422,110 @@ pub fn delete_echo(
 }
 
 #[tauri::command]
-pub fn get_echo_metadata_direct(echo_name: String) -> Result<Option<EchoMetadataResponse>, String> {
-    // Import the echo mappings function
-    use crate::assets::mappings::echoes::get_echo_mappings;
-    
-    let mappings = get_echo_mappings();
-    
-    // Search by display name (case-insensitive)
-    let echo_name_lower = echo_name.to_lowercase();
-    
-    for (_filename, metadata) in mappings.iter() {
-        if metadata.display_name.to_lowercase() == echo_name_lower {
-            // Tags are in order: [passive1, passive2, "Cooldown: Xs"]
-            if metadata.tags.len() >= 3 {
-                let passive1 = metadata.tags[0].clone();
-                let passive2 = metadata.tags[1].clone();
-                let passive3 = metadata.tags[2].clone();
-                
-                // Parse cooldown from "Cooldown: 20s" format
-                let cooldown_str = &metadata.tags[2];
-                let cooldown = cooldown_str
-                    .replace("Cooldown:", "")
-                    .replace("s", "")
-                    .trim()
-                    .parse::<u8>()
-                    .unwrap_or(0);
-                
-                return Ok(Some(EchoMetadataResponse {
-                    passive1,
-                    passive2,
-                    passive3,
-                    cooldown,
-                }));
-            }
-        }
+pub fn get_echo_metadata_direct(
+    echo_name: String,
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Option<EchoMetadataResponse>, String> {
+
+    let name = echo_name.to_lowercase();
+
+    let metadata = manager
+        .get_all_mappings()
+        .values()
+        .find(|m| m.asset_type == "echo"
+            && m.display_name.to_lowercase() == name);
+
+    if let Some(m) = metadata {
+        // Find cooldown tag by content, regardless of position
+        let cooldown = m.tags.iter()
+            .find(|t| t.trim_start().starts_with("Cooldown:"))
+            .and_then(|t| {
+                t.replace("Cooldown:", "")
+                 .replace("s", "")
+                 .trim()
+                 .parse::<u8>()
+                 .ok()
+            })
+            .unwrap_or(0);
+
+        // Collect all non-cooldown tags as description lines
+        let desc_lines: Vec<&str> = m.tags.iter()
+            .filter(|t| !t.trim_start().starts_with("Cooldown:"))
+            .map(|t| t.as_str())
+            .collect();
+
+        return Ok(Some(EchoMetadataResponse {
+            passive1: desc_lines.get(0).unwrap_or(&"").to_string(),
+            passive2: desc_lines.get(1).unwrap_or(&"").to_string(),
+            passive3: desc_lines.get(2).unwrap_or(&"").to_string(),
+            cooldown,
+        }));
     }
-    
-    // Not found
+
     Ok(None)
 }
-
 /// Get available echo sets for a specific echo name
 /// Returns the list of set names this echo can belong to
 #[tauri::command]
-pub fn get_echo_available_sets(echo_name: String) -> Result<Vec<String>, String> {
-    use crate::assets::mappings::echoes::get_echo_mappings;
-    
-    let mappings = get_echo_mappings();
-    let echo_name_lower = echo_name.to_lowercase();
-    
-    for (_filename, metadata) in mappings.iter() {
-        if metadata.display_name.to_lowercase() == echo_name_lower {
-            // The element field contains the comma-separated list of sets
-            if let Some(sets_str) = &metadata.element {
-                let sets: Vec<String> = sets_str
-                    .split(", ")
+pub fn get_echo_available_sets(
+    echo_name: String,
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Vec<String>, String> {
+
+    let name = echo_name.to_lowercase();
+
+    let metadata = manager
+        .get_all_mappings()
+        .values()
+        .find(|m| m.asset_type == "echo"
+            && m.display_name.to_lowercase() == name);
+
+    if let Some(m) = metadata {
+        if let Some(sets) = &m.element {
+            return Ok(
+                sets.split(", ")
                     .map(|s| s.trim().to_string())
-                    .collect();
-                return Ok(sets);
-            }
+                    .collect()
+            );
         }
     }
-    
+
     Ok(vec![])
 }
 
 /// Get all available echoes for the echo name dropdown
 /// Returns a list of echo names with their cost, class, and available sets
 #[tauri::command]
-pub fn get_available_echoes() -> Result<Vec<EchoListItem>, String> {
-    use crate::assets::mappings::echoes::get_echo_mappings;
-    
-    let mappings = get_echo_mappings();
-    
-    let mut echoes: Vec<EchoListItem> = mappings
-        .iter()
-        .map(|(_filename, metadata)| {
-            // Parse available sets from the element field (comma-separated)
-            let available_sets: Vec<String> = metadata
-                .element
+pub fn get_available_echoes(
+    manager: tauri::State<'_, AssetManager>
+) -> Result<Vec<EchoListItem>, String> {
+
+    let mut echoes: Vec<EchoListItem> = manager
+        .get_all_mappings()
+        .values()
+        .filter(|m| m.asset_type == "echo")
+        .map(|m| {
+            let available_sets = m.element
                 .as_ref()
-                .map(|sets_str| {
-                    sets_str
-                        .split(", ")
-                        .map(|s| s.trim().to_string())
+                .map(|s| {
+                    s.split(", ")
+                        .map(|x| x.trim().to_string())
                         .collect()
                 })
                 .unwrap_or_default();
-            
+
             EchoListItem {
-                name: metadata.display_name.clone(),
-                cost: metadata.cost.unwrap_or(0),
-                echo_class: metadata.echo_class.clone().unwrap_or_default(),
+                name: m.display_name.clone(),
+                cost: m.cost.unwrap_or(0) as u8,
+                echo_class: m.echo_class.clone().unwrap_or_default(),
                 available_sets,
             }
         })
         .collect();
-    
-    // Sort by cost (descending) then by name
+
     echoes.sort_by(|a, b| {
         b.cost.cmp(&a.cost).then_with(|| a.name.cmp(&b.name))
     });
-    
+
     Ok(echoes)
 }
