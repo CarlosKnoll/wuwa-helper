@@ -1,5 +1,3 @@
-import { AssetType } from "./hooks/useAssets";
-
 /* =======================
 Dashboard
 ======================= */
