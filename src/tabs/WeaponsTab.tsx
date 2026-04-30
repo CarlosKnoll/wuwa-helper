@@ -128,10 +128,14 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
     }
   };
 
-  const weaponTypes = useMemo(() => {
-    const types = new Set(weapons.map(w => w.weapon_type));
-    return Array.from(types).sort();
-  }, [weapons]);
+  // Fixed canonical weapon types — always singular, matching what the backend normalises to
+  const weaponTypes = [
+    { label: 'Sword',      value: 'Sword'      },
+    { label: 'Broadblade', value: 'Broadblade' },
+    { label: 'Pistols',    value: 'Pistol'     },
+    { label: 'Gauntlets',  value: 'Gauntlet'   },
+    { label: 'Rectifier',  value: 'Rectifier'  },
+  ];
 
   const filteredAndSortedWeapons = useMemo(() => {
     let filtered = weapons.filter(weapon => {
@@ -223,8 +227,8 @@ export default function WeaponsTab({ weapons, onUpdate }: { weapons: Weapon[]; o
               className="w-full bg-slate-800 border border-white/[0.4] rounded-lg px-3 py-2 focus:outline-none focus:border-yellow-400 transition-colors"
             >
               <option value="all">All Types</option>
-              {weaponTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
+              {weaponTypes.map(({ label, value }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>

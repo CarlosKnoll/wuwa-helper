@@ -10,6 +10,17 @@ pub struct WeaponListItem {
     pub rarity: u8,
 }
 
+/// Normalize weapon type strings to their canonical singular form.
+/// The metadata uses singular ("Pistol", "Gauntlet") but old DB rows
+/// may have the plural form — always normalise on the way in and out.
+fn normalize_weapon_type(weapon_type: &str) -> String {
+    match weapon_type.trim() {
+        "Pistols"   => "Pistol".to_string(),
+        "Gauntlets" => "Gauntlet".to_string(),
+        other       => other.to_string(),
+    }
+}
+
 /// Get list of all available weapons from backend mappings
 #[tauri::command]
 pub fn get_available_weapons(
@@ -29,7 +40,9 @@ pub fn get_available_weapons(
         .filter(|meta| seen_names.insert(meta.display_name.clone()))
         .map(|meta| WeaponListItem {
             name: meta.display_name.clone(),
-            weapon_type: meta.weapon_type.clone().unwrap_or_else(|| "Unknown".to_string()),
+            weapon_type: normalize_weapon_type(
+                &meta.weapon_type.clone().unwrap_or_else(|| "Unknown".to_string())
+            ),
             rarity: meta.rarity.unwrap_or(3) as u8,
         })
         .collect();
@@ -56,7 +69,7 @@ pub fn get_all_weapons(app: tauri::AppHandle) -> Result<Vec<Weapon>, String> {
             Ok(Weapon {
                 id: row.get(0)?,
                 weapon_name: row.get(1)?,
-                weapon_type: row.get(2)?,
+                weapon_type: normalize_weapon_type(&row.get::<_, String>(2)?),
                 rarity: row.get(3)?,
                 rank: row.get(4)?,
                 level: row.get(5)?,
@@ -84,105 +97,102 @@ pub fn update_weapon(
     notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
-    
+
     // Validate rarity
     let rarity = if (1..=5).contains(&rarity) { rarity } else { 5 };
-    
-    // Get the old equipped_on value and weapon details
+
+    // Fetch the current row by id — the only safe key with duplicates allowed.
     let (old_equipped_on, weapon_name): (String, String) = conn
         .query_row(
-            "SELECT equipped_on, weapon_name FROM weapons_inventory WHERE id = ?", 
-            [id], 
-            |row| Ok((row.get(0)?, row.get(1)?))
+            "SELECT equipped_on, weapon_name FROM weapons_inventory WHERE id = ?",
+            [id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .map_err(|e| e.to_string())?;
-    
-    // If equipping to a new character (not "Nobody"), check if that character already has a weapon
+
+    // If moving to a new character, evict whatever weapon that character currently holds.
     if equipped_on != "Nobody" && equipped_on != old_equipped_on {
-        let character_id_result: rusqlite::Result<i64> = conn.query_row(
+        let char_id_result: rusqlite::Result<i64> = conn.query_row(
             "SELECT id FROM characters WHERE character_name = ?",
             [&equipped_on],
-            |row| row.get(0)
+            |row| row.get(0),
         );
-        
-        if let Ok(char_id) = character_id_result {
-            // Get the character's current weapon
-            let current_weapon_result: rusqlite::Result<String> = conn.query_row(
-                "SELECT weapon_name FROM character_weapons WHERE character_id = ?",
+
+        if let Ok(char_id) = char_id_result {
+            // Look up the existing slot by character_id — weapon_id is now the FK.
+            let prev_weapon_id_result: rusqlite::Result<Option<i64>> = conn.query_row(
+                "SELECT weapon_id FROM character_weapons WHERE character_id = ?",
                 [char_id],
-                |row| row.get(0)
+                |row| row.get(0),
             );
-            
-            // If character has a weapon that's not "None", unequip it
-            if let Ok(current_weapon_name) = current_weapon_result {
-                if current_weapon_name != "None" && current_weapon_name != weapon_name {
-                    // Set the old weapon to "Nobody" in weapons_inventory
-                    conn.execute(
-                        "UPDATE weapons_inventory SET equipped_on = 'Nobody' WHERE weapon_name = ? AND equipped_on = ?",
-                        (&current_weapon_name, &equipped_on)
-                    ).map_err(|e| e.to_string())?;
-                }
+
+            if let Ok(Some(prev_weapon_id)) = prev_weapon_id_result {
+                // Unequip the previous weapon row by its own id, not by name.
+                conn.execute(
+                    "UPDATE weapons_inventory SET equipped_on = 'Nobody' WHERE id = ?",
+                    [prev_weapon_id],
+                )
+                .map_err(|e| e.to_string())?;
             }
         }
     }
-    
-    // Update the weapon
+
+    // Write the updated stats + new equipped_on to this specific weapon row.
     conn.execute(
         "UPDATE weapons_inventory SET level = ?, rank = ?, rarity = ?, equipped_on = ?, category = ?, notes = ? WHERE id = ?",
         (level, rank, rarity, &equipped_on, category, notes, id),
     )
     .map_err(|e| e.to_string())?;
-    
-    // If equipped_on changed, update the character_weapons table
+
+    // Keep character_weapons in sync.
     if old_equipped_on != equipped_on {
-        // If unequipping from old character
+        // Vacate the slot for the character we just unequipped from.
         if old_equipped_on != "Nobody" {
-            // Try to find the character by name and unequip
-            let character_id_result: rusqlite::Result<i64> = conn.query_row(
+            let old_char_id_result: rusqlite::Result<i64> = conn.query_row(
                 "SELECT id FROM characters WHERE character_name = ?",
                 [&old_equipped_on],
-                |row| row.get(0)
+                |row| row.get(0),
             );
-            
-            if let Ok(old_char_id) = character_id_result {
+            if let Ok(old_char_id) = old_char_id_result {
                 conn.execute(
-                    "UPDATE character_weapons SET weapon_name = 'None', rarity = NULL, level = NULL, rank = NULL WHERE character_id = ?",
-                    [old_char_id]
-                ).map_err(|e| e.to_string())?;
+                    "UPDATE character_weapons SET weapon_id = NULL, weapon_name = 'None', rarity = NULL, level = NULL, rank = NULL WHERE character_id = ?",
+                    [old_char_id],
+                )
+                .map_err(|e| e.to_string())?;
             }
         }
-        
-        // If equipping to new character
+
+        // Fill the slot for the character we are equipping to.
         if equipped_on != "Nobody" {
-            let character_id_result: rusqlite::Result<i64> = conn.query_row(
+            let new_char_id_result: rusqlite::Result<i64> = conn.query_row(
                 "SELECT id FROM characters WHERE character_name = ?",
                 [&equipped_on],
-                |row| row.get(0)
+                |row| row.get(0),
             );
-            
-            if let Ok(new_char_id) = character_id_result {
+            if let Ok(new_char_id) = new_char_id_result {
                 conn.execute(
-                    "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
-                    (&weapon_name, rarity, level, rank, new_char_id)
-                ).map_err(|e| e.to_string())?;
+                    "UPDATE character_weapons SET weapon_id = ?, weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
+                    (id, &weapon_name, rarity, level, rank, new_char_id),
+                )
+                .map_err(|e| e.to_string())?;
             }
         }
     } else if equipped_on != "Nobody" {
-        // Even if equipped_on didn't change, sync the weapon stats
-        let character_id_result: rusqlite::Result<i64> = conn.query_row(
+        // equipped_on unchanged — just sync the stats in the character slot.
+        let char_id_result: rusqlite::Result<i64> = conn.query_row(
             "SELECT id FROM characters WHERE character_name = ?",
             [&equipped_on],
-            |row| row.get(0)
+            |row| row.get(0),
         );
-        
-        if let Ok(char_id) = character_id_result {
+        if let Ok(char_id) = char_id_result {
             conn.execute(
-                "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
-                (weapon_name, rarity, level, rank, char_id)
-            ).map_err(|e| e.to_string())?;
+                "UPDATE character_weapons SET weapon_id = ?, weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
+                (id, &weapon_name, rarity, level, rank, char_id),
+            )
+            .map_err(|e| e.to_string())?;
         }
     }
-    
+
     Ok("Weapon updated successfully".to_string())
 }
 
@@ -199,30 +209,34 @@ pub fn add_weapon(
     notes: Option<String>,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
-    
+    let weapon_type = normalize_weapon_type(&weapon_type);
+
     conn.execute(
-        "INSERT INTO weapons_inventory (weapon_name, weapon_type, rarity, rank, level, equipped_on, category, notes) 
+        "INSERT INTO weapons_inventory (weapon_name, weapon_type, rarity, rank, level, equipped_on, category, notes)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (&weapon_name, &weapon_type, rarity, rank, level, &equipped_on, category, &notes),
     )
     .map_err(|e| e.to_string())?;
-    
-    // If equipping to a character, update character_weapons
+
+    // Capture the id of the row we just inserted.
+    let new_id = conn.last_insert_rowid();
+
+    // If equipping to a character, update character_weapons using the real id.
     if equipped_on != "Nobody" {
-        let character_id_result: rusqlite::Result<i64> = conn.query_row(
+        let char_id_result: rusqlite::Result<i64> = conn.query_row(
             "SELECT id FROM characters WHERE character_name = ?",
             [&equipped_on],
-            |row| row.get(0)
+            |row| row.get(0),
         );
-        
-        if let Ok(char_id) = character_id_result {
+        if let Ok(char_id) = char_id_result {
             conn.execute(
-                "UPDATE character_weapons SET weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
-                (&weapon_name, rarity, level, rank, char_id)
-            ).map_err(|e| e.to_string())?;
+                "UPDATE character_weapons SET weapon_id = ?, weapon_name = ?, rarity = ?, level = ?, rank = ? WHERE character_id = ?",
+                (new_id, &weapon_name, rarity, level, rank, char_id),
+            )
+            .map_err(|e| e.to_string())?;
         }
     }
-    
+
     Ok("Weapon added successfully".to_string())
 }
 
@@ -232,34 +246,35 @@ pub fn delete_weapon(
     id: i64,
 ) -> Result<String, String> {
     let conn = init_db(&app)?;
-    
-    // Get equipped_on before deleting
+
+    // Fetch equipped_on before deletion so we can clean up the character slot.
     let equipped_on: String = conn
-        .query_row("SELECT equipped_on FROM weapons_inventory WHERE id = ?", [id], |row| row.get(0))
+        .query_row(
+            "SELECT equipped_on FROM weapons_inventory WHERE id = ?",
+            [id],
+            |row| row.get(0),
+        )
         .map_err(|e| e.to_string())?;
-    
-    // If weapon was equipped, unequip from character
+
+    // If the weapon was equipped, clear the character slot identified by weapon_id,
+    // not by name, so a duplicate copy on another character is left untouched.
     if equipped_on != "Nobody" {
-        let character_id_result: rusqlite::Result<i64> = conn.query_row(
+        let char_id_result: rusqlite::Result<i64> = conn.query_row(
             "SELECT id FROM characters WHERE character_name = ?",
             [&equipped_on],
-            |row| row.get(0)
+            |row| row.get(0),
         );
-        
-        if let Ok(char_id) = character_id_result {
+        if let Ok(char_id) = char_id_result {
             conn.execute(
-                "UPDATE character_weapons SET weapon_name = 'None', rarity = NULL, level = NULL, rank = NULL WHERE character_id = ?",
-                [char_id]
-            ).map_err(|e| e.to_string())?;
+                "UPDATE character_weapons SET weapon_id = NULL, weapon_name = 'None', rarity = NULL, level = NULL, rank = NULL WHERE character_id = ? AND weapon_id = ?",
+                (char_id, id),
+            )
+            .map_err(|e| e.to_string())?;
         }
     }
-    
-    // Delete the weapon
-    conn.execute(
-        "DELETE FROM weapons_inventory WHERE id = ?",
-        [id],
-    )
-    .map_err(|e| e.to_string())?;
-    
+
+    conn.execute("DELETE FROM weapons_inventory WHERE id = ?", [id])
+        .map_err(|e| e.to_string())?;
+
     Ok("Weapon deleted successfully".to_string())
 }

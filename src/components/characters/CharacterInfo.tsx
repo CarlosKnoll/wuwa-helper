@@ -30,6 +30,7 @@ export default function CharacterInfo({
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
   const [selectedWeaponWarning, setSelectedWeaponWarning] = useState<string | null>(null);
   const [weaponForm, setWeaponForm] = useState({
+    id: null as number | null,
     weapon_name: '',
     rarity: 5,
     level: 90,
@@ -70,6 +71,7 @@ export default function CharacterInfo({
       setWeapon(w);
       if (w) {
         setWeaponForm({
+          id: w.id ?? null,
           weapon_name: w.weapon_name || '',
           rarity: w.rarity || 5,
           level: w.level || 90,
@@ -113,24 +115,27 @@ export default function CharacterInfo({
   }, [editingWeapon]);
 
   const handleWeaponSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedWeapon = availableWeapons.find(w => w.weapon_name === e.target.value);
+    const selectedId = e.target.value === 'None' ? null : Number(e.target.value);
+    const selectedWeapon = selectedId !== null ? availableWeapons.find(w => w.id === selectedId) : null;
+
     if (selectedWeapon) {
       if (selectedWeapon.equipped_on !== 'Nobody' && selectedWeapon.equipped_on !== currentCharacter?.character_name) {
         setSelectedWeaponWarning(`This will unequip ${selectedWeapon.weapon_name} from ${selectedWeapon.equipped_on}`);
       } else {
         setSelectedWeaponWarning(null);
       }
-      
       setWeaponForm({
+        id: selectedWeapon.id,
         weapon_name: selectedWeapon.weapon_name,
         rarity: selectedWeapon.rarity,
         level: selectedWeapon.level,
         rank: selectedWeapon.rank,
         notes: selectedWeapon.notes || '',
       });
-    } else if (e.target.value === 'None') {
+    } else {
       setSelectedWeaponWarning(null);
       setWeaponForm({
+        id: null,
         weapon_name: 'None',
         rarity: 5,
         level: 1,
@@ -144,6 +149,7 @@ export default function CharacterInfo({
     try {
       await safeInvoke('update_character_weapon', {
         characterId: character.id,
+        weaponId: weaponForm.weapon_name === 'None' ? null : weaponForm.id,
         weaponName: weaponForm.weapon_name,
         rarity: weaponForm.weapon_name === 'None' ? null : (weaponForm.rarity || null),
         level: weaponForm.weapon_name === 'None' ? null : (weaponForm.level || null),
@@ -163,6 +169,7 @@ export default function CharacterInfo({
     setSelectedWeaponWarning(null);
     if (weapon) {
       setWeaponForm({
+        id: weapon.id ?? null,
         weapon_name: weapon.weapon_name || '',
         rarity: weapon.rarity || 5,
         level: weapon.level || 90,
@@ -397,7 +404,7 @@ export default function CharacterInfo({
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Select from Inventory</label>
                     <select
-                      value={weaponForm.weapon_name}
+                      value={weaponForm.id ?? 'None'}
                       onChange={handleWeaponSelect}
                       className="w-full bg-slate-800/50 border border-slate-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-yellow-500"
                     >
@@ -406,7 +413,7 @@ export default function CharacterInfo({
                       {availableForEquip.length > 0 && (
                         <optgroup label="Available Weapons">
                           {availableForEquip.map(w => (
-                            <option key={w.id} value={w.weapon_name}>
+                            <option key={w.id} value={w.id}>
                               {w.weapon_name} ({getRarityStars(w.rarity)}) - Lv.{w.level} R{w.rank}
                               {w.equipped_on === currentCharacter?.character_name ? ' [Equipped]' : ''}
                             </option>
@@ -417,7 +424,7 @@ export default function CharacterInfo({
                       {equippedWeapons.length > 0 && (
                         <optgroup label="Equipped on Others">
                           {equippedWeapons.map(w => (
-                            <option key={w.id} value={w.weapon_name}>
+                            <option key={w.id} value={w.id}>
                               {w.weapon_name} ({getRarityStars(w.rarity)}) - Lv.{w.level} R{w.rank} [on {w.equipped_on}]
                             </option>
                           ))}

@@ -49,6 +49,7 @@ pub struct CharacterWeapon {
     pub level: Option<i64>,
     pub rank: Option<i64>,
     pub notes: Option<String>,
+    pub weapon_id: Option<i64>, // New FK reference to weapons_inventory.id, added in v5
 }
 
 #[derive(Debug, Serialize, Deserialize)]
