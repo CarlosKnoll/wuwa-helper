@@ -9,11 +9,11 @@ pub mod models;
 pub mod mapper;
 pub mod resolver;
 pub mod mappings_loader;
-pub mod mappings_exploration;
 
 pub use mapper::AssetMapper;
 pub use resolver::AssetResolver;
 pub use models::*;
+
 pub struct AssetManager {
     resolver: AssetResolver,
     bundled_base_path: PathBuf,
@@ -21,8 +21,6 @@ pub struct AssetManager {
     metadata_version: String,
     pub mapper: AssetMapper,
 }
-
-
 
 impl AssetManager {
     pub async fn new(app_handle: AppHandle) -> Result<Self, AssetError> {
@@ -40,10 +38,11 @@ impl AssetManager {
             )));
         }
 
-        let runtime_base_path = app_handle
-            .path()
-            .app_data_dir()
-            .map_err(|e| AssetError::PathError(format!("Failed to get app data dir: {}", e)))?
+        let runtime_base_path = std::env::current_exe()
+            .map_err(|e| AssetError::PathError(format!("Failed to get executable path: {}", e)))?
+            .parent()
+            .ok_or_else(|| AssetError::PathError("Failed to get executable directory".to_string()))?
+            .to_path_buf()
             .join("runtime-assets")
             .join("assets");
 
@@ -61,26 +60,39 @@ impl AssetManager {
         let mut mapper = AssetMapper::new();
 
         for meta in &metadata.entries {
-            mapper
-                .name_to_file
-                .insert(meta.display_name.clone(), meta.filename.clone());
+            // name_to_file: only index entries that have a filename
+            if let Some(ref filename) = meta.filename {
+                mapper
+                    .name_to_file
+                    .insert(meta.display_name.clone(), filename.clone());
+
+                // assets: keyed by filename for entries that have one
+                mapper
+                    .assets
+                    .insert(filename.clone(), meta.clone());
+            } else {
+                // Entries without a filename (e.g. exploration_region) are
+                // indexed by their id so they can still be looked up.
+                mapper
+                    .assets
+                    .insert(meta.id.clone(), meta.clone());
+            }
 
             mapper
                 .by_type
                 .entry(meta.asset_type.clone())
                 .or_default()
-                .push(meta.filename.clone());
-
-            mapper
-                .assets
-                .insert(meta.filename.clone(), meta.clone());
+                .push(
+                    meta.filename
+                        .clone()
+                        .unwrap_or_else(|| meta.id.clone()),
+                );
         }
 
         let resolver = AssetResolver::new_with_mappings(
             mapper.clone(),
             std::collections::HashMap::new(),
         );
-
 
         Ok(Self {
             resolver,
@@ -106,241 +118,167 @@ impl AssetManager {
         paths
     }
 
-
-
-    /// Get path to asset - uses resolver for lookups and handles nested weapon directories
     pub fn get_asset_path(&self, asset_type: AssetType, name: &str) -> Option<PathBuf> {
 
-        // For echoes, try multiple strategies
         if matches!(asset_type, AssetType::Echo) {
-            // Strategy 1: Try to resolve by display name first
             if let Some(metadata) = self.resolver.resolve_by_name(name) {
-                for base_path in self.candidate_base_paths() {
-                    let path = base_path
-                        .join(asset_type.as_str())
-                        .join(&metadata.filename);
-                    if path.exists() {
-                        return Some(path);
+                if let Some(ref filename) = metadata.filename {
+                    for base_path in self.candidate_base_paths() {
+                        let path = base_path.join(asset_type.as_str()).join(filename);
+                        if path.exists() { return Some(path); }
                     }
                 }
             }
 
-            // Strategy 2: Try the name as filename directly
             for base_path in self.candidate_base_paths() {
-                let direct_path = base_path
-                    .join(asset_type.as_str())
-                    .join(name);
-                if direct_path.exists() {
-                    return Some(direct_path);
-                }
+                let direct_path = base_path.join(asset_type.as_str()).join(name);
+                if direct_path.exists() { return Some(direct_path); }
             }
 
-
-            // Strategy 3: Try with .webp extension if not present
             if !name.ends_with(".webp") && !name.ends_with(".png") {
                 for base_path in self.candidate_base_paths() {
-                    let with_webp = base_path
-                        .join(asset_type.as_str())
-                        .join(format!("{}.webp", name));
-                    if with_webp.exists() {
-                        return Some(with_webp);
-                    }
+                    let with_webp = base_path.join(asset_type.as_str()).join(format!("{}.webp", name));
+                    if with_webp.exists() { return Some(with_webp); }
                 }
             }
 
-            // Strategy 4: Try converting name to ID format (lowercase, underscores)
             let name_id = name.to_lowercase().replace(" ", "_").replace("'", "");
             if let Some(metadata) = self.resolver.resolve_by_name(&name_id) {
-                for base_path in self.candidate_base_paths() {
-                    let path = base_path
-                        .join(asset_type.as_str())
-                        .join(&metadata.filename);
-                    if path.exists() {
-                        return Some(path);
+                if let Some(ref filename) = metadata.filename {
+                    for base_path in self.candidate_base_paths() {
+                        let path = base_path.join(asset_type.as_str()).join(filename);
+                        if path.exists() { return Some(path); }
                     }
                 }
             }
         }
 
-        // For characters, use the resolver to find the correct filename
         if matches!(asset_type, AssetType::Character) {
             if let Some(filename) = self.resolver.get_asset_filename(name) {
                 for base_path in self.candidate_base_paths() {
-                    let path = base_path
-                        .join(asset_type.as_str())
-                        .join(&filename);
-                    if path.exists() {
-                        return Some(path);
-                    }
+                    let path = base_path.join(asset_type.as_str()).join(&filename);
+                    if path.exists() { return Some(path); }
                 }
             }
         }
 
-        // For weapons, use resolver then filesystem fallbacks
         if matches!(asset_type, AssetType::Weapon) {
-
-            // Strategy 1: Try to resolve by display name using mappings
             if let Some(metadata) = self.resolver.resolve_by_name(name) {
-
-                // Weapon type icon (starts with "weapon_")
-                if metadata.filename.starts_with("weapon_") {
-                    for base_path in self.candidate_base_paths() {
-                        let path = base_path
-                            .join("weapons")
-                            .join(&metadata.filename);
-                        if path.exists() {
-                            return Some(path);
-                        }
-                    }
-                }
-                // Numeric weapon ID (starts with digit)
-                else if metadata.filename.chars().next().unwrap_or('a').is_numeric() {
-                    if let Some(ref weapon_type) = metadata.weapon_type {
+                if let Some(ref filename) = metadata.filename {
+                    if filename.starts_with("weapon_") {
                         for base_path in self.candidate_base_paths() {
-                            let path = base_path
-                                .join("weapons")
-                                .join(weapon_type.to_lowercase())
-                                .join(&metadata.filename);
-                            if path.exists() {
-                                return Some(path);
+                            let path = base_path.join("weapons").join(filename);
+                            if path.exists() { return Some(path); }
+                        }
+                    } else if filename.chars().next().unwrap_or('a').is_numeric() {
+                        if let Some(ref weapon_type) = metadata.weapon_type {
+                            for base_path in self.candidate_base_paths() {
+                                let path = base_path.join("weapons").join(weapon_type.to_lowercase()).join(filename);
+                                if path.exists() { return Some(path); }
                             }
                         }
-                    }
-                }
-                // Special filename (e.g. T_IconWeapon21020076_UI.webp)
-                else {
-                    if let Some(ref weapon_type) = metadata.weapon_type {
-                        for base_path in self.candidate_base_paths() {
-                            let path = base_path
-                                .join("weapons")
-                                .join(weapon_type.to_lowercase())
-                                .join(&metadata.filename);
-                            if path.exists() {
-                                return Some(path);
+                    } else {
+                        if let Some(ref weapon_type) = metadata.weapon_type {
+                            for base_path in self.candidate_base_paths() {
+                                let path = base_path.join("weapons").join(weapon_type.to_lowercase()).join(filename);
+                                if path.exists() { return Some(path); }
                             }
                         }
                     }
                 }
             }
 
-            // Strategy 2: Try to resolve by filename
             if let Some(metadata) = self.resolver.resolve_by_filename(name) {
-                if metadata.filename.starts_with("weapon_") {
-                    for base_path in self.candidate_base_paths() {
-                        let path = base_path
-                            .join("weapons")
-                            .join(&metadata.filename);
-                        if path.exists() {
-                            return Some(path);
+                if let Some(ref filename) = metadata.filename {
+                    if filename.starts_with("weapon_") {
+                        for base_path in self.candidate_base_paths() {
+                            let path = base_path.join("weapons").join(filename);
+                            if path.exists() { return Some(path); }
                         }
-                    }
-                } else if let Some(ref weapon_type) = metadata.weapon_type {
-                    for base_path in self.candidate_base_paths() {
-                        let path = base_path
-                            .join("weapons")
-                            .join(weapon_type.to_lowercase())
-                            .join(&metadata.filename);
-                        if path.exists() {
-                            return Some(path);
+                    } else if let Some(ref weapon_type) = metadata.weapon_type {
+                        for base_path in self.candidate_base_paths() {
+                            let path = base_path.join("weapons").join(weapon_type.to_lowercase()).join(filename);
+                            if path.exists() { return Some(path); }
                         }
                     }
                 }
             }
 
-            // Strategy 3: If name looks like a weapon type icon, try directly
             if name.starts_with("weapon_") {
                 for base_path in self.candidate_base_paths() {
                     let path = base_path.join("weapons").join(name);
-                    if path.exists() {
-                        return Some(path);
-                    }
+                    if path.exists() { return Some(path); }
                 }
                 for base_path in self.candidate_base_paths() {
-                    let path = base_path
-                        .join("weapons")
-                        .join(format!("{}.png", name));
-                    if path.exists() {
-                        return Some(path);
-                    }
+                    let path = base_path.join("weapons").join(format!("{}.png", name));
+                    if path.exists() { return Some(path); }
                 }
             }
 
-            // Strategy 4: Brute force across all weapon subdirectories
             for weapon_type in &["broadblade", "sword", "pistol", "gauntlet", "rectifier"] {
                 for base_path in self.candidate_base_paths() {
                     let path = base_path.join("weapons").join(weapon_type).join(name);
-                    if path.exists() {
-                        return Some(path);
-                    }
+                    if path.exists() { return Some(path); }
                 }
                 for base_path in self.candidate_base_paths() {
-                    let path = base_path
-                        .join("weapons")
-                        .join(weapon_type)
-                        .join(format!("{}.webp", name));
-                    if path.exists() {
-                        return Some(path);
-                    }
+                    let path = base_path.join("weapons").join(weapon_type).join(format!("{}.webp", name));
+                    if path.exists() { return Some(path); }
                 }
-            }   
+            }
         }
 
-        // For elements, try direct filesystem access
         if matches!(asset_type, AssetType::Element) {
             for base_path in self.candidate_base_paths() {
                 let direct_path = base_path.join(asset_type.as_str()).join(name);
-                if direct_path.exists() {
-                    return Some(direct_path);
-                }
+                if direct_path.exists() { return Some(direct_path); }
             }
             if !name.ends_with(".png") {
                 for base_path in self.candidate_base_paths() {
-                    let with_png = base_path
-                        .join(asset_type.as_str())
-                        .join(format!("{}.png", name));
-                    if with_png.exists() {
-                        return Some(with_png);
-                    }
+                    let with_png = base_path.join(asset_type.as_str()).join(format!("{}.png", name));
+                    if with_png.exists() { return Some(with_png); }
                 }
             }
         }
 
-        // For echo_sets, try direct filesystem access
         if matches!(asset_type, AssetType::EchoSet) {
             for base_path in self.candidate_base_paths() {
                 let direct_path = base_path.join(asset_type.as_str()).join(name);
-                if direct_path.exists() {
-                    return Some(direct_path);
-                }
+                if direct_path.exists() { return Some(direct_path); }
             }
             if !name.ends_with(".webp") {
                 for base_path in self.candidate_base_paths() {
-                    let with_webp = base_path
-                        .join(asset_type.as_str())
-                        .join(format!("{}.webp", name));
-                    if with_webp.exists() {
-                        return Some(with_webp);
-                    }
+                    let with_webp = base_path.join(asset_type.as_str()).join(format!("{}.webp", name));
+                    if with_webp.exists() { return Some(with_webp); }
                 }
             }
         }
 
-        // For misc assets (currency icons, etc.), try direct filesystem access
         if matches!(asset_type, AssetType::Misc) {
             for base_path in self.candidate_base_paths() {
                 let direct_path = base_path.join(asset_type.as_str()).join(name);
-                if direct_path.exists() {
-                    return Some(direct_path);
-                }
+                if direct_path.exists() { return Some(direct_path); }
             }
             if !name.ends_with(".png") {
                 for base_path in self.candidate_base_paths() {
-                    let with_png = base_path
-                        .join(asset_type.as_str())
-                        .join(format!("{}.png", name));
-                    if with_png.exists() {
-                        return Some(with_png);
-                    }
+                    let with_png = base_path.join(asset_type.as_str()).join(format!("{}.png", name));
+                    if with_png.exists() { return Some(with_png); }
+                }
+            }
+        }
+
+        if matches!(asset_type, AssetType::Exploration) {
+            for base_path in self.candidate_base_paths() {
+                let direct_path = base_path.join(asset_type.as_str()).join(name);
+                if direct_path.exists() { return Some(direct_path); }
+            }
+            if !name.ends_with(".webp") && !name.ends_with(".png") {
+                for base_path in self.candidate_base_paths() {
+                    let with_webp = base_path.join(asset_type.as_str()).join(format!("{}.webp", name));
+                    if with_webp.exists() { return Some(with_webp); }
+                }
+                for base_path in self.candidate_base_paths() {
+                    let with_png = base_path.join(asset_type.as_str()).join(format!("{}.png", name));
+                    if with_png.exists() { return Some(with_png); }
                 }
             }
         }
@@ -356,7 +294,6 @@ impl AssetManager {
         use base64::Engine;
         Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
     }
-    
 }
 
 #[derive(Debug, thiserror::Error)]

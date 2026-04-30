@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { Users, Sword, Target, Map, Settings, Database, TrendingUp, Menu, Trophy } from 'lucide-react';
-import { Character, Weapon, Resources, PityStatus, ExplorationRegion, EndgameTabRef } from './types';
+import { Character, Weapon, Resources, PityStatus, ExplorationSegment, EndgameTabRef } from './types';
 import { safeInvoke, checkForUpdates } from './utils';
 import DashboardTab from './tabs/DashboardTab';
 import CharactersTab from './tabs/CharactersTab';
@@ -24,7 +24,7 @@ export default function WuwaHelper() {
   const [resources, setResources] = useState<Resources | null>(null);
   const [pityStatus, setPityStatus] = useState<PityStatus[]>([]);
   const [weapons, setWeapons] = useState<Weapon[]>([]);
-  const [explorationRegions, setExplorationRegions] = useState<ExplorationRegion[]>([]);
+  const [explorationSegments, setExplorationSegments] = useState<ExplorationSegment[]>([]);
 
   // Ref for EndgameTab to trigger refresh
   const endgameTabRef = useRef<EndgameTabRef>(null);
@@ -41,18 +41,18 @@ export default function WuwaHelper() {
     setLoading(true);
     setError(null);
     try {
-      const [chars, res, pity, weaps, regions] = await Promise.all([
+      const [chars, res, pity, weaps, segments] = await Promise.all([
         safeInvoke('get_all_characters'),
         safeInvoke('get_resources'),
         safeInvoke('get_pity_status'),
         safeInvoke('get_all_weapons'),
-        safeInvoke('get_exploration_regions')
+        safeInvoke('get_exploration_segments'),
       ]);
       setCharacters(chars as Character[]);
       setResources(res as Resources);
       setPityStatus(pity as PityStatus[]);
       setWeapons(weaps as Weapon[]);
-      setExplorationRegions(regions as ExplorationRegion[]);
+      setExplorationSegments(segments as ExplorationSegment[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -64,7 +64,6 @@ export default function WuwaHelper() {
   };
 
   const handleRefresh = async () => {
-    // If we're in the endgame tab, refresh endgame data
     if (activeTab === 'endgame' && endgameTabRef.current) {
       setLoading(true);
       try {
@@ -75,7 +74,6 @@ export default function WuwaHelper() {
         setLoading(false);
       }
     } else {
-      // Otherwise refresh main data
       await loadAllData();
     }
   };
@@ -140,7 +138,7 @@ export default function WuwaHelper() {
               {activeTab === 'characters' && <CharactersTab characters={characters} onUpdate={loadAllData} />}
               {activeTab === 'weapons' && <WeaponsTab weapons={weapons} onUpdate={loadAllData} />}
               {activeTab === 'pity' && <PityTab pityStatus={pityStatus} onUpdate={loadAllData} />}
-              {activeTab === 'exploration' && <ExplorationTab regions={explorationRegions} onUpdate={loadAllData} />}
+              {activeTab === 'exploration' && <ExplorationTab segments={explorationSegments} onUpdate={loadAllData} />}
               {activeTab === 'endgame' && <EndgameTab ref={endgameTabRef} />}
               {activeTab === 'settings' && <SettingsTab />}
             </>

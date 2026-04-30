@@ -11,7 +11,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetMetadata {
     pub id: String,
-    pub filename: String,
+    pub filename: Option<String>,
     pub display_name: String,
     pub asset_type: String,
     pub rarity: Option<u8>,
@@ -20,6 +20,11 @@ pub struct AssetMetadata {
     pub echo_class: Option<String>,
     pub cost: Option<u8>,
     pub tags: Vec<String>,
+    // Exploration-specific fields — None for all non-exploration entries
+    pub exploration_id: Option<i64>,
+    pub exploration_parent_id: Option<i64>,
+    pub exploration_display_order: Option<i32>,
+    pub description: Option<String>,
 }
 
 /// Asset mapping database

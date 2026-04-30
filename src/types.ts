@@ -194,32 +194,40 @@ export interface EchoStatsOptions {
   substats: StatInfo[];
 }
 
-export interface EchoListItem {
-  name: string;
-  cost: number;
-  echo_class: string;
-  available_sets: string[];
-}
-
 /* =======================
 Exploration
 ======================= */
 
-export interface ExplorationRegion {
+/** Top-level geographical zone. Rendered as a full-background-image card. */
+export interface ExplorationSegment {
   id: number;
-  region_name: string;
+  segment_name: string;
   display_order: number;
   description: string | null;
   notes: string | null;
+  /** Filename inside exploration/ passed directly to get_asset. Null until an image is added. */
+  asset_filename: string | null;
+  is_flat: boolean;
 }
 
-export interface ExplorationMap {
+/** Middle-level named sub-group within a segment. Text only — no image. */
+export interface ExplorationRegion {
+  id: number;
+  segment_id: number;
+  region_name: string;
+  display_order: number;
+}
+
+/** Individual explorable area within a region. Rendered as a full-background-image card. */
+export interface ExplorationArea {
   id: number;
   region_id: number;
-  map_name: string;
+  area_name: string;
   display_order: number;
   exploration_percent: number;
   notes: string | null;
+  /** Filename inside exploration/ passed directly to get_asset. Null until an image is added. */
+  asset_filename: string | null;
 }
 
 

@@ -121,7 +121,7 @@ fn set_schema_version(conn: &Connection, version: i32) -> Result<()> {
 /// Run all migrations from current version to latest
 pub fn run_migrations(conn: &Connection) -> Result<()> {
     let current_version = get_schema_version(conn)?;
-    const LATEST_VERSION: i32 = 3; // Update this when you add new migrations
+    const LATEST_VERSION: i32 = 4; // Update this when you add new migrations
 
     if current_version >= LATEST_VERSION {
         return Ok(());
@@ -134,6 +134,7 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
             1 => versions::v1::migrate_to_v1(conn)?,
             2 => versions::v2::migrate_to_v2(conn)?,
             3 => versions::v3::migrate_to_v3(conn)?,
+            4 => versions::v4::migrate_to_v4(conn)?,
             // Add new migrations here:
             // 4 => migrate_to_v4(conn)?,
             _ => {

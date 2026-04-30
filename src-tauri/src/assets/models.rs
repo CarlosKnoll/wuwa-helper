@@ -13,6 +13,7 @@ pub enum AssetType {
     EchoSet,
     Element,
     Misc,
+    Exploration,
 }
 
 impl AssetType {
@@ -24,11 +25,11 @@ impl AssetType {
             AssetType::EchoSet => "echo_sets",
             AssetType::Element => "elements",
             AssetType::Misc => "misc",
+            AssetType::Exploration => "exploration",
         }
     }
 }
 
-// Fixed: Implement Display trait for AssetType
 impl fmt::Display for AssetType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())

@@ -80,8 +80,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_updater::Builder::new().build()) 
-        .plugin(tauri_plugin_process::init()) 
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             characters::get_all_characters,
             characters::get_character_talents,
@@ -120,19 +120,20 @@ pub fn run() {
             gacha::add_pull,
             gacha::delete_pull,
             gacha::import_pulls_from_url,
-            goals::get_goals,           
-            goals::update_goal,        
-            goals::add_goal,            
-            goals::delete_goal,         
+            goals::get_goals,
+            goals::update_goal,
+            goals::add_goal,
+            goals::delete_goal,
             weapons::get_all_weapons,
             weapons::update_weapon,
             weapons::add_weapon,
             weapons::delete_weapon,
             weapons::get_available_weapons,
+            exploration::get_exploration_segments,
             exploration::get_exploration_regions,
-            exploration::get_exploration_maps,
-            exploration::update_exploration_map,
-            exploration::update_exploration_region_notes,
+            exploration::get_exploration_areas,
+            exploration::update_exploration_area,
+            exploration::update_exploration_segment_notes,
             endgame::get_tower_of_adversity,
             endgame::get_tower_details,
             endgame::get_tower_floors,
@@ -159,9 +160,9 @@ pub fn run() {
             endgame::reset_tower_of_adversity,
             endgame::reset_whimpering_wastes,
             endgame::reset_troop_matrix,
-            endgame::add_tower_team,              
-            endgame::delete_tower_team,           
-            endgame::add_torrents_stage,          
+            endgame::add_tower_team,
+            endgame::delete_tower_team,
+            endgame::add_torrents_stage,
             endgame::delete_torrents_stage,
             endgame::initialize_tower_floors,
             database::import_database,

@@ -28,9 +28,6 @@ pub fn get_asset(
     }
     
     // Step 2: If cache failed and this is a weapon, resolve display name to filename and try subdirectory
-    //if matches!(asset_type_enum, AssetType::Weapon) {
-   
-    // Use the resolved filename if available, otherwise use the original name
     let filename = resolved_name.clone();
     let subdir_path = if matches!(asset_type_enum, AssetType::Weapon) {
         if let Some(wtype) = &weapon_type {
@@ -60,7 +57,6 @@ pub fn get_asset_path(
 ) -> Result<String, String> {
     let asset_type_enum = parse_asset_type(&asset_type)?;
 
-    
     let resolved_name = if matches!(asset_type_enum, AssetType::Element) {
         resolve_element_filename(&name)
     } else {
@@ -74,7 +70,6 @@ pub fn get_asset_path(
     
     // Step 2: If cache failed and this is a weapon, resolve display name to filename and try subdirectory
     if matches!(asset_type_enum, AssetType::Weapon) {
-        // Use the resolved filename if available, otherwise use the original name
         let filename = resolved_name.clone();
         
         if let Some(wtype) = &weapon_type {
@@ -82,7 +77,6 @@ pub fn get_asset_path(
             if let Some(path) = manager.get_asset_path(asset_type_enum, &subdir_path) {
                 return Ok(path.to_string_lossy().to_string());
             }
-        } else {
         }
     }
     
@@ -119,8 +113,7 @@ fn parse_asset_type(s: &str) -> Result<AssetType, String> {
         "echo_set" | "echoset" | "echo_sets" => Ok(AssetType::EchoSet),
         "element" | "elements" => Ok(AssetType::Element),
         "misc" => Ok(AssetType::Misc),
+        "exploration" => Ok(AssetType::Exploration),
         _ => Err(format!("Invalid asset type: {}", s)),
     }
 }
-
-

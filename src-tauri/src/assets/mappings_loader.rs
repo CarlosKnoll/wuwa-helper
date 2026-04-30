@@ -37,10 +37,11 @@ pub async fn ensure_runtime_assets_current(app: &AppHandle) -> Result<(), String
         .join("wuwa-helper-assets")
         .join("assets");
 
-    let runtime_root = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+    let runtime_root = std::env::current_exe()
+        .map_err(|e| format!("Failed to get executable path: {}", e))?
+        .parent()
+        .ok_or_else(|| "Failed to get executable directory".to_string())?
+        .to_path_buf()
         .join("runtime-assets");
 
     let runtime_assets_path = runtime_root.join("assets");

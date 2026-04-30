@@ -60,7 +60,8 @@ impl AssetResolver {
             .or_else(|| self.hardcoded.get(filename))
     }
 
-    /// Get asset filename for use in the frontend
+    /// Get asset filename for use in the frontend.
+    /// Returns None if the identifier cannot be resolved or the entry has no filename.
     pub fn get_asset_filename(&self, identifier: &str) -> Option<String> {
 
         // Try direct filename first
@@ -70,8 +71,9 @@ impl AssetResolver {
 
         // Try by display name (works for elements like "Aero", "Spectro")
         if let Some(meta) = self.resolve_by_name(identifier) {
-            return Some(meta.filename.clone());
+            return meta.filename.clone();
         }
+
         None
     }
 }
