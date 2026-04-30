@@ -7,7 +7,7 @@
 import { invoke } from '@tauri-apps/api/core'; // Tauri v2
 import { useState, useEffect, useCallback } from 'react';
 
-export type AssetType = 'characters' | 'weapon' | 'echo' | 'element' | 'misc';
+export type AssetType = 'characters' | 'weapon' | 'echo' | 'element' | 'exploration' | 'misc' ;
 
 export function useAssets() {
   const [isInitialized, setIsInitialized] = useState(false);
