@@ -42,22 +42,26 @@ pub async fn ensure_runtime_assets_current(app: &AppHandle) -> Result<(), String
         .parent()
         .ok_or_else(|| "Failed to get executable directory".to_string())?
         .to_path_buf()
-        .join("runtime-assets");
+        .join("wuwa-helper-assets");
 
     let runtime_assets_path = runtime_root.join("assets");
     let runtime_metadata_path = runtime_assets_path.join("metadata.json");
     let bundled_metadata_path = bundled_assets_path.join("metadata.json");
 
     let local_metadata = if runtime_metadata_path.exists() {
-        load_metadata_file(&runtime_metadata_path)?
+        Some(load_metadata_file(&runtime_metadata_path)?)
+    } else if bundled_metadata_path.exists() {
+        Some(load_metadata_file(&bundled_metadata_path)?)
     } else {
-        load_metadata_file(&bundled_metadata_path)?
+        None
     };
 
     let remote_metadata = fetch_remote_metadata().await?;
 
-    if !is_remote_newer(&local_metadata.version, &remote_metadata.version)? {
-        return Ok(());
+    if let Some(ref local) = local_metadata {
+        if !is_remote_newer(&local.version, &remote_metadata.version)? {
+            return Ok(());
+        }
     }
 
     let zip_bytes = download_assets_zip().await?;
@@ -254,7 +258,57 @@ fn sibling_tmp_dir(runtime_root: &Path) -> PathBuf {
     let dir_name = runtime_root
         .file_name()
         .and_then(|name| name.to_str())
-        .unwrap_or("runtime-assets");
+        .unwrap_or("wuwa-helper-assets");
 
     parent.join(format!("{}-tmp", dir_name))
+}
+pub async fn sync_assets_with_status(app: &AppHandle) -> Result<String, String> {
+    let bundled_assets_path = app
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("Failed to get resource dir: {}", e))?
+        .join("wuwa-helper-assets")
+        .join("assets");
+
+    let runtime_root = std::env::current_exe()
+        .map_err(|e| format!("Failed to get executable path: {}", e))?
+        .parent()
+        .ok_or_else(|| "Failed to get executable directory".to_string())?
+        .to_path_buf()
+        .join("wuwa-helper-assets");
+
+    let runtime_assets_path = runtime_root.join("assets");
+    let runtime_metadata_path = runtime_assets_path.join("metadata.json");
+    let bundled_metadata_path = bundled_assets_path.join("metadata.json");
+
+    let local_metadata = if runtime_metadata_path.exists() {
+        Some(load_metadata_file(&runtime_metadata_path)?)
+    } else if bundled_metadata_path.exists() {
+        Some(load_metadata_file(&bundled_metadata_path)?)
+    } else {
+        None
+    };
+
+    let remote_metadata = fetch_remote_metadata().await?;
+
+    if let Some(ref local) = local_metadata {
+        if !is_remote_newer(&local.version, &remote_metadata.version)? {
+            return Ok(format!(
+                "Already on the latest version ({}).",
+                local.version
+            ));
+        }
+    }
+
+    let zip_bytes = download_assets_zip().await?;
+    install_runtime_assets(&runtime_root, &remote_metadata, &zip_bytes)?;
+
+    let from = local_metadata
+        .map(|m| m.version)
+        .unwrap_or_else(|| "none".to_string());
+
+    Ok(format!(
+        "Assets updated from {} to {}.",
+        from, remote_metadata.version
+    ))
 }

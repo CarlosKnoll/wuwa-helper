@@ -32,16 +32,13 @@ pub fn run() {
                 let asset_manager = match crate::assets::AssetManager::new(app_handle.clone()).await {
                     Ok(manager) => manager,
                     Err(err) => {
-                        eprintln!("Failed to initialize AssetManager: {}", err);
-
-                        if let Some(splash_window) = app_handle.get_webview_window("splash") {
-                            let _ = splash_window.close();
-                        }
-
-                        return;
+                        // Assets unavailable (no bundled metadata and no network).
+                        // Fall back to an empty manager so State<AssetManager> is always
+                        // satisfied — asset lookups will fail gracefully per-image.
+                        eprintln!("AssetManager init failed, falling back to empty: {}", err);
+                        crate::assets::AssetManager::empty()
                     }
                 };
-
                 app_handle.manage(asset_manager);
 
                 let main_window = match WebviewWindowBuilder::new(
@@ -169,6 +166,7 @@ pub fn run() {
             database::export_database,
             commands::assets::get_asset,
             commands::assets::get_asset_path,
+            commands::assets::sync_assets,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

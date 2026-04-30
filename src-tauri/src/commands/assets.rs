@@ -1,8 +1,16 @@
 // src-tauri/src/commands/assets.rs
 //! Tauri commands for asset management
 
-use tauri::State;
+use tauri::{AppHandle, State};
 use crate::assets::{AssetManager, AssetType};
+use crate::assets::mappings_loader;
+
+/// Check the remote metadata version vs local, download and install assets.zip if newer.
+/// Returns a human-readable status string for the UI to display.
+#[tauri::command]
+pub async fn sync_assets(app: AppHandle) -> Result<String, String> {
+    mappings_loader::sync_assets_with_status(&app).await
+}
 
 
 /// Get asset as base64 encoded string

@@ -103,6 +103,23 @@ impl AssetManager {
         })
     }
 
+    /// Constructs an empty AssetManager used as a fallback when assets are unavailable.
+    /// All asset lookups will return NotFound errors, but the app remains functional.
+    pub fn empty() -> Self {
+        let mapper = AssetMapper::new();
+        let resolver = AssetResolver::new_with_mappings(
+            mapper.clone(),
+            std::collections::HashMap::new(),
+        );
+        Self {
+            resolver,
+            bundled_base_path: PathBuf::new(),
+            runtime_base_path: PathBuf::new(),
+            metadata_version: "0.0.0".to_string(),
+            mapper,
+        }
+    }
+
     pub fn get_all_mappings(&self) -> &std::collections::HashMap<String, mapper::AssetMetadata> {
         &self.mapper.assets
     }
