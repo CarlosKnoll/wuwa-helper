@@ -311,6 +311,29 @@ pub fn get_exploration_regions() -> Vec<RegionMetadata> {
             map_name: "Tidelost Forest".to_string(),
             display_order: 14,
         },  
-
+        MapMetadata {
+            id: 43,
+            region_id: 4,
+            map_name: "Solisia Landing".to_string(),
+            display_order: 15,
+        },  
+        MapMetadata {
+            id: 44,
+            region_id: 4,
+            map_name: "Sealed Fissure".to_string(),
+            display_order: 16,
+        },  
+        MapMetadata {
+            id: 45,
+            region_id: 4,
+            map_name: "Silent Crag".to_string(),
+            display_order: 17,
+        },  
+        MapMetadata {
+            id: 46,
+            region_id: 4,
+            map_name: "Dimmr Deep".to_string(),
+            display_order: 18,
+        },  
     ]
 }
