@@ -1,10 +1,10 @@
 import { Character, CharacterTalents, CharacterWeapon,
          EchoBuild, Echo, EchoSubstat, 
          TowerOfAdversity, TowerDetails, TowerFloor, TowerAreaEffect, TowerTeam,
-         WhimperingWastes, TorrentsStage,
+         WhimperingWastes, TorrentsStage, ToaSeasonData, WhiwaSeasonData, MatrixSeasonData,
          TroopMatrix, MatrixTeam,
          PullHistory, FiveStarPull,
-         PortalDropdownOption
+         PortalDropdownOption,
          } from './types';
 import { ReactNode } from 'react';    
 
@@ -150,6 +150,7 @@ export interface TowerDetailsViewProps {
   onUpdate: () => void;
   onInitializeFloors?: () => void;
   availableCharacters?: string[];
+  apiData?: ToaSeasonData;
 }
 
 export interface WhimperingWastesDetailsViewProps {
@@ -157,6 +158,7 @@ export interface WhimperingWastesDetailsViewProps {
   torrentsStages: TorrentsStage[];
   onUpdate: () => void;
   availableCharacters?: string[];
+  apiData?: WhiwaSeasonData;
 }
 
 export interface TroopMatrixDetailsViewProps {
@@ -165,6 +167,7 @@ export interface TroopMatrixDetailsViewProps {
   onUpdate: () => void;
   availableCharacters?: string[];
   healerCharacters?: string[];
+  apiData?: MatrixSeasonData;
 }
 
 export interface StarRatingProps {

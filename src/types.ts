@@ -407,3 +407,94 @@ export interface AssetFilters {
 export interface EndgameTabRef {
   refresh: () => Promise<void>;
 }
+
+/* =======================
+API Data — encore.moe endgame integration
+These mirror the Rust structs in endgame.rs
+======================= */
+
+export interface ApiElement {
+  name: string;
+  /** Element icon URL (webp). Empty string for Physical — omit rendering entirely. */
+  icon: string;
+}
+
+
+export interface ApiMonster {
+  name: string;
+  icon: string;
+ 
+  /** All elemental resistances. May be empty (e.g. Physical). */
+  elements: ApiElement[];
+}
+
+
+export interface ApiTowerBuff {
+  id: number;
+  desc: string; // may contain <span style="color:#..."> HTML
+}
+
+export interface ApiTowerFloorData {
+  floor: number;
+  area_name: string;
+  monsters: ApiMonster[];
+  buffs: ApiTowerBuff[];
+}
+
+export interface ToaSeasonData {
+  season_id: number;
+  season_name: string;
+  finish_date: string;
+  floors_by_tower: Record<string, ApiTowerFloorData[]>;
+}
+
+export interface ApiWhiwaStage {
+  stage_index: number; // 1 or 2
+  dungeon_desc: string;
+  monsters: ApiMonster[];
+}
+
+export interface WhiwaSeasonData {
+  season_id: number;
+  season_name: string;
+  finish_date: string;
+  torrents_stages: ApiWhiwaStage[];
+  token_items: ApiWhiwaToken[];
+}
+
+export interface ApiMatrixTag {
+  name: string;
+  color: string; // CSS color string
+  path: string;  // Element icon URL (webp)
+}
+
+
+export interface ApiMatrixWave {
+  round: number;
+  wave: number;
+  name: string;
+  icon: string;
+  tags: ApiMatrixTag[];
+}
+
+export interface ApiMatrixLevel {
+  id: number;
+  name: string; // "Stability Accords" | "Singularity Expansion"
+  waves: ApiMatrixWave[];
+  season_buffs: ApiTowerBuff[];
+}
+
+export interface MatrixSeasonData {
+  season_id: number;
+  season_name: string;
+  levels: ApiMatrixLevel[];
+}
+
+export interface ApiWhiwaToken {
+  id: number;
+  name: string;
+  /** IconSmall URL (webp) */
+  icon: string;
+  /** 4 = purple rarity, 5 = gold rarity */
+  quality: number;
+}

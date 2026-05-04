@@ -1,66 +1,335 @@
-import { useState } from 'react';
-import { Zap, Edit2, Plus, Trash2, Save, X } from 'lucide-react';
-import { TorrentsStage } from '../../types';
+import { useState, useRef, useEffect } from 'react';
+import { Edit2, Save, X, Waves, ChevronDown, Search } from 'lucide-react';
+import { WhimperingWastes, TorrentsStage } from '../../types';
 import { WhimperingWastesDetailsViewProps } from '../../props';
-import { safeInvoke, calculateChasmAstrite, calculateTorrentsAstrite } from '../../utils';
+import { safeInvoke } from '../../utils';
 import { CurrencyIcon } from '../CurrencyIcon';
-import ConfirmDialog from '../ConfirmDialog';
-import { MatrixTeamDisplay, TeamEditor } from './TeamManager';
+import TeamDisplay, { TeamEditor } from './TeamManager';
+import type { ApiMonster, ApiElement, ApiWhiwaStage, ApiWhiwaToken } from '../../types';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Enemy card: monster portrait + stacked element icons below name */
+function MonsterCard({ monster }: { monster: ApiMonster }) {
+  return (
+    <div
+      className="flex flex-col items-center gap-1 bg-slate-800/70 rounded-lg p-2.5 w-[4.5rem] flex-shrink-0"
+      title={monster.name}
+    >
+      {/* Monster portrait */}
+      <div className="relative w-10 h-10 flex-shrink-0">
+        {monster.icon ? (
+          <img
+            src={monster.icon}
+            alt={monster.name}
+            className="w-10 h-10 rounded-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-slate-700" />
+        )}
+      </div>
+      {/* Name */}
+      <span className="text-[10px] text-slate-300 text-center leading-tight line-clamp-2 w-full">
+        {monster.name}
+      </span>
+      {/* Element icons — one per resistance, skip if no icons */}
+      {monster.elements.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-0.5">
+          {monster.elements.map((el, i) => (
+            <img
+              key={i}
+              src={el.icon}
+              alt={el.name}
+              title={el.name}
+              className="w-4 h-4 flex-shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonsterLineup({ monsters }: { monsters: ApiMonster[] }) {
+  if (!monsters.length) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {monsters.map((m, i) => (
+        <MonsterCard key={i} monster={m} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Sanitises API buff HTML: strips raw tags while preserving colour spans and
+ * making all coloured text bold too.
+ */
+function sanitizeBuffDesc(raw: string): string {
+  return raw
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(
+      /<span\s+style="color:([^";]+);?[^"]*"[^>]*>/gi,
+      '<span style="color:$1;font-weight:700">'
+    )
+    .trim();
+}
+
+function BuffDesc({ desc }: { desc: string }) {
+  return (
+    <span
+      className="text-xs text-slate-300"
+      dangerouslySetInnerHTML={{ __html: sanitizeBuffDesc(desc) }}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Token dropdown with icon + searchable list
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TokenDropdown({
+  value,
+  onChange,
+  tokens,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+  tokens: ApiWhiwaToken[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    if (open) document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
+  const filtered = tokens.filter((t) =>
+    t.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const selected = tokens.find((t) => t.name === value);
+
+  const qualityBorder = (q: number) =>
+    q >= 5 ? 'border-yellow-500/60' : 'border-purple-500/60';
+  const qualityGlow = (q: number) =>
+    q >= 5 ? 'text-yellow-400' : 'text-purple-400';
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); setQuery(''); }}
+        className="w-full flex items-center gap-2 bg-slate-700 border border-teal-500/40 rounded px-2 py-1.5 text-sm hover:border-teal-500/70 transition-colors text-left"
+      >
+        {selected ? (
+          <>
+            <img
+              src={selected.icon}
+              alt={selected.name}
+              className={`w-5 h-5 rounded flex-shrink-0 border ${qualityBorder(selected.quality)}`}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <span className={`flex-1 truncate text-xs ${qualityGlow(selected.quality)}`}>
+              {selected.name}
+            </span>
+          </>
+        ) : (
+          <span className="flex-1 text-slate-400 text-xs">Select token…</span>
+        )}
+        <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden">
+          {/* Search */}
+          <div className="flex items-center gap-2 px-2 py-1.5 border-b border-slate-700">
+            <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search tokens…"
+              className="flex-1 bg-transparent text-xs text-slate-200 outline-none placeholder:text-slate-500"
+            />
+          </div>
+          {/* Options */}
+          <div className="max-h-48 overflow-y-auto">
+            {/* Clear option */}
+            <button
+              type="button"
+              onClick={() => { onChange(''); setOpen(false); setQuery(''); }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              <span className="w-5 h-5 flex-shrink-0" />
+              <span className="italic">None</span>
+            </button>
+            {filtered.length === 0 && (
+              <p className="px-3 py-2 text-xs text-slate-500 italic">No results</p>
+            )}
+            {filtered.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => { onChange(t.name); setOpen(false); setQuery(''); }}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 hover:bg-slate-700 transition-colors ${
+                  value === t.name ? 'bg-slate-700' : ''
+                }`}
+              >
+                <img
+                  src={t.icon}
+                  alt={t.name}
+                  className={`w-5 h-5 rounded flex-shrink-0 border ${qualityBorder(t.quality)}`}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <span className={`text-xs truncate ${qualityGlow(t.quality)}`}>
+                  {t.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Token display badge (read-only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TokenBadge({
+  tokenName,
+  tokens,
+}: {
+  tokenName: string;
+  tokens: ApiWhiwaToken[];
+}) {
+  const token = tokens.find((t) => t.name === tokenName);
+  if (!tokenName) return null;
+
+  if (!token) {
+    // Fallback for legacy plain-string tokens (pre-API)
+    return (
+      <span className="px-2 py-0.5 rounded text-xs font-medium text-teal-300 bg-teal-500/20">
+        {tokenName}
+      </span>
+    );
+  }
+
+  const isGold = token.quality >= 5;
+  return (
+    <div
+      className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${
+        isGold ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-purple-500/50 bg-purple-500/10'
+      }`}
+    >
+      <img
+        src={token.icon}
+        alt={token.name}
+        className="w-4 h-4 rounded flex-shrink-0"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+      <span className={`text-xs font-medium ${isGold ? 'text-yellow-400' : 'text-purple-300'}`}>
+        {token.name}
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const WHIWA_COLOR = 'text-teal-400';
+const WHIWA_BG = 'bg-teal-500/20';
+const WHIWA_BORDER = 'border-teal-500/[0.75]';
+const WHIWA_BORDER_DIM = 'border-teal-500/[0.35]';
+const WHIWA_BAR = 'bg-teal-500';
 
 export default function WhimperingWastesDetailsView({
   wastesInfo,
   torrentsStages,
   onUpdate,
-  availableCharacters = []
+  availableCharacters = [],
+  apiData,
 }: WhimperingWastesDetailsViewProps) {
-  const [editing, setEditing] = useState(false);
+  const [editingOverview, setEditingOverview] = useState(false);
   const [editingStage, setEditingStage] = useState<number | null>(null);
-  const [addingStage, setAddingStage] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [torrentsCollapsed, setTorrentsCollapsed] = useState(false);
-  const [deleteStageDialog, setDeleteStageDialog] = useState<number | null>(null);
 
-  // Main edit states
+  // Overview form
   const [editChasmPoints, setEditChasmPoints] = useState(0);
+  const [editTorrentsPoints, setEditTorrentsPoints] = useState(0);
   const [editNotes, setEditNotes] = useState('');
 
-  // Stage edit states
+  // Stage form
   const [editChar1, setEditChar1] = useState('');
   const [editChar2, setEditChar2] = useState('');
   const [editChar3, setEditChar3] = useState('');
   const [editToken, setEditToken] = useState('');
   const [editPoints, setEditPoints] = useState(0);
-  const [newStageNumber, setNewStageNumber] = useState(1);
 
-  const MAX_TEAMS = 2;
-  const canAddTeam = torrentsStages.length < MAX_TEAMS;
+  if (!wastesInfo) return null;
 
-  const startEdit = () => {
-    if (wastesInfo) {
-      setEditChasmPoints(wastesInfo.chasm_total_points);
-      setEditNotes(wastesInfo.notes || '');
-      setEditing(true);
-    }
+  // Token list from API (empty array if offline)
+  const apiTokens: ApiWhiwaToken[] = apiData?.token_items ?? [];
+
+  const startEditOverview = () => {
+    setEditChasmPoints(wastesInfo.chasm_total_points);
+    setEditTorrentsPoints(wastesInfo.torrents_total_points);
+    setEditNotes(wastesInfo.notes || '');
+    setEditingOverview(true);
   };
 
-  const saveChanges = async () => {
+  const saveOverview = async () => {
     setSaving(true);
-    try {      
-      const calculatedChasmAstrite = calculateChasmAstrite(editChasmPoints);
-      const calculatedTorrentsAstrite = calculateTorrentsAstrite(wastesInfo?.torrents_total_points || 0);
-      
+    try {
+      // Chasm: 5 milestones at 5000/7000/9500/12000/15000 pts, 125 Astrite each = 625 max
+      const CHASM_THRESHOLDS: [number, number][] = [
+        [5000, 125], [7000, 125], [9500, 125], [12000, 125], [15000, 125],
+      ];
+      const chasmAstrite = CHASM_THRESHOLDS
+        .filter(([t]) => editChasmPoints >= t)
+        .reduce((sum, [, reward]) => sum + reward, 0);
+      // Torrents: 3 milestones at 3500/4000/4500 pts, 75+50+50 = 175 max
+      const TORRENTS_THRESHOLDS: [number, number][] = [
+        [3500, 75], [4000, 50], [4500, 50],
+      ];
+      const torrentsAstrite = TORRENTS_THRESHOLDS
+        .filter(([t]) => editTorrentsPoints >= t)
+        .reduce((sum, [, reward]) => sum + reward, 0);
       await safeInvoke('update_whimpering_wastes', {
-        chasmHighestStage: wastesInfo?.chasm_highest_stage || 0,
+        id: wastesInfo.id,
+        chasmHighestStage: wastesInfo.chasm_highest_stage,
         chasmTotalPoints: editChasmPoints,
-        chasmAstrite: calculatedChasmAstrite,
-        torrentsTotalPoints: wastesInfo?.torrents_total_points || 0,
-        torrentsAstrite: calculatedTorrentsAstrite,
-        notes: editNotes || null
+        chasmAstrite,
+        torrentsTotalPoints: editTorrentsPoints,
+        torrentsAstrite,
+        notes: editNotes || null,
       });
-      setEditing(false);
+      setEditingOverview(false);
       onUpdate();
-    } catch (error) {
-      console.error('Failed to update whimpering wastes:', error);
+    } catch (e) {
+      console.error('Failed to update wastes overview:', e);
       alert('Failed to save changes');
     } finally {
       setSaving(false);
@@ -77,162 +346,67 @@ export default function WhimperingWastesDetailsView({
   };
 
   const saveStage = async (id: number) => {
+    const chars = [editChar1, editChar2, editChar3].filter(
+      (c) => c && c !== 'None' && c !== ''
+    );
+    if (chars.length !== new Set(chars).size) {
+      alert('Cannot use the same character more than once in a team');
+      return;
+    }
     setSaving(true);
     try {
       await safeInvoke('update_torrents_stage', {
         id,
-        character1: editChar1,
-        character2: editChar2,
-        character3: editChar3,
-        token: editToken,
-        points: editPoints
-      });
-      
-      // Recalculate total torrents points and astrite after updating stage
-      // Get all stages and recalculate
-      const allStages = await safeInvoke('get_torrents_stages') as TorrentsStage[];
-      const totalTorrentsPoints = allStages.reduce((sum, stage) => sum + stage.points, 0);
-      const calculatedTorrentsAstrite = calculateTorrentsAstrite(totalTorrentsPoints);
-      
-      // Update wastes info with new totals (keep chasm values unchanged)
-      if (wastesInfo) {
-        await safeInvoke('update_whimpering_wastes', {
-          chasmHighestStage: wastesInfo.chasm_highest_stage,
-          chasmTotalPoints: wastesInfo.chasm_total_points,
-          chasmAstrite: wastesInfo.chasm_astrite,
-          torrentsTotalPoints: totalTorrentsPoints,
-          torrentsAstrite: calculatedTorrentsAstrite,
-          notes: wastesInfo.notes || null
-        });
-      }
-      
-      setEditingStage(null);
-      onUpdate();
-    } catch (error) {
-      console.error('Failed to update torrents stage:', error);
-      alert('Failed to save stage');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addNewStage = async () => {
-    setSaving(true);
-    try {
-      await safeInvoke('add_torrents_stage', {
-        stageNumber: newStageNumber,
         character1: editChar1 || 'None',
         character2: editChar2 || 'None',
         character3: editChar3 || 'None',
-        token: editToken || 'None',
-        points: editPoints
+        token: editToken || '',
+        points: editPoints,
       });
-      
-      // Recalculate total torrents points and astrite after adding stage
-      const allStages = await safeInvoke('get_torrents_stages') as TorrentsStage[];
-      const totalTorrentsPoints = allStages.reduce((sum, stage) => sum + stage.points, 0);
-      const calculatedTorrentsAstrite = calculateTorrentsAstrite(totalTorrentsPoints);
-      
-      // Update wastes info with new totals
-      if (wastesInfo) {
-        await safeInvoke('update_whimpering_wastes', {
-          chasmHighestStage: wastesInfo.chasm_highest_stage,
-          chasmTotalPoints: wastesInfo.chasm_total_points,
-          chasmAstrite: wastesInfo.chasm_astrite,
-          torrentsTotalPoints: totalTorrentsPoints,
-          torrentsAstrite: calculatedTorrentsAstrite,
-          notes: wastesInfo.notes || null
-        });
-      }
-      
-      setAddingStage(false);
-      setEditChar1('');
-      setEditChar2('');
-      setEditChar3('');
-      setEditToken('');
-      setEditPoints(0);
-      setNewStageNumber(1);
+      setEditingStage(null);
       onUpdate();
-    } catch (error) {
-      console.error('Failed to add torrents stage:', error);
-      alert('Failed to add stage');
+    } catch (e) {
+      console.error('Failed to update stage:', e);
+      alert('Failed to save changes');
     } finally {
       setSaving(false);
     }
   };
 
-  const startAddStage = () => {
-    // Check which sides are already taken
-    const usedSides = new Set(torrentsStages.map(s => s.stage_number));
-    
-    // Find first available side (1 or 2)
-    let availableSide = 1;
-    if (usedSides.has(1)) {
-      if (usedSides.has(2)) {
-        alert('Both sides already have teams. Remove a team before adding another.');
-        return;
+  const computeVigorMap = (): Record<string, number> => {
+    const consumed: Record<string, number> = {};
+    for (const s of torrentsStages) {
+      for (const char of [s.character1, s.character2, s.character3]) {
+        if (char && char !== 'None') {
+          consumed[char] = (consumed[char] || 0) + 1;
+        }
       }
-      availableSide = 2;
     }
-    
-    setEditChar1('');
-    setEditChar2('');
-    setEditChar3('');
-    setEditToken('');
-    setEditPoints(0);
-    setNewStageNumber(availableSide);
-    setAddingStage(true);
+    return consumed;
   };
+  const vigorConsumedMap = computeVigorMap();
 
-  const deleteStage = async (id: number) => {
-    setDeleteStageDialog(id);
-  };
-
-  const confirmDeleteStage = async () => {
-    if (deleteStageDialog === null) return;
-    
-    try {
-      await safeInvoke('delete_torrents_stage', { id: deleteStageDialog });
-      
-      // Recalculate total torrents points and astrite after deleting stage
-      const allStages = await safeInvoke('get_torrents_stages') as TorrentsStage[];
-      const totalTorrentsPoints = allStages.reduce((sum, stage) => sum + stage.points, 0);
-      const calculatedTorrentsAstrite = calculateTorrentsAstrite(totalTorrentsPoints);
-      
-      // Update wastes info with new totals
-      if (wastesInfo) {
-        await safeInvoke('update_whimpering_wastes', {
-          chasmHighestStage: wastesInfo.chasm_highest_stage,
-          chasmTotalPoints: wastesInfo.chasm_total_points,
-          chasmAstrite: wastesInfo.chasm_astrite,
-          torrentsTotalPoints: totalTorrentsPoints,
-          torrentsAstrite: calculatedTorrentsAstrite,
-          notes: wastesInfo.notes || null
-        });
-      }
-      
-      onUpdate();
-    } catch (error) {
-      console.error('Failed to delete stage:', error);
-      alert('Failed to delete stage');
-    } finally {
-      setDeleteStageDialog(null);
-    }
-  };
-
-  if (!wastesInfo) return null;
+  const totalAstrite = wastesInfo.chasm_astrite + wastesInfo.torrents_astrite;
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
+      {/* ── Overview ──────────────────────────────────────────────────────── */}
+      <div
+        className={`bg-slate-900/50 rounded-xl p-6 border-2 border-white/30 shadow-[0_0_12px_rgba(226,232,240,0.08)]`}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold flex items-center gap-2">
-            <Zap className="w-6 h-6 text-purple-400" />
-            Whimpering Wastes Overview
+          <h3 className={`text-xl font-bold flex items-center gap-2`}>
+            <Waves className="w-6 h-6" />
+            Overview
+            {apiData && (
+              <span className="text-xs font-normal text-slate-500 ml-1">
+                {apiData.season_name}
+              </span>
+            )}
           </h3>
-          {!editing && (
+          {!editingOverview && (
             <button
-              onClick={startEdit}
+              onClick={startEditOverview}
               className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
             >
               <Edit2 className="w-4 h-4" />
@@ -240,407 +414,241 @@ export default function WhimperingWastesDetailsView({
           )}
         </div>
 
-        {editing ? (
+        {editingOverview ? (
           <div className="space-y-4">
-            <div>
-              <label className="text-sm text-slate-400 block mb-1">Respawning Waters: Chasm - Points</label>
-              <input
-                type="number"
-                value={editChasmPoints}
-                onChange={(e) => setEditChasmPoints(parseInt(e.target.value) || 0)}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-400"
-                min={0}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm text-slate-400 block mb-1">Chasm Total Points</label>
+                <input
+                  type="number"
+                  value={editChasmPoints}
+                  onChange={(e) => setEditChasmPoints(parseInt(e.target.value) || 0)}
+                  className={`w-full bg-slate-700 border ${WHIWA_BORDER} rounded px-3 py-2 text-sm focus:outline-none`}
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-slate-400 block mb-1">Torrents Total Points</label>
+                <input
+                  type="number"
+                  value={editTorrentsPoints}
+                  onChange={(e) => setEditTorrentsPoints(parseInt(e.target.value) || 0)}
+                  className={`w-full bg-slate-700 border ${WHIWA_BORDER} rounded px-3 py-2 text-sm focus:outline-none`}
+                  min="0"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm text-slate-400 block mb-1">Notes</label>
               <textarea
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                className={`w-full bg-slate-700 border ${WHIWA_BORDER_DIM} rounded px-3 py-2 text-sm focus:outline-none`}
                 rows={2}
               />
             </div>
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => setEditing(false)}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center gap-2"
+                onClick={() => setEditingOverview(false)}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center gap-2 text-sm"
               >
-                <X className="w-4 h-4" />
-                Cancel
+                <X className="w-4 h-4" /> Cancel
               </button>
               <button
-                onClick={saveChanges}
+                onClick={saveOverview}
                 disabled={saving}
-                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded flex items-center gap-2"
+                className={`px-4 py-2 ${WHIWA_BG} hover:opacity-80 rounded flex items-center gap-2 text-sm ${WHIWA_COLOR}`}
               >
-                <Save className="w-4 h-4" />
-                {saving ? 'Saving...' : 'Save'}
+                <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Respawning Waters: Chasm */}
-            <div className="bg-slate-700/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-yellow-400 mb-3">Respawning Waters: Chasm</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Points:</span>
-                  <span className="font-semibold">{wastesInfo.chasm_total_points.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
-                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
-                    {wastesInfo.chasm_astrite} / 625
-                  </span>
-                </div>
-                <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all"
-                    style={{ width: `${Math.min((wastesInfo.chasm_astrite / 625) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg p-4">
+              <p className="text-sm text-slate-400 mb-1">Chasm Points</p>
+              <p className="text-2xl font-bold text-yellow-400">{wastesInfo.chasm_total_points.toLocaleString()}</p>
             </div>
-
-            {/* Respawning Waters: Torrents */}
-            <div className="bg-slate-700/50 rounded-lg p-4">
-              <h4 className="text-lg font-bold text-yellow-400 mb-3">Respawning Waters: Torrents</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Points:</span>
-                  <span className="font-semibold">{wastesInfo.torrents_total_points.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Astrite Earned:</span>
-                  <span className="font-semibold text-yellow-400 flex items-center gap-1">
-                    <CurrencyIcon currencyName="astrite" className="w-4 h-4" />
-                    {wastesInfo.torrents_astrite} / 175
-                  </span>
-                </div>
-                <div className="mt-3 bg-slate-700 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full transition-all"
-                    style={{ width: `${Math.min((wastesInfo.torrents_astrite / 175) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
+            <div className="rounded-lg p-4">
+              <p className="text-sm text-slate-400 mb-1">Torrents Points</p>
+              <p className="text-2xl font-bold text-yellow-400">{wastesInfo.torrents_total_points.toLocaleString()}</p>
             </div>
-
-            {wastesInfo.notes && (
-              <div className="col-span-1 md:col-span-2 bg-slate-800/50 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-slate-400 mb-2">Notes</h4>
-                <p className="text-sm text-slate-300">{wastesInfo.notes}</p>
-              </div>
-            )}
+            <div className="rounded-lg p-4">
+              <p className="text-sm text-slate-400 mb-1">Total Astrite</p>
+              <p className="text-2xl font-bold text-yellow-400 flex items-center gap-2">
+                <CurrencyIcon currencyName="astrite" className="w-6 h-6" />
+                {totalAstrite}
+              </p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Respawning Waters: Torrents Teams */}
-      <div className="bg-slate-900/50 rounded-xl p-6 backdrop-blur-sm border-2 shadow-[0_0_12px_rgba(226,232,240,0.08)] border-white/[0.3]">
-        <div className="flex items-center justify-between mb-4">
-          <button 
-            onClick={() => setTorrentsCollapsed(!torrentsCollapsed)}
-            className="flex items-center gap-2 text-lg font-bold text-yellow-400 hover:text-yellow-300 transition-colors"
-          >
-            <span>Respawning Waters: Torrents Teams</span>
-            <span className="text-sm">{torrentsCollapsed ? '▶' : '▼'}</span>
-          </button>
-          {!torrentsCollapsed && canAddTeam && (
-            <button
-              onClick={startAddStage}
-              className="flex items-center gap-2 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Add Team
-            </button>
+      {/* ── Infinite Torrents ──────────────────────────────────────────────── */}
+      <div
+        className={`bg-slate-900/50 rounded-xl p-6 border-2 ${WHIWA_BORDER} shadow-[0_0_12px_rgba(226,232,240,0.08)]`}
+      >
+        <h4 className={`text-lg font-semibold ${WHIWA_COLOR} mb-4 flex items-center gap-2`}>
+          <Waves className="w-5 h-5" />
+          Infinite Torrents
+          {apiData && (
+            <span className="text-xs font-normal text-slate-400 ml-1">
+              — {apiData.season_name}
+            </span>
           )}
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2].map((sideIndex) => {
+            const stage = torrentsStages.find((s) => s.stage_number === sideIndex);
+            const isEditingThis = editingStage === stage?.id;
+            const apiStage: ApiWhiwaStage | undefined = apiData?.torrents_stages?.find(
+              (s) => s.stage_index === sideIndex
+            );
+
+            return (
+              <div
+                key={sideIndex}
+                className={`${WHIWA_BG} rounded-lg p-4 border ${WHIWA_BORDER} space-y-3`}
+              >
+                {/* Side header */}
+                <div className="flex items-center justify-between">
+                  <h5 className={`text-sm font-semibold ${WHIWA_COLOR}`}>Side {sideIndex}</h5>
+                  {stage && !isEditingThis && (
+                    <button
+                      onClick={() => startEditStage(stage)}
+                      className="p-1 hover:bg-slate-600 rounded transition-colors"
+                      title="Edit team"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* ① API dungeon description */}
+                {apiStage?.dungeon_desc && (
+                  <p className="text-xs text-slate-400 italic leading-relaxed">
+                    <BuffDesc desc={apiStage.dungeon_desc} />
+                  </p>
+                )}
+
+                {/* ② Enemies — above team card */}
+                {apiStage && apiStage.monsters.length > 0 && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1.5">Enemies</p>
+                    <MonsterLineup monsters={apiStage.monsters} />
+                  </div>
+                )}
+
+                {/* ③ Team + token — edit or display */}
+                {isEditingThis ? (
+                  <TeamEditor
+                    character1={editChar1}
+                    character2={editChar2}
+                    character3={editChar3}
+                    onChar1Change={setEditChar1}
+                    onChar2Change={setEditChar2}
+                    onChar3Change={setEditChar3}
+                    onSave={() => saveStage(stage!.id)}
+                    onCancel={() => setEditingStage(null)}
+                    availableCharacters={availableCharacters}
+                    saving={saving}
+                    vigorConfig={{
+                      vigorConsumedMap,
+                      getMaxVigor: () => 10,
+                      vigorCost: 1,
+                    }}
+                    saveButtonColor={WHIWA_BG}
+                    saveButtonHoverColor="hover:opacity-80"
+                    extraFields={
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Token</label>
+                          {apiTokens.length > 0 ? (
+                            <TokenDropdown
+                              value={editToken}
+                              onChange={setEditToken}
+                              tokens={apiTokens}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={editToken}
+                              onChange={(e) => setEditToken(e.target.value)}
+                              className={`w-full bg-slate-700 border ${WHIWA_BORDER_DIM} rounded px-2 py-1 text-sm`}
+                              placeholder="Token name…"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Points</label>
+                          <input
+                            type="number"
+                            value={editPoints}
+                            onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
+                            className={`w-full bg-slate-700 border ${WHIWA_BORDER_DIM} rounded px-2 py-1 text-sm`}
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                    }
+                  />
+                ) : stage ? (
+                  <div className="space-y-2">
+                    <TeamDisplay
+                      characters={[stage.character1, stage.character2, stage.character3]}
+                      size="md"
+                      showNames={true}
+                    />
+                    <div className="flex items-center justify-between mt-1">
+                      {stage.token && (
+                        <TokenBadge tokenName={stage.token} tokens={apiTokens} />
+                      )}
+                      {stage.points > 0 && (
+                        <span className={`text-sm font-semibold ${WHIWA_COLOR} ml-auto`}>
+                          {stage.points.toLocaleString()} pts
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-slate-500 text-sm">
+                    No team recorded
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {!torrentsCollapsed && (
-          <>
-            {torrentsStages.length > 0 || addingStage ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Render Side 1 (left column) */}
-                {(() => {
-                  const side1Team = torrentsStages.find(s => s.stage_number === 1);
-                  const isEditingSide1 = side1Team && editingStage === side1Team.id;
-                  const showAddFormSide1 = addingStage && newStageNumber === 1;
-                  
-                  if (showAddFormSide1) {
-                    return (
-                      <div className="md:col-start-1 bg-slate-700/50 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-yellow-400">New Team</p>
-                        </div>
-                        <TeamEditor
-                          character1={editChar1}
-                          character2={editChar2}
-                          character3={editChar3}
-                          onChar1Change={setEditChar1}
-                          onChar2Change={setEditChar2}
-                          onChar3Change={setEditChar3}
-                          onSave={addNewStage}
-                          onCancel={() => setAddingStage(false)}
-                          availableCharacters={availableCharacters}
-                          saving={saving}
-                          saveButtonColor="bg-green-500/[0.5]"
-                          saveButtonHoverColor="hover:bg-green-500/[0.65]"
-                          extraFields={
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Token</label>
-                                <input
-                                  type="text"
-                                  value={editToken}
-                                  onChange={(e) => setEditToken(e.target.value)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Points</label>
-                                <input
-                                  type="number"
-                                  value={editPoints}
-                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                            </div>
-                          }
-                        />
-                      </div>
-                    );
-                  } else if (side1Team) {
-                    return (
-                      <div key={side1Team.id} className="md:col-start-1 bg-slate-700/50 rounded-lg p-3 space-y-2">
-                        {isEditingSide1 ? (
-                          <>
-                            <p className="text-sm font-semibold text-yellow-400">Side 1</p>
-                            <TeamEditor
-                              character1={editChar1}
-                              character2={editChar2}
-                              character3={editChar3}
-                              onChar1Change={setEditChar1}
-                              onChar2Change={setEditChar2}
-                              onChar3Change={setEditChar3}
-                              onSave={() => saveStage(side1Team.id)}
-                              onCancel={() => setEditingStage(null)}
-                              availableCharacters={availableCharacters}
-                              saving={saving}
-                              saveButtonColor="bg-green-500/[0.5]"
-                              saveButtonHoverColor="hover:bg-green-500/[0.65]"
-                              extraFields={
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-xs text-slate-400 block mb-1">Token</label>
-                                    <input
-                                      type="text"
-                                      value={editToken}
-                                      onChange={(e) => setEditToken(e.target.value)}
-                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-xs text-slate-400 block mb-1">Points</label>
-                                    <input
-                                      type="number"
-                                      value={editPoints}
-                                      onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                    />
-                                  </div>
-                                </div>
-                              }
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-yellow-400">Side 1</span>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => startEditStage(side1Team)}
-                                  className="p-1 hover:bg-slate-600 rounded transition-colors"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => deleteStage(side1Team.id)}
-                                  className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{side1Team.token}</span>
-                              <span className="text-xs text-yellow-400">{side1Team.points} pts</span>
-                            </div>
-                            <MatrixTeamDisplay
-                              characters={[side1Team.character1, side1Team.character2, side1Team.character3]}
-                              size="md"
-                              showNames={true}
-                            />
-                          </>
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+        {/* Total points progress bar */}
+        <div className="mt-4">
+          <div className="flex justify-between text-sm text-slate-400 mb-1">
+            <span>Total Points</span>
+            <span className={WHIWA_COLOR}>
+              {wastesInfo.torrents_total_points.toLocaleString()}
+            </span>
+          </div>
+          <div className="w-full bg-slate-700 rounded-full h-1.5">
+            <div
+              className={`${WHIWA_BAR} h-full rounded-full transition-all`}
+              style={{
+                width: `${Math.min((wastesInfo.torrents_total_points / 5500) * 100, 100)}%`,
+              }}
+            />
+          </div>
+          <div className="flex justify-end mt-1">
+            <span className="text-xs text-slate-500">/ 5,500 (SSS)</span>
+          </div>
+        </div>
 
-                {/* Render Side 2 (right column) */}
-                {(() => {
-                  const side2Team = torrentsStages.find(s => s.stage_number === 2);
-                  const isEditingSide2 = side2Team && editingStage === side2Team.id;
-                  const showAddFormSide2 = addingStage && newStageNumber === 2;
-                  
-                  if (showAddFormSide2) {
-                    return (
-                      <div className="md:col-start-2 bg-slate-700/50 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-yellow-400">New Team</p>
-                        </div>
-                        <TeamEditor
-                          character1={editChar1}
-                          character2={editChar2}
-                          character3={editChar3}
-                          onChar1Change={setEditChar1}
-                          onChar2Change={setEditChar2}
-                          onChar3Change={setEditChar3}
-                          onSave={addNewStage}
-                          onCancel={() => setAddingStage(false)}
-                          availableCharacters={availableCharacters}
-                          saving={saving}
-                          saveButtonColor="bg-green-500/[0.5]"
-                          saveButtonHoverColor="hover:bg-green-500/[0.65]"
-                          extraFields={
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Token</label>
-                                <input
-                                  type="text"
-                                  value={editToken}
-                                  onChange={(e) => setEditToken(e.target.value)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs text-slate-400 block mb-1">Points</label>
-                                <input
-                                  type="number"
-                                  value={editPoints}
-                                  onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                  className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                />
-                              </div>
-                            </div>
-                          }
-                        />
-                      </div>
-                    );
-                  } else if (side2Team) {
-                    return (
-                      <div key={side2Team.id} className="md:col-start-2 bg-slate-700/50 rounded-lg p-3 space-y-2">
-                        {isEditingSide2 ? (
-                          <>
-                            <p className="text-sm font-semibold text-yellow-400">Side 2</p>
-                            <TeamEditor
-                              character1={editChar1}
-                              character2={editChar2}
-                              character3={editChar3}
-                              onChar1Change={setEditChar1}
-                              onChar2Change={setEditChar2}
-                              onChar3Change={setEditChar3}
-                              onSave={() => saveStage(side2Team.id)}
-                              onCancel={() => setEditingStage(null)}
-                              availableCharacters={availableCharacters}
-                              saving={saving}
-                              saveButtonColor="bg-green-500/[0.5]"
-                              saveButtonHoverColor="hover:bg-green-500/[0.65]"
-                              extraFields={
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="text-xs text-slate-400 block mb-1">Token</label>
-                                    <input
-                                      type="text"
-                                      value={editToken}
-                                      onChange={(e) => setEditToken(e.target.value)}
-                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-xs text-slate-400 block mb-1">Points</label>
-                                    <input
-                                      type="number"
-                                      value={editPoints}
-                                      onChange={(e) => setEditPoints(parseInt(e.target.value) || 0)}
-                                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-yellow-400"
-                                    />
-                                  </div>
-                                </div>
-                              }
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold text-yellow-400">Side 2</span>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => startEditStage(side2Team)}
-                                  className="p-1 hover:bg-slate-600 rounded transition-colors"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => deleteStage(side2Team.id)}
-                                  className="p-1 hover:bg-red-600/50 rounded transition-colors text-red-400"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{side2Team.token}</span>
-                              <span className="text-xs text-yellow-400">{side2Team.points} pts</span>
-                            </div>
-                            <MatrixTeamDisplay
-                              characters={[side2Team.character1, side2Team.character2, side2Team.character3]}
-                              size="md"
-                              showNames={true}
-                            />
-                          </>
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-500">
-                <p>No teams recorded yet. Click "Add Team" to record which teams you used on each side.</p>
-              </div>
-            )}
-          </>
+        {wastesInfo.notes && (
+          <div className="mt-4 bg-slate-800/50 rounded-lg p-3">
+            <p className="text-xs text-slate-400 mb-1">Notes</p>
+            <p className="text-sm">{wastesInfo.notes}</p>
+          </div>
         )}
       </div>
-
-      <ConfirmDialog
-        isOpen={deleteStageDialog !== null}
-        title="Delete Stage"
-        message="Are you sure you want to delete this stage? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        onConfirm={confirmDeleteStage}
-        onCancel={() => setDeleteStageDialog(null)}
-      />
     </div>
   );
 }

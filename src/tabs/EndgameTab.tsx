@@ -2,7 +2,7 @@ import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Trophy, Zap, Users, RotateCcw, Edit2, Save, X } from 'lucide-react';
 import { safeInvoke } from '../utils';
 import { TowerOfAdversity, TowerDetails, TowerFloor, TowerAreaEffect, TowerTeam, 
-         WhimperingWastes, TorrentsStage, 
+         WhimperingWastes, TorrentsStage, ToaSeasonData, WhiwaSeasonData, MatrixSeasonData,
          TroopMatrix, MatrixTeam, 
          EndgameTabRef } from '../types';
 import TowerDetailsView from '../components/endgame/TowerDetailsView';
@@ -41,6 +41,11 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
   // Available characters for vigor dropdowns
   const [availableCharacters, setAvailableCharacters] = useState<string[]>([]);
   const [healerCharacters, setHealerCharacters] = useState<string[]>([]);
+
+  const [toaApiData, setToaApiData] = useState<ToaSeasonData | null>(null);
+  const [whiwaApiData, setWhiwaApiData] = useState<WhiwaSeasonData | null>(null);
+  const [matrixApiData, setMatrixApiData] = useState<MatrixSeasonData | null>(null);
+
 
   useEffect(() => {
     loadAllEndgameData();
@@ -90,6 +95,21 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
 
       // Load floor data for each tower type
       await loadTowerFloors();
+
+      // Fetch API season data — non-blocking, failures are silent
+      Promise.allSettled([
+        safeInvoke('fetch_toa_season'),
+        safeInvoke('fetch_whiwa_season'),
+        safeInvoke('fetch_matrix_season'),
+      ]).then(([toaResult, whiwaResult, matrixResult]) => {
+        if (toaResult.status === 'fulfilled' && toaResult.value)
+          setToaApiData(toaResult.value as ToaSeasonData);
+        if (whiwaResult.status === 'fulfilled' && whiwaResult.value)
+          setWhiwaApiData(whiwaResult.value as WhiwaSeasonData);
+        if (matrixResult.status === 'fulfilled' && matrixResult.value)
+          setMatrixApiData(matrixResult.value as MatrixSeasonData);
+      });
+
 
     } catch (error) {
       console.error('Failed to load endgame data:', error);
@@ -511,6 +531,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
           onUpdate={refreshData}
           onInitializeFloors={initializeTowerFloors}
           availableCharacters={availableCharacters}
+          apiData={toaApiData ?? undefined}
         />
       )}
 
@@ -520,6 +541,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
           torrentsStages={torrentsStages}
           onUpdate={refreshData}
           availableCharacters={availableCharacters}
+          apiData={whiwaApiData  ?? undefined}
         />
       )}
 
@@ -530,6 +552,7 @@ const EndgameTab = forwardRef<EndgameTabRef>((_props, ref): React.ReactElement =
           onUpdate={refreshData}
           availableCharacters={availableCharacters}
           healerCharacters={healerCharacters}
+          apiData={matrixApiData ?? undefined}
         />
       )}
     </div>
